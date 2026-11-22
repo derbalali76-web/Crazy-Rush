@@ -153,16 +153,41 @@ func _touch_test() -> void:
 	print("controls size=", r.hud.controls.size, " input_set=", r.hud.controls.input != null)
 	var t := InputEventScreenTouch.new()
 	t.index = 0
-	t.position = Vector2(200, 500)
+	t.position = Vector2(700, 300)
 	t.pressed = true
 	Input.parse_input_event(t)
 	await get_tree().process_frame
 	var d := InputEventScreenDrag.new()
 	d.index = 0
-	d.position = Vector2(260, 500)
+	d.position = Vector2(760, 300)
 	Input.parse_input_event(d)
 	await get_tree().process_frame
 	print("steer after drag right=", r.runner.input.steer)
 	for i in range(30):
 		await get_tree().process_frame
 	print("x=", r.runner.x, " steer=", r.runner.input.steer)
+	var d2 := InputEventScreenDrag.new()
+	d2.index = 0
+	d2.position = Vector2(760, 230)
+	Input.parse_input_event(d2)
+	var peak := 0.0
+	for i in range(40):
+		await get_tree().process_frame
+		peak = maxf(peak, r.runner.y)
+	print("swipe up -> peak y=", peak)
+	var up := InputEventScreenTouch.new()
+	up.index = 0
+	up.position = Vector2(760, 230)
+	up.pressed = false
+	Input.parse_input_event(up)
+	await get_tree().process_frame
+	print("steer after release=", r.runner.input.steer)
+	var pb := InputEventScreenTouch.new()
+	pb.index = 1
+	pb.position = Vector2(1280 - 120, 720 - 120)
+	pb.pressed = true
+	Input.parse_input_event(pb)
+	print("punch flag=", r.runner.input.punch, " state=", r.runner.state)
+	for i in range(3):
+		await get_tree().process_frame
+	print("punch cd=", r.runner.t_punch_cd, " flag=", r.runner.input.punch)

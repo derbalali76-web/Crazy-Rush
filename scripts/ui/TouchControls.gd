@@ -1,6 +1,6 @@
 class_name TouchControls
 extends Control
-## أدوات التحكم باللمس: نصف أيسر = سحب أفقي حر للتوجيه، نصف أيمن = أزرار + إيماءات (سحب لأعلى قفز، لأسفل انزلاق، لمسة ضرب).
+## أدوات التحكم: سحب أفقي في أي مكان من الشاشة = توجيه، سحب لأعلى = قفز، لأسفل = انزلاق. يظهر زرّان فقط: اللكمة والقدرة الخاصة.
 ## يدعم اللمس المتعدد (كل إصبع له معرّف مستقل) فلا تتداخل الإيماءات. وعلى الحاسوب: لوحة المفاتيح.
 
 var input: RunnerInput
@@ -10,11 +10,12 @@ var special_enabled := true
 var sensitivity := 1.0
 var enabled := true
 
-const PAD_RADIUS := 92.0
+const PAD_RADIUS := 92.0   # نصف قطر منطقة التوجيه الافتراضية (بكسل) — غير مرسومة
 const SWIPE_PX := 55.0
 
 var _pad_touch := -1
 var _pad_anchor := Vector2.ZERO
+var _steer_y0 := 0.0
 var _pad_pos := Vector2.ZERO
 var _btn_touch: Dictionary = {}     # index -> اسم الزر
 var _gest: Dictionary = {}          # index -> {start, t, done}
@@ -35,15 +36,9 @@ func _vp() -> Vector2:
 func _btn_defs() -> Dictionary:
 	var sz := _vp()
 	return {
-		"jump": {"c": Vector2(sz.x - 132, sz.y - 128), "r": 80.0},
-		"slide": {"c": Vector2(sz.x - 296, sz.y - 88), "r": 58.0},
-		"punch": {"c": Vector2(sz.x - 262, sz.y - 222), "r": 64.0},
-		"special": {"c": Vector2(sz.x - 118, sz.y - 292), "r": 56.0},
+		"punch": {"c": Vector2(sz.x - 120, sz.y - 120), "r": 78.0},
+		"special": {"c": Vector2(sz.x - 290, sz.y - 96), "r": 60.0},
 	}
-
-
-func _default_pad_center() -> Vector2:
-	return Vector2(176.0, _vp().y - 128.0)
 
 
 # ------------------------------------------------------------------ إدخال
@@ -74,45 +69,48 @@ func _down(idx: int, pos: Vector2) -> void:
 	var defs := _btn_defs()
 	for name in defs:
 		var d: Dictionary = defs[name]
-		if pos.distance_to(d.c) <= d.r * 1.2:
+		if pos.distance_to(d.c) <= d.r * 1.25:
 			_btn_touch[idx] = name
 			_pressed[name] = int(_pressed.get(name, 0)) + 1
 			match name:
-				"jump": input.jump = true
-				"slide": input.slide = true
 				"punch": input.punch = true
 				"special":
 					if special_cd <= 0.0 and special_enabled:
 						input.special = true
 			return
-	if pos.x < _vp().x * 0.5 and _pad_touch == -1:
+	# أي مكان آخر على الشاشة: إصبع التوجيه (الأول فقط). حركة أفقية = توجيه، سحب لأعلى/أسفل = قفز/انزلاق.
+	if _pad_touch == -1:
 		_pad_touch = idx
-		var c := Vector2(clampf(pos.x, PAD_RADIUS + 20.0, _vp().x * 0.5 - 40.0), clampf(pos.y, _vp().y * 0.45, _vp().y - PAD_RADIUS - 10.0))
-		_pad_anchor = c
+		_pad_anchor = pos
 		_pad_pos = pos
+		_steer_y0 = pos.y
 		_update_steer()
-	elif pos.x >= _vp().x * 0.5:
-		_gest[idx] = {"start": pos, "t": Time.get_ticks_msec(), "done": false}
 
 
 func _move(idx: int, pos: Vector2) -> void:
-	if idx == _pad_touch:
-		_pad_pos = pos
-		_update_steer()
-	elif _gest.has(idx):
-		var g: Dictionary = _gest[idx]
-		if g.done:
-			return
-		var d: Vector2 = pos - g.start
-		if d.y < -SWIPE_PX and absf(d.y) > absf(d.x) * 0.7:
-			input.jump = true
-			g.done = true
-		elif d.y > SWIPE_PX and absf(d.y) > absf(d.x) * 0.7:
-			input.slide = true
-			g.done = true
+	if idx != _pad_touch:
+		return
+	_pad_pos = pos
+	# المرساة تلحق الإصبع كي يستجيب عكس الاتجاه فورًا
+	var lim := PAD_RADIUS * 0.62
+	_pad_anchor.x = clampf(_pad_anchor.x, pos.x - lim, pos.x + lim)
+	_update_steer()
+	var dy := pos.y - _steer_y0
+	if dy < -SWIPE_PX:
+		input.jump = true
+		_steer_y0 = pos.y
+	elif dy > SWIPE_PX:
+		input.slide = true
+		_steer_y0 = pos.y
+	else:
+		# اسمح بإعادة الإيماءة عند تغيير الاتجاه العمودي
+		if dy > 0.0 and pos.y < _steer_y0:
+			_steer_y0 = pos.y
+		elif dy < 0.0 and pos.y > _steer_y0:
+			_steer_y0 = pos.y
 
 
-func _up(idx: int, pos: Vector2) -> void:
+func _up(idx: int, _pos: Vector2) -> void:
 	if idx == _pad_touch:
 		_pad_touch = -1
 		input.steer = 0.0
@@ -120,13 +118,6 @@ func _up(idx: int, pos: Vector2) -> void:
 		var n: String = _btn_touch[idx]
 		_pressed[n] = maxi(int(_pressed.get(n, 1)) - 1, 0)
 		_btn_touch.erase(idx)
-	if _gest.has(idx):
-		var g: Dictionary = _gest[idx]
-		var moved: float = pos.distance_to(g.start)
-		var dt: float = float(Time.get_ticks_msec() - int(g.t)) / 1000.0
-		if not g.done and moved < 28.0 and dt < 0.30:
-			input.punch = true
-		_gest.erase(idx)
 
 
 func _update_steer() -> void:
@@ -157,33 +148,9 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if input == null:
 		return
-	_draw_pad()
 	var defs := _btn_defs()
 	for name in defs:
 		_draw_button(name, defs[name])
-
-
-func _draw_pad() -> void:
-	var active := _pad_touch != -1
-	var c := _pad_anchor if active else _default_pad_center()
-	var a := 0.95 if active else 0.62
-	draw_circle(c + Vector2(0, 5), PAD_RADIUS, Color(0, 0, 0, 0.25 * a))
-	draw_circle(c, PAD_RADIUS, Color(0.55, 0.62, 0.85, 0.42 * a))
-	draw_arc(c, PAD_RADIUS - 2.0, 0, TAU, 48, Color(1, 1, 1, 0.85 * a), 5.0, true)
-	# أسهم اليمين واليسار
-	for sgn in [-1.0, 1.0]:
-		var tip := c + Vector2(sgn * (PAD_RADIUS - 18.0), 0)
-		var pts := PackedVector2Array([tip, tip + Vector2(-sgn * 22.0, -16.0), tip + Vector2(-sgn * 22.0, 16.0)])
-		draw_colored_polygon(pts, Color(1, 1, 1, 0.85 * a))
-	var knob := c
-	if active:
-		var off := clampf(_pad_pos.x - _pad_anchor.x, -PAD_RADIUS * 0.62, PAD_RADIUS * 0.62)
-		knob = c + Vector2(off, 0)
-	else:
-		knob = c + Vector2(input.steer * PAD_RADIUS * 0.62, 0)
-	draw_circle(knob + Vector2(0, 4), 36.0, Color(0, 0, 0, 0.3 * a))
-	draw_circle(knob, 36.0, Color(0.86, 0.88, 0.98, a))
-	draw_circle(knob + Vector2(-6, -8), 24.0, Color(1, 1, 1, 0.8 * a))
 
 
 func _draw_button(name: String, d: Dictionary) -> void:
