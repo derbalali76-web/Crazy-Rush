@@ -45,16 +45,16 @@ func _ready() -> void:
 	_fox.build(true)
 	add_child(_fox)
 	_fox.anim = Foxy.Anim.IDLE
-	_fox.rotation_degrees.y = 180.0 + 25.0
+	_fox.rotation_degrees.y = 160.0
 
 	_cam = Camera3D.new()
 	_cam.fov = 38.0
 	add_child(_cam)
-	_cam.position = Vector3(-0.3, 1.5, 4.6)
-	_cam.look_at(Vector3(0.9, 1.0, 0), Vector3.UP)
+	_cam.position = Vector3(0.0, 1.5, 6.4)
+	_cam.look_at(Vector3(0.0, 1.0, 0), Vector3.UP)
 	_cam.make_current()
 	# تحريك الكاميرا يمينًا قليلًا ليبقى فوكسي في الثلث الأيسر
-	_cam.h_offset = -1.5
+	_cam.h_offset = 0.9
 
 	_ui = CanvasLayer.new()
 	add_child(_ui)
@@ -103,4 +103,4 @@ func _open_settings() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	_fox.rotation_degrees.y = 205.0 + sin(_t * 0.6) * 12.0
+	_fox.rotation_degrees.y = 160.0 + sin(_t * 0.6) * 14.0
