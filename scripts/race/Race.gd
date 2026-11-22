@@ -103,6 +103,7 @@ func Perf_reset() -> void:
 # ------------------------------------------------------------------ بيئة
 func _setup_environment() -> void:
 	var prof := Settings.profile()
+	Toon.detail_enabled = float(prof.density) >= 0.5
 	var sky := Sky.new()
 	var pm := ProceduralSkyMaterial.new()
 	pm.sky_top_color = Color("2f78e0")
@@ -119,7 +120,7 @@ func _setup_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("c4b4f0")
-	env.ambient_light_energy = 0.34
+	env.ambient_light_energy = 0.38
 	env.fog_enabled = bool(prof.fog)
 	env.fog_light_color = Color("c4e0ff")
 	env.fog_density = 0.0042
@@ -135,6 +136,8 @@ func _setup_environment() -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sun.directional_shadow_max_distance = 55.0
 	sun.shadow_bias = 0.06
+	sun.directional_shadow_blend_splits = true
+	sun.shadow_blur = 1.6
 	sun.shadow_normal_bias = 1.2
 	add_child(sun)
 	cam = Camera3D.new()

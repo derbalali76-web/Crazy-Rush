@@ -52,6 +52,17 @@ var _prev_hip_y := 0.7
 var _ear_twitch := 0.0
 
 var _phase := 0.0
+var _tail_curl := 0.3
+var animated := true          # false = مؤقتًا بلا تحريك (متسابق بعيد)
+var player: AnimationPlayer
+var tree: AnimationTree
+var _playback: AnimationNodeStateMachinePlayback
+var _cur_state := ""
+const REF_SPEED := 13.0       # سرعة مرجعية لمقطع الجري (م/ث)
+const STRIDE_RATE := 1.38     # راديان طور لكل متر/ث
+const STATES := ["idle", "run", "dash", "jump_up", "fall_air", "slide", "stumble", "fall", "cheer"]
+const XFADE := {"idle": 0.18, "run": 0.14, "dash": 0.08, "jump_up": 0.07, "fall_air": 0.12,
+	"slide": 0.08, "stumble": 0.05, "fall": 0.08, "cheer": 0.15}
 var _time := 0.0
 var _pose := PackedFloat32Array()
 var _target := PackedFloat32Array()
@@ -119,6 +130,7 @@ func build(outline := true) -> void:
 	_build_scarf_tails(mat_solid)
 	scale = Vector3.ONE * SCALE_FACTOR
 	_apply_pose_instant()
+	_setup_animation()
 
 
 func _mi(mb: MeshBuilder, parent: Node3D, mat: Material, pos := Vector3.ZERO) -> MeshInstance3D:
@@ -388,17 +400,211 @@ func notify_hit(power := 1.0) -> void:
 
 
 func _process(delta: float) -> void:
-	if body == null:
+	if body == null or not animated:
 		return
 	_time += delta
-	_compute_target(delta)
-	var k := 1.0 - exp(-delta * (16.0 if anim != Anim.IDLE else 8.0))
-	for i in range(P_COUNT):
-		_pose[i] = lerpf(_pose[i], _target[i], k)
 	_lean_s = lerpf(_lean_s, lean, 1.0 - exp(-delta * 7.0))
-	_apply_pose()
+	_drive_tree(delta)
+	_apply_overlays()
 	_update_chains(delta)
 	_update_secondary(delta)
+
+
+# ======================================================== نظام المقاطع (AnimationPlayer + AnimationTree)
+## المقاطع تُخبز مرة واحدة عند البناء من دوال الوضعيات (مقاطع مكتوبة بالكود وليست Mocap)،
+## ثم يشغّلها AnimationTree بآلة حالات وانتقالات ممزوجة. سرعة التشغيل = سرعة الجري/المرجع.
+func _state_for_anim() -> String:
+	match anim:
+		Anim.RUN: return "run"
+		Anim.DASH: return "dash"
+		Anim.JUMP: return "jump_up" if vy > 0.0 else "fall_air"
+		Anim.SLIDE: return "slide"
+		Anim.STUMBLE: return "stumble"
+		Anim.FALL: return "fall"
+		Anim.CHEER: return "cheer"
+	return "idle"
+
+
+func _setup_animation() -> void:
+	if player != null:
+		return
+	player = AnimationPlayer.new()
+	player.name = "ClipPlayer"
+	add_child(player)
+	var lib := AnimationLibrary.new()
+	var run_len := TAU / (REF_SPEED * STRIDE_RATE)
+	# اسم: [Anim, الطول, عدد العينات, vy, تكرار]
+	var specs := {
+		"idle": [Anim.IDLE, 6.0, 30, 0.0],
+		"run": [Anim.RUN, run_len, 24, 0.0],
+		"dash": [Anim.DASH, run_len / 1.35, 24, 0.0],
+		"jump_up": [Anim.JUMP, 0.5, 4, 8.0],
+		"fall_air": [Anim.JUMP, 0.5, 4, -6.0],
+		"slide": [Anim.SLIDE, 0.6, 4, 0.0],
+		"stumble": [Anim.STUMBLE, TAU / 30.0 * 2.0, 16, 0.0],
+		"fall": [Anim.FALL, TAU / 22.0 * 2.0, 16, 0.0],
+		"cheer": [Anim.CHEER, PI / 7.0, 16, 0.0],
+	}
+	var save := [anim, run_speed, lean, vy, height_above, _land_t, punch_t, _time, _phase, _lean_s]
+	for key in specs.keys():
+		var sp: Array = specs[key]
+		lib.add_animation(key, _bake_clip(sp[0], sp[1], sp[2], sp[3]))
+	anim = save[0]; run_speed = save[1]; lean = save[2]; vy = save[3]; height_above = save[4]
+	_land_t = save[5]; punch_t = save[6]; _time = save[7]; _phase = save[8]; _lean_s = save[9]
+	player.add_animation_library("", lib)
+
+	var sm := AnimationNodeStateMachine.new()
+	var i := 0
+	for st in STATES:
+		var node: AnimationRootNode
+		if st == "run" or st == "dash":
+			var bt := AnimationNodeBlendTree.new()
+			var an := AnimationNodeAnimation.new()
+			an.animation = st
+			var ts := AnimationNodeTimeScale.new()
+			bt.add_node("clip", an, Vector2(-300, 0))
+			bt.add_node("ts", ts, Vector2(-150, 0))
+			bt.connect_node("ts", 0, "clip")
+			bt.connect_node("output", 0, "ts")
+			node = bt
+		else:
+			var an2 := AnimationNodeAnimation.new()
+			an2.animation = st
+			if st == "idle" or st == "stumble" or st == "fall" or st == "cheer" or st == "slide":
+				an2.play_mode = AnimationNodeAnimation.PLAY_MODE_FORWARD
+			node = an2
+		sm.add_node(st, node, Vector2(150.0 * (i % 5), 120.0 * (i / 5)))
+		i += 1
+	for a in STATES:
+		for b in STATES:
+			if a == b:
+				continue
+			var tr := AnimationNodeStateMachineTransition.new()
+			tr.xfade_time = XFADE[b]
+			tr.switch_mode = AnimationNodeStateMachineTransition.SWITCH_MODE_IMMEDIATE
+			sm.add_transition(a, b, tr)
+	tree = AnimationTree.new()
+	tree.name = "ClipTree"
+	add_child(tree)
+	tree.anim_player = NodePath("../ClipPlayer")
+	tree.tree_root = sm
+	tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	tree.active = true
+
+
+func _bake_clip(a: int, length: float, n: int, vy_: float) -> Animation:
+	var clip := Animation.new()
+	clip.length = length
+	clip.loop_mode = Animation.LOOP_LINEAR
+	# مسارات: [العقدة، الخاصية]
+	var targets: Array = [[hips, "position:y"], [hips, "rotation"], [head, "rotation"],
+		[arm_l, "rotation"], [elbow_l, "rotation"], [arm_r, "rotation"], [elbow_r, "rotation"],
+		[leg_l, "rotation"], [knee_l, "rotation"], [leg_r, "rotation"], [knee_r, "rotation"]]
+	var tracks: Array[int] = []
+	for tg in targets:
+		var path := String(get_path_to(tg[0])) + ":" + String(tg[1])
+		var ti := clip.add_track(Animation.TYPE_VALUE)
+		clip.track_set_path(ti, NodePath(path))
+		clip.track_set_interpolation_type(ti, Animation.INTERPOLATION_CUBIC)
+		clip.track_set_interpolation_loop_wrap(ti, true)
+		tracks.append(ti)
+	for k in range(n + 1):
+		var u := float(k) / float(n)
+		anim = a
+		run_speed = REF_SPEED
+		lean = 0.0
+		_lean_s = 0.0
+		vy = vy_
+		height_above = 9.0
+		_land_t = 0.0
+		punch_t = -1.0
+		_time = u * length
+		_phase = TAU * u
+		_compute_target(0.0)
+		for j in range(P_COUNT):
+			_pose[j] = _target[j]
+		_apply_pose()
+		var tm := u * length
+		for ti2 in range(targets.size()):
+			var nd: Node3D = targets[ti2][0]
+			var v: Variant = nd.position.y if ti2 == 0 else nd.rotation
+			clip.track_insert_key(tracks[ti2], tm, v)
+	return clip
+
+
+func _drive_tree(delta: float) -> void:
+	if tree == null or not tree.is_inside_tree():
+		return
+	if _playback == null:
+		_playback = tree.get("parameters/playback")
+		if _playback == null:
+			return
+		_cur_state = _state_for_anim()
+		_playback.start(_cur_state, true)
+	var st := _state_for_anim()
+	if st != _cur_state:
+		_cur_state = st
+		_playback.travel(st)
+	var ts := clampf(maxf(run_speed, 6.0) / REF_SPEED, 0.45, 2.0)
+	tree.set("parameters/run/ts/scale", ts)
+	tree.set("parameters/dash/ts/scale", ts)
+	tree.advance(delta)
+
+
+## تراكبات إضافية فوق المقاطع: الميل عند التوجيه، ثني الركبتين عند الهبوط، الضرب.
+func _apply_overlays() -> void:
+	var l := _lean_s
+	match anim:
+		Anim.RUN, Anim.DASH:
+			hips.rotation.y += -l * 0.28
+			hips.rotation.z += -l * 0.24
+			head.rotation.z += l * 0.10
+			arm_l.rotation.z += l * 0.28
+			arm_r.rotation.z += l * 0.28
+		Anim.JUMP:
+			hips.rotation.z += -l * 0.15
+			if vy <= 0.0:
+				var r := clampf(1.0 - height_above / 1.2, 0.0, 1.0)
+				leg_l.rotation.x += 0.35 * r
+				knee_l.rotation.x -= 0.45 * r
+				leg_r.rotation.x += 0.40 * r
+				knee_r.rotation.x -= 0.40 * r
+				arm_l.rotation.x -= 0.5 * r
+		Anim.SLIDE:
+			hips.rotation.z += -l * 0.12
+	if _land_t > 0.0 and (anim == Anim.RUN or anim == Anim.DASH or anim == Anim.IDLE):
+		var lk := clampf(_land_t / 0.2, 0.0, 1.0)
+		hips.position.y -= 0.2 * lk
+		knee_l.rotation.x -= 0.7 * lk
+		knee_r.rotation.x -= 0.7 * lk
+		leg_l.rotation.x += 0.35 * lk
+		leg_r.rotation.x += 0.35 * lk
+		hips.rotation.x += 0.18 * lk
+	if punch_t >= 0.0:
+		var w := _punch_curve(punch_t)
+		arm_r.rotation.x = lerpf(arm_r.rotation.x, w.x, w.z)
+		elbow_r.rotation.x = lerpf(elbow_r.rotation.x, w.y, w.z)
+		arm_r.rotation.z = lerpf(arm_r.rotation.z, -0.05, w.z)
+		hips.rotation.y = lerpf(hips.rotation.y, w.w, w.z * 0.8)
+		arm_l.rotation.x = lerpf(arm_l.rotation.x, -0.9, w.z * 0.6)
+	var tt := 0.3
+	match anim:
+		Anim.RUN, Anim.DASH: tt = 0.5
+		Anim.JUMP: tt = 1.0 if vy > 0.0 else 0.2
+		Anim.SLIDE: tt = 0.2
+		Anim.STUMBLE: tt = 0.0
+		Anim.FALL: tt = 1.2
+		Anim.CHEER: tt = 0.8
+	_tail_curl = lerpf(_tail_curl, tt, 0.15)
+
+
+## يضبط الوضعية فورًا من دوال الوضعيات (للّقطات الثابتة وأدوات التطوير).
+func debug_pose(phase: float) -> void:
+	_phase = phase
+	_compute_target(0.0)
+	for j in range(P_COUNT):
+		_pose[j] = _target[j]
+	_apply_pose()
 
 
 func _update_secondary(delta: float) -> void:
@@ -649,12 +855,12 @@ func _compute_target(delta: float) -> void:
 			t[P_TAIL] = 0.8
 		_:
 			# IDLE: وقفة استعداد (قبضة قرب الصدر) مع تنفّس
-			var br := sin(_time * 2.2)
+			var br := sin(_time * TAU / 3.0)
 			t[P_HIPY] = -0.03 + br * 0.012
 			t[P_HRX] = -0.04
-			t[P_HRY] = sin(_time * 0.8) * 0.05
+			t[P_HRY] = sin(_time * TAU / 6.0) * 0.05
 			t[P_HDX] = 0.06 + br * 0.02
-			t[P_HDZ] = sin(_time * 0.9) * 0.05
+			t[P_HDZ] = sin(_time * TAU / 6.0 + 1.0) * 0.05
 			t[P_ALX] = -0.1
 			t[P_ALZ] = 0.22
 			t[P_AEL] = 0.35
@@ -729,7 +935,7 @@ func _punch_curve(t: float) -> Vector4:
 
 
 func _update_chains(delta: float) -> void:
-	var curl := _pose[P_TAIL]
+	var curl := _tail_curl
 	for i in range(tail.size()):
 		var n := tail[i]
 		var ph := _time * (4.0 + run_speed * 0.15) - float(i) * 0.9

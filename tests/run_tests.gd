@@ -21,6 +21,7 @@ func _init() -> void:
 	test_track_consistency()
 	test_race8()
 	test_direct_strike()
+	await test_foxy_clips()
 	print("RESULT fails=", fails)
 	quit(1 if fails > 0 else 0)
 
@@ -174,3 +175,69 @@ func test_direct_strike() -> void:
 	check(logic.runners[1].times_hit == 1, "punch hits rival in front (times_hit=%d)" % logic.runners[1].times_hit)
 	check(logic.runners[0].t_punch_cd > 1.5 or logic.runners[0].rival_hits == 1, "rival hit sets longer cooldown")
 	check(logic.runners[1].is_invulnerable(), "victim gets short protection")
+
+
+func test_foxy_clips() -> void:
+	var f := Foxy.new()
+	f.build(true)
+	root.add_child(f)
+	await process_frame
+	check(f.player != null and f.player.get_animation_list().size() == 9, "9 baked clips in AnimationPlayer")
+	check(f.tree != null and f.tree.tree_root is AnimationNodeStateMachine, "AnimationTree state machine exists")
+	# جري: يجب أن تتحرك الساق وتنتقل الحالة إلى run
+	f.anim = Foxy.Anim.RUN
+	f.run_speed = 13.0
+	var lo := 99.0
+	var hi := -99.0
+	for i in range(120):
+		f._process(1.0 / 60.0)
+		lo = minf(lo, f.leg_l.rotation.x)
+		hi = maxf(hi, f.leg_l.rotation.x)
+	check(f._cur_state == "run", "state machine reaches run")
+	check(hi - lo > 1.2, "run clip swings the leg (range=%.2f)" % (hi - lo))
+	# مطابقة الخطوة: ضعف السرعة -> ضعف عدد الدورات تقريبًا (لا انزلاق للقدمين)
+	var cycles := []
+	for sp in [9.0, 18.0]:
+		f.run_speed = sp
+		for i in range(30):
+			f._process(1.0 / 60.0)
+		var crossings := 0
+		var prev: float = f.leg_l.rotation.x
+		for i in range(240):
+			f._process(1.0 / 60.0)
+			var cur: float = f.leg_l.rotation.x
+			if prev < 0.0 and cur >= 0.0:
+				crossings += 1
+			prev = cur
+		cycles.append(crossings)
+	check(cycles[1] >= cycles[0] * 1.7 and cycles[1] <= cycles[0] * 2.3, "stride rate scales with speed (%s)" % str(cycles))
+	# قفز، هبوط، تعثّر، احتفال
+	f.anim = Foxy.Anim.JUMP
+	f.vy = 6.0
+	for i in range(20):
+		f._process(1.0 / 60.0)
+	check(f._cur_state == "jump_up", "jump_up state")
+	f.vy = -6.0
+	f.height_above = 3.0
+	for i in range(20):
+		f._process(1.0 / 60.0)
+	check(f._cur_state == "fall_air", "fall_air state")
+	f.anim = Foxy.Anim.STUMBLE
+	for i in range(20):
+		f._process(1.0 / 60.0)
+	check(f._cur_state == "stumble", "stumble state")
+	f.anim = Foxy.Anim.CHEER
+	for i in range(30):
+		f._process(1.0 / 60.0)
+	check(f._cur_state == "cheer" and f.arm_l.rotation.x > 2.0, "cheer raises arms")
+	# هبوط: ثني الركبتين
+	f.anim = Foxy.Anim.RUN
+	for i in range(30):
+		f._process(1.0 / 60.0)
+	f.notify_land(true)
+	var kmin := 0.0
+	for i in range(10):
+		f._process(1.0 / 60.0)
+		kmin = minf(kmin, f.knee_l.rotation.x)
+	check(kmin < -1.0, "landing bends the knees (%.2f)" % kmin)
+	f.queue_free()

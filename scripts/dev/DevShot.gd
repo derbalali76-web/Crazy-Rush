@@ -76,9 +76,7 @@ func _scene_fox() -> void:
 	if a == "punch":
 		fox.anim = Foxy.Anim.RUN
 		fox.run_speed = 13.0
-	fox._phase = float(args.get("phase", "0.0"))
-	fox._compute_target(0.0)
-	fox._apply_pose_instant()
+	fox.debug_pose(float(args.get("phase", "0.0")))
 	if a == "punch":
 		fox.punch_t = float(args.get("pt", "0.16"))
 		fox._apply_pose()

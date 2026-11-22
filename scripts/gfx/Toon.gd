@@ -13,6 +13,26 @@ static func solid(outline := false, thickness := 0.018) -> ShaderMaterial:
 	return _fetch("solid", outline, thickness)
 
 
+static var detail_enabled := true
+
+
+## خامة مع تفاصيل إجرائية: 1 خشب، 2 عشب/أوراق، 3 صخر. تعود لـ solid عند تعطيل التفاصيل (جودة منخفضة).
+static func textured(mode: int, amount := 0.35, foliage_wind := -1.0) -> ShaderMaterial:
+	if not detail_enabled:
+		return foliage(foliage_wind) if foliage_wind >= 0.0 else solid(false)
+	var key := "tex_%d_%.2f_%.2f" % [mode, amount, foliage_wind]
+	if _cache.has(key):
+		return _cache[key]
+	var m := _make("res://shaders/toon_double.gdshader" if foliage_wind >= 0.0 else "res://shaders/toon.gdshader")
+	m.set_shader_parameter("detail_mode", mode)
+	m.set_shader_parameter("detail_amount", amount)
+	if foliage_wind >= 0.0:
+		m.set_shader_parameter("wind_amount", foliage_wind)
+		m.set_shader_parameter("rim_amount", 0.12)
+	_cache[key] = m
+	return m
+
+
 static func double_sided(outline := false) -> ShaderMaterial:
 	return _fetch("double", outline, 0.0)
 

@@ -119,9 +119,9 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 				if int(round(s / 3.0)) % 4 == 0 and density >= 0.5:
 					lanterns.append(_frame_xf(s, sd * 6.25, 0.0))
 		s += 3.0
-	_mmi(TrackProtos.get_mesh("board"), boards, board_cols, Toon.solid(false), node, false)
-	_mmi(TrackProtos.get_mesh("stringer"), stringers, [], Toon.solid(false), node, false)
-	_mmi(TrackProtos.get_mesh("post"), posts, [], Toon.solid(false), node, true)
+	_mmi(TrackProtos.get_mesh("board"), boards, board_cols, Toon.textured(1, 0.34), node, false)
+	_mmi(TrackProtos.get_mesh("stringer"), stringers, [], Toon.textured(1, 0.34), node, false)
+	_mmi(TrackProtos.get_mesh("post"), posts, [], Toon.textured(1, 0.34), node, true)
 	_mmi(TrackProtos.get_mesh("pennant"), pennants, [], Toon.double_sided(false), node, false)
 	_mmi(TrackProtos.get_mesh("lantern"), lanterns, [], Toon.solid(false), node, false)
 	_build_ropes(s0, s1, node)
@@ -211,19 +211,19 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 				for k in range(3):
 					flowers.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(7.8, 12.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.3)))
 		s += 6.0
-	_mmi(TrackProtos.get_mesh("palm_a"), palms_a, [], Toon.foliage(0.05), node, true)
-	_mmi(TrackProtos.get_mesh("palm_b"), palms_b, [], Toon.foliage(0.05), node, true)
-	_mmi(TrackProtos.get_mesh("bush"), bushes, [], Toon.solid(false), node, false)
+	_mmi(TrackProtos.get_mesh("palm_a"), palms_a, [], Toon.textured(2, 0.35, 0.05), node, true)
+	_mmi(TrackProtos.get_mesh("palm_b"), palms_b, [], Toon.textured(2, 0.35, 0.05), node, true)
+	_mmi(TrackProtos.get_mesh("bush"), bushes, [], Toon.textured(2, 0.42), node, false)
 	_mmi(TrackProtos.get_mesh("mushroom"), mush, [], Toon.solid(false), node, true)
-	_mmi(TrackProtos.get_mesh("rock_a"), rocks_a, [], Toon.solid(false), node, true)
-	_mmi(TrackProtos.get_mesh("rock_b"), rocks_b, [], Toon.solid(false), node, true)
+	_mmi(TrackProtos.get_mesh("rock_a"), rocks_a, [], Toon.textured(3, 0.55), node, true)
+	_mmi(TrackProtos.get_mesh("rock_b"), rocks_b, [], Toon.textured(3, 0.55), node, true)
 	_mmi(TrackProtos.get_mesh("flower"), flowers, [], Toon.solid(false), node, false)
 	_mmi(TrackProtos.get_mesh("pillar"), pillars, [], Toon.solid(false), node, false)
-	_mmi(TrackProtos.get_mesh("tree_round"), trees_r, [], Toon.solid(false), node, true)
-	_mmi(TrackProtos.get_mesh("tree_cone"), trees_c, [], Toon.solid(false), node, true)
-	_mmi(TrackProtos.get_mesh("tuft"), tufts, [], Toon.solid(false), node, false)
+	_mmi(TrackProtos.get_mesh("tree_round"), trees_r, [], Toon.textured(2, 0.42), node, true)
+	_mmi(TrackProtos.get_mesh("tree_cone"), trees_c, [], Toon.textured(2, 0.42), node, true)
+	_mmi(TrackProtos.get_mesh("tuft"), tufts, [], Toon.textured(2, 0.42), node, false)
 	_mmi(TrackProtos.get_mesh("flower_b"), flowers_b, [], Toon.solid(false), node, false)
-	_mmi(TrackProtos.get_mesh("boulder"), boulders, [], Toon.solid(false), node, true)
+	_mmi(TrackProtos.get_mesh("boulder"), boulders, [], Toon.textured(3, 0.55), node, true)
 
 
 func _build_ground_strip(s0: float, s1: float, node: Node3D) -> void:
@@ -282,7 +282,7 @@ func _build_ground_strip(s0: float, s1: float, node: Node3D) -> void:
 			prev = cur2
 	var mi := MeshInstance3D.new()
 	mi.mesh = mb.build()
-	mi.material_override = Toon.double_sided(false)
+	mi.material_override = Toon.textured(2, 0.40, 0.0)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.add_child(mi)
 
