@@ -176,8 +176,8 @@ _bone("root", None, (0, -HIPS_Y, 0), (0, -HIPS_Y + 0.25, 0))
 _bone("hips", "root", (0, 0, 0), (0, 0.3, 0))
 _bone("head", "hips", (0, 0.82, -0.01), (0, 1.25, -0.01))
 for s, sd in (("L", -1.0), ("R", 1.0)):
-    _bone("arm." + s, "hips", (0.325 * sd, 0.43, 0), (0.325 * sd, 0.15, 0))
-    _bone("forearm." + s, "arm." + s, (0.325 * sd, 0.15, 0), (0.325 * sd, -0.15, 0))
+    _bone("arm." + s, "hips", (0.375 * sd, 0.43, 0), (0.375 * sd, 0.15, 0))
+    _bone("forearm." + s, "arm." + s, (0.375 * sd, 0.15, 0), (0.375 * sd, -0.15, 0))
     _bone("thigh." + s, "hips", (0.14 * sd, -0.02, 0), (0.14 * sd, -0.30, 0))
     _bone("shin." + s, "thigh." + s, (0.14 * sd, -0.30, 0), (0.14 * sd, -0.58, 0))
     d = Vector((0.38 * sd, 1.0, 0.12)).normalized() * 0.5
@@ -296,8 +296,8 @@ def build_body():
 
     # ---- الذراعان
     for s, sd in (("L", -1.0), ("R", 1.0)):
-        sh = (0.325 * sd, 0.43, 0)
-        el = (0.325 * sd, 0.15, 0)
+        sh = (0.375 * sd, 0.43, 0)
+        el = (0.375 * sd, 0.15, 0)
         wf = blend_z("arm." + s, "forearm." + s, el[2] if False else (el[1] + HIPS_Y))
         P = lambda dx, dy, dz, base=sh: (base[0] + dx, base[1] + dy, base[2] + dz)
         b.ellipsoid((0.095, 0.095, 0.095), C_ORANGE, xf(sh), wf, 12, 8)
@@ -371,6 +371,7 @@ SECONDARY = {
     "jump": (1.0, -0.12, 0.05, 1.2, 1), "fall": (0.2, 0.55, 0.1, 1.2, 1), "land": (0.4, 0.2, 0.0, 0.8, 1),
     "slide": (0.2, 0.85, 0.0, 0.6, 1), "stumble": (0.0, 0.1, 0.5, 1.0, 2), "pit_fall": (1.2, 0.9, 0.2, 1.6, 2),
     "victory": (0.8, -0.08, 0.05, 0.9, 1), "punch": (0.5, 0.30, 0.07, 1.0, 1),
+    "punch_l": (0.5, 0.30, 0.07, 1.0, 1),
 }
 
 

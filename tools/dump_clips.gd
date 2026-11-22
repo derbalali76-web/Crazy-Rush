@@ -57,6 +57,26 @@ func _init() -> void:
 				row.append_array([n.rotation.x, n.rotation.y, n.rotation.z])
 			frames.append(row)
 		out[key] = {"length": sp[1], "loop": sp[5], "frames": frames}
+	# لكمة يسرى = انعكاس مرآة للكمة اليمنى (تبديل الأذرع وعكس محوري y,z)
+	var pr: Dictionary = out["punch"]
+	var mframes := []
+	var swap := {1: 1, 2: 3, 3: 2, 4: 5, 5: 4, 6: 7, 7: 6, 8: 9, 9: 8}   # فهارس العُقد (hips=0,head=1 ...)
+	for row in pr["frames"]:
+		var m := [row[0]]
+		for j in range(NODES.size()):
+			var src := j
+			match j:
+				2: src = 4
+				3: src = 5
+				4: src = 2
+				5: src = 3
+				6: src = 8
+				7: src = 9
+				8: src = 6
+				9: src = 7
+			m.append_array([row[1 + src * 3], -row[2 + src * 3], -row[3 + src * 3]])
+		mframes.append(m)
+	out["punch_l"] = {"length": pr["length"], "loop": false, "frames": mframes}
 	var fa := FileAccess.open("res://tools/blender/foxy_clips.json", FileAccess.WRITE)
 	fa.store_string(JSON.stringify(out))
 	fa.close()

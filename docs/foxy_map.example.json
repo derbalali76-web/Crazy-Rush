@@ -1,0 +1,16 @@
+{
+  "_comment": "ضع نسخة معدلة باسم assets/characters/foxy_map.json بجانب foxy.glb. كل المفاتيح اختيارية.",
+  "clips": {
+    "idle": "Idle_Loop", "run": "Run_Cycle", "dash": "Sprint", "turn_l": "Run_Lean_L", "turn_r": "Run_Lean_R",
+    "jump": "Jump_Up", "fall": "Fall_Loop", "land": "Land", "slide": "Slide", "stumble": "Hit_Stumble",
+    "pit_fall": "Fall_Pit", "victory": "Victory", "punch": "Punch_R", "punch_l": "Punch_L"
+  },
+  "bones": {
+    "hips": "pelvis", "head": "Head", "arm.L": "upperarm_l", "forearm.L": "lowerarm_l",
+    "arm.R": "upperarm_r", "forearm.R": "lowerarm_r", "thigh.L": "thigh_l", "shin.L": "calf_l",
+    "thigh.R": "thigh_r", "shin.R": "calf_r"
+  },
+  "punch_right": ["upperarm_r", "lowerarm_r", "hand_r"],
+  "punch_left": ["upperarm_l", "lowerarm_l", "hand_l"],
+  "keep_model_materials": true
+}

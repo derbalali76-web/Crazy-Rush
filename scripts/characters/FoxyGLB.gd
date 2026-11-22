@@ -10,12 +10,37 @@ const GSTATES := ["idle", "run", "dash", "jump", "fall", "land", "slide", "stumb
 const GXFADE := {"idle": 0.18, "run": 0.14, "dash": 0.08, "jump": 0.07, "fall": 0.12, "land": 0.05,
 	"slide": 0.08, "stumble": 0.05, "pit_fall": 0.08, "victory": 0.15}
 
+## تخصيص لنموذج بهيكل/أسماء مختلفة (اختياري): ملف JSON بجانب GLB (انظر docs/NEW_FOXY_MODEL_SPEC.md).
+## {"clips": {"run": "Run_Cycle", ...}, "punch_right": ["UpperArm_R", "LowerArm_R"], "punch_left": [...]}
+const MAP_PATH := "res://assets/characters/foxy_map.json"
+## true = يُبقي خامات النموذج (PBR/خرائط) كما في GLB بدل شيدر الكرتون واللون بالرؤوس.
+static var keep_model_materials := false
+static var clip_map := {}
+static var punch_right := ["arm.R", "forearm.R"]
+static var punch_left := ["arm.L", "forearm.L"]
+
 var model: Node3D
 var skeleton: Skeleton3D
 var gplayer: AnimationPlayer
 var gtree: AnimationTree
 var _gplayback: AnimationNodeStateMachinePlayback
 var _gstate := ""
+
+
+static func load_map() -> void:
+	if not FileAccess.file_exists(MAP_PATH):
+		return
+	var data = JSON.parse_string(FileAccess.get_file_as_string(MAP_PATH))
+	if data is Dictionary:
+		clip_map = data.get("clips", {})
+		punch_right = data.get("punch_right", punch_right)
+		punch_left = data.get("punch_left", punch_left)
+		keep_model_materials = bool(data.get("keep_model_materials", keep_model_materials))
+
+
+## اسم المقطع الفعلي في الملف لاسم منطقي.
+static func cn(logical: String) -> String:
+	return String(clip_map.get(logical, logical))
 
 
 static func available() -> bool:
@@ -25,6 +50,7 @@ static func available() -> bool:
 func build(outline := true) -> void:
 	if body != null:
 		return
+	load_map()
 	body = Node3D.new()
 	body.name = "Body"
 	add_child(body)
@@ -39,7 +65,9 @@ func build(outline := true) -> void:
 		elif c is MeshInstance3D:
 			var mi: MeshInstance3D = c
 			var nm := String(mi.name)
-			if nm.begins_with("Glossy"):
+			if keep_model_materials:
+				pass
+			elif nm.begins_with("Glossy"):
 				mi.material_override = Toon.glossy(outline, 0.012)
 			elif nm.begins_with("Scarf"):
 				mi.material_override = Toon.double_sided(false)
@@ -49,8 +77,10 @@ func build(outline := true) -> void:
 			mi.extra_cull_margin = 1.0
 			_meshes.append(mi)
 	scale = Vector3.ONE * SCALE_FACTOR
-	for a in gplayer.get_animation_list():
-		gplayer.get_animation(a).loop_mode = Animation.LOOP_LINEAR if a in LOOPED else Animation.LOOP_NONE
+	for logical in LOOPED + ["land", "punch", "punch_l"]:
+		var an_name := cn(logical)
+		if gplayer.has_animation(an_name):
+			gplayer.get_animation(an_name).loop_mode = Animation.LOOP_LINEAR if logical in LOOPED else Animation.LOOP_NONE
 	_setup_gtree()
 
 
@@ -66,7 +96,7 @@ func _setup_gtree() -> void:
 			bs.max_space = 1.0
 			for pair in [["turn_l", -1.0], ["run", 0.0], ["turn_r", 1.0]]:
 				var an := AnimationNodeAnimation.new()
-				an.animation = pair[0]
+				an.animation = cn(pair[0])
 				bs.add_blend_point(an, pair[1])
 			var ts := AnimationNodeTimeScale.new()
 			bt.add_node("turn", bs, Vector2(-300, 0))
@@ -77,7 +107,7 @@ func _setup_gtree() -> void:
 		elif st == "dash":
 			var bt2 := AnimationNodeBlendTree.new()
 			var an2 := AnimationNodeAnimation.new()
-			an2.animation = "dash"
+			an2.animation = cn("dash")
 			var ts2 := AnimationNodeTimeScale.new()
 			bt2.add_node("clip", an2, Vector2(-300, 0))
 			bt2.add_node("ts", ts2, Vector2(-150, 0))
@@ -86,7 +116,7 @@ func _setup_gtree() -> void:
 			node = bt2
 		else:
 			var an3 := AnimationNodeAnimation.new()
-			an3.animation = st
+			an3.animation = cn(st)
 			node = an3
 		sm.add_node(st, node, Vector2(150.0 * (i % 5), 120.0 * (i / 5)))
 		i += 1
@@ -100,24 +130,39 @@ func _setup_gtree() -> void:
 	# جذر: آلة الحالات + لكمة (OneShot مفلترة على الذراع اليمنى)
 	var root := AnimationNodeBlendTree.new()
 	var punch := AnimationNodeAnimation.new()
-	punch.animation = "punch"
+	punch.animation = cn("punch")
 	var shot := AnimationNodeOneShot.new()
 	shot.fadein_time = 0.04
 	shot.fadeout_time = 0.1
 	shot.filter_enabled = true
 	var arm_tracks := 0
-	var anim_ref := gplayer.get_animation("punch")
+	var anim_ref := gplayer.get_animation(cn("punch"))
 	for t in range(anim_ref.get_track_count()):
 		var p: String = String(anim_ref.track_get_path(t))
-		if p.contains("arm.R") or p.contains("forearm.R"):
+		if _path_has_any(p, punch_right):
 			shot.set_filter_path(anim_ref.track_get_path(t), true)
 			arm_tracks += 1
+	var punch_l := AnimationNodeAnimation.new()
+	punch_l.animation = cn("punch_l")
+	var shot_l := AnimationNodeOneShot.new()
+	shot_l.fadein_time = 0.04
+	shot_l.fadeout_time = 0.1
+	shot_l.filter_enabled = true
+	var anim_l := gplayer.get_animation(cn("punch_l"))
+	for t2 in range(anim_l.get_track_count()):
+		var p2: String = String(anim_l.track_get_path(t2))
+		if _path_has_any(p2, punch_left):
+			shot_l.set_filter_path(anim_l.track_get_path(t2), true)
 	root.add_node("sm", sm, Vector2(-500, 0))
 	root.add_node("punch", punch, Vector2(-500, 200))
+	root.add_node("punch_l", punch_l, Vector2(-500, 400))
 	root.add_node("shot", shot, Vector2(-250, 0))
+	root.add_node("shot_l", shot_l, Vector2(0, 0))
 	root.connect_node("shot", 0, "sm")
 	root.connect_node("shot", 1, "punch")
-	root.connect_node("output", 0, "shot")
+	root.connect_node("shot_l", 0, "shot")
+	root.connect_node("shot_l", 1, "punch_l")
+	root.connect_node("output", 0, "shot_l")
 	gtree = AnimationTree.new()
 	gtree.name = "RigTree"
 	add_child(gtree)
@@ -125,6 +170,13 @@ func _setup_gtree() -> void:
 	gtree.tree_root = root
 	gtree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	gtree.active = true
+
+
+static func _path_has_any(path: String, names: Array) -> bool:
+	for n in names:
+		if path.ends_with(":" + String(n)) or path.contains(":" + String(n) + ":"):
+			return true
+	return false
 
 
 func _gstate_for_anim() -> String:
@@ -141,10 +193,11 @@ func _gstate_for_anim() -> String:
 	return "idle"
 
 
-func start_punch() -> void:
+func start_punch(side := 1.0) -> void:
 	punch_t = 0.0
 	if gtree != null:
-		gtree.set("parameters/shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		var node := "shot" if side >= 0.0 else "shot_l"
+		gtree.set("parameters/%s/request" % node, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 func _process(delta: float) -> void:
@@ -212,7 +265,7 @@ func debug_pose(phase: float) -> void:
 		skeleton.reset_bone_poses()
 		return
 	var name_ := _gstate_for_anim()
-	var clip := {"land": "land", "jump": "jump", "fall": "fall", "pit_fall": "pit_fall"}.get(name_, name_) as String
+	var clip := cn(name_)
 	gtree.active = false
 	gplayer.play(clip)
 	gplayer.seek(fposmod(phase / TAU, 1.0) * gplayer.get_animation(clip).length, true)

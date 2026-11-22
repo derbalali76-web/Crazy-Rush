@@ -390,7 +390,7 @@ func play(a: int) -> void:
 	anim = a
 
 
-func start_punch() -> void:
+func start_punch(_side := 1.0) -> void:
 	punch_t = 0.0
 
 
@@ -597,7 +597,7 @@ func _apply_overlays() -> void:
 		var w := _punch_curve(punch_t)
 		arm_r.rotation.x = lerpf(arm_r.rotation.x, w.x, w.z)
 		elbow_r.rotation.x = lerpf(elbow_r.rotation.x, w.y, w.z)
-		arm_r.rotation.z = lerpf(arm_r.rotation.z, -0.05, w.z)
+		arm_r.rotation.z = lerpf(arm_r.rotation.z, -0.55, w.z)
 		hips.rotation.y = lerpf(hips.rotation.y, w.w, w.z * 0.8)
 		arm_l.rotation.x = lerpf(arm_l.rotation.x, -0.9, w.z * 0.6)
 	var tt := 0.3
@@ -763,12 +763,12 @@ func _compute_target(delta: float) -> void:
 				t[P_ALZ] = 0.25
 				t[P_ARZ] = -0.25
 			else:
-				t[P_ALX] = -s * 1.0 - 0.1
-				t[P_ARX] = -s2 * 1.0 - 0.1
-				t[P_AEL] = 1.15 + 0.25 * c
-				t[P_AER] = 1.15 + 0.25 * c2
-				t[P_ALZ] = 0.12
-				t[P_ARZ] = -0.12
+				t[P_ALX] = -s * 1.2 - 0.15
+				t[P_ARX] = -s2 * 1.2 - 0.15
+				t[P_AEL] = 1.0 + 0.45 * c
+				t[P_AER] = 1.0 + 0.45 * c2
+				t[P_ALZ] = 0.42 + 0.06 * c
+				t[P_ARZ] = -0.42 - 0.06 * c2
 			t[P_TAIL] = 0.5 + 0.2 * s
 		Anim.JUMP:
 			var rising := vy > 0.0
@@ -918,7 +918,7 @@ func _apply_pose() -> void:
 		var w := _punch_curve(punch_t)   # x: وزن الذراع للأمام، y: التفاف الجذع
 		arx = lerpf(arx, w.x, w.z)
 		aer = lerpf(aer, w.y, w.z)
-		arz = lerpf(arz, -0.05, w.z)
+		arz = lerpf(arz, -0.55, w.z)
 		hry = lerpf(hry, w.w, w.z * 0.8)
 		alx = lerpf(alx, -0.9, w.z * 0.6)
 	hips.rotation = Vector3(hrx, hry, p[P_HRZ])

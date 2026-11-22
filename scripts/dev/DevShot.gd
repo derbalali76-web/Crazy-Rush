@@ -66,6 +66,11 @@ func _scene_fox() -> void:
 	var fox := Foxy.create(true)
 	add_child(fox)
 	await get_tree().process_frame
+	if args.has("clip") and fox is FoxyGLB:
+		fox.gtree.active = false
+		fox.gplayer.play(args["clip"])
+		fox.gplayer.seek(float(args.get("t", "0.2")), true)
+		fox.gplayer.pause()
 	if args.get("plain", "0") == "1":
 		var pm := StandardMaterial3D.new()
 		pm.vertex_color_use_as_albedo = true

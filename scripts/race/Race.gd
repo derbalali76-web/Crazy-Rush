@@ -74,7 +74,7 @@ func _load() -> void:
 	data = TrackData.new()
 	_total_coins = data.coins.size()
 	runner = Runner.new(data)
-	logic = RaceLogic.new(runner, 3, randi())
+	logic = RaceLogic.new(runner, randi() % RaceLogic.RACERS, randi())
 	_connect_runner()
 	logic.racer_hit.connect(_on_racer_hit)
 	view = TrackView.new()
@@ -179,7 +179,7 @@ func _build_rivals() -> void:
 		lb.position = Vector3(0, 2.45, 0)
 		f.add_child(lb)
 		var rr := logic.runners[i]
-		rr.punch_started.connect(func(): f.start_punch())
+		rr.punch_started.connect(func(): f.start_punch(logic.punch_side(i)))
 		rr.jumped.connect(func(): f.notify_jump())
 		rr.landed.connect(func(hard: bool): f.notify_land(hard))
 		rr.stumbled.connect(func(kind: String): f.notify_hit(_hit_power(kind)))
@@ -307,7 +307,7 @@ func _connect_runner() -> void:
 		hud.show_banner("أُصبتَ بضربة!" if kind == "hit" else "أوه! اصطدام", Color("ff9a8a")))
 	runner.punch_started.connect(func():
 		if foxy:
-			foxy.start_punch())
+			foxy.start_punch(logic.punch_side(logic.player)))
 	runner.punch_hit.connect(_on_punch_hit)
 	runner.coin_collected.connect(func(i: int):
 		view.hide_coin(i)

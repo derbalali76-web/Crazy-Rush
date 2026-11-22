@@ -21,6 +21,7 @@ func _init() -> void:
 	test_track_consistency()
 	test_race8()
 	test_direct_strike()
+	test_grid_and_punch_fixes()
 	await test_foxy_clips()
 	await test_foxy_glb()
 	print("RESULT fails=", fails)
@@ -252,12 +253,12 @@ func test_foxy_glb() -> void:
 	await process_frame
 	check(g.skeleton != null and g.skeleton.get_bone_count() >= 19, "GLB skeleton has %d bones" % g.skeleton.get_bone_count())
 	var names: Array = Array(g.gplayer.get_animation_list())
-	var need := ["idle", "run", "dash", "jump", "fall", "land", "slide", "stumble", "pit_fall", "victory", "turn_l", "turn_r", "punch"]
+	var need := ["idle", "run", "dash", "jump", "fall", "land", "slide", "stumble", "pit_fall", "victory", "turn_l", "turn_r", "punch", "punch_l"]
 	var missing := []
 	for n in need:
 		if not (n in names):
 			missing.append(n)
-	check(missing.is_empty(), "GLB has all 13 clips (missing=%s)" % str(missing))
+	check(missing.is_empty(), "GLB has all required clips (missing=%s)" % str(missing))
 	var thigh := g.skeleton.find_bone("thigh.L")
 	f.anim = Foxy.Anim.RUN
 	var cyc := []
@@ -302,7 +303,94 @@ func test_foxy_glb() -> void:
 	for i in range(8):
 		f._process(1.0 / 60.0)
 	check(g.punch_t >= 0.0, "GLB punch fires")
+	var troot := g.gtree.tree_root as AnimationNodeBlendTree
+	var shot_r := troot.get_node("shot") as AnimationNodeOneShot
+	var shot_l := troot.get_node("shot_l") as AnimationNodeOneShot
+	var pa: Animation = g.gplayer.get_animation("punch")
+	var nr := 0
+	var nl := 0
+	for t in range(pa.get_track_count()):
+		var tp := String(pa.track_get_path(t))
+		if shot_r.is_path_filtered(pa.track_get_path(t)):
+			nr += 1
+			check(tp.ends_with(".R"), "right filter only touches right-side bones (%s)" % tp)
+		if shot_l.is_path_filtered(pa.track_get_path(t)):
+			nl += 1
+			check(tp.ends_with(".L"), "left filter only touches left-side bones (%s)" % tp)
+	check(nr == 2 and nl == 2, "punch filters cover arm+forearm on each side (r=%d l=%d)" % [nr, nl])
 	var ghost := f.make_ghost()
 	check(ghost != null and ghost.find_children("*", "MeshInstance3D", true, false).size() == 3, "GLB ghost copy built")
 	ghost.free()
 	f.queue_free()
+
+
+func test_grid_and_punch_fixes() -> void:
+	var pr := Runner.new(TrackData.new())
+	var logic := RaceLogic.new(pr, 3, 7)
+	# --- شبكة بصفّين: لا تداخل
+	var mind := 99.0
+	var rows := {}
+	for i in range(8):
+		var a: Runner = logic.runners[i]
+		rows[snappedf(a.s, 0.01)] = rows.get(snappedf(a.s, 0.01), 0) + 1
+		for j in range(i + 1, 8):
+			var b: Runner = logic.runners[j]
+			mind = minf(mind, Vector2(a.x - b.x, a.s - b.s).length())
+	check(mind >= 2.19, "start grid: min distance between racers %.2f m (>= 2.2)" % mind)
+	check(rows.size() == 2, "start grid has exactly two rows (%s)" % str(rows))
+	var maxs := 0.0
+	var mins := 99.0
+	for r in logic.runners:
+		maxs = maxf(maxs, r.s)
+		mins = minf(mins, r.s)
+	check(absf((maxs - mins) - RaceLogic.ROW_GAP) < 0.001, "row stagger equals ROW_GAP (%.2f m) to the same finish line" % (maxs - mins))
+	var same_row_min := 99.0
+	for i in range(8):
+		for j in range(i + 1, 8):
+			if absf(logic.runners[i].s - logic.runners[j].s) < 0.01:
+				same_row_min = minf(same_row_min, absf(logic.runners[i].x - logic.runners[j].x))
+	check(same_row_min >= 2.99, "same-row lateral spacing %.2f m (>= 3.0)" % same_row_min)
+	# --- اللكمة: لحظة الإصابة عند وصول القبضة + دفع جانبي + ضربة جانبية
+	check(Runner.PUNCH_HIT_AT >= 0.18 and Runner.PUNCH_HIT_AT <= 0.24, "punch resolves when the fist arrives (%.2f s)" % Runner.PUNCH_HIT_AT)
+	var pr2 := Runner.new(TrackData.new())
+	var lg := RaceLogic.new(pr2, 0, 5)
+	lg.start()
+	for r in lg.runners:
+		r.s = 100.0
+		r.x = -5.0
+	for i in range(2, 8):
+		lg.runners[i].x = 5.0
+		lg.runners[i].s = 300.0 + 10.0 * i
+	lg.runners[0].x = 0.0
+	lg.runners[1].x = 1.7          # جانبي (على اليمين) وأمام قليلًا
+	lg.runners[1].s = 100.8
+	check(lg.punch_side(0) > 0.0, "punch aims right toward the rival on the right")
+	lg.runners[1].x = -1.7
+	check(lg.punch_side(0) < 0.0, "punch aims left toward the rival on the left")
+	var x0: float = lg.runners[1].x
+	lg.runners[0].input.punch = true
+	var hit_time := -1.0
+	for i in range(80):
+		lg.runners[0].step(1.0 / 120.0)
+		lg.runners[1].step(1.0 / 120.0)
+		if hit_time < 0.0 and lg.runners[1].times_hit == 1:
+			hit_time = float(i) / 120.0
+	check(lg.runners[1].times_hit == 1, "side punch connects with a rival 1.7 m to the side")
+	check(hit_time >= 0.18 and hit_time <= 0.26, "hit registered at fist arrival (%.2f s)" % hit_time)
+	var moved: float = lg.runners[1].x - x0
+	check(moved < -0.3 and moved > -1.6, "victim shoved sideways away from attacker (%.2f m)" % moved)
+	# --- ذراع الجري أوضح: مدى حركة الكتف والمرفق في المقطع
+	var f := Foxy.new()
+	f.build(false)
+	var zs := []
+	f.anim = Foxy.Anim.RUN
+	f.run_speed = 13.0
+	f.lean = 0.0
+	f._lean_s = 0.0
+	for k in range(24):
+		f._phase = TAU * float(k) / 24.0
+		f._compute_target(0.0)
+		zs.append(absf(f._target[Foxy.P_ALZ]))
+	var zmin: float = zs.min()
+	check(zmin >= 0.35, "run arms stay abducted away from torso (min z %.2f rad)" % zmin)
+	f.free()

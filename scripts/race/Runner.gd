@@ -34,7 +34,9 @@ const INVULN_TIME := 1.50
 const FALL_RESPAWN := 1.50
 const PUNCH_RANGE := 1.8
 const PUNCH_WIDTH := 1.25
-const PUNCH_HIT_AT := 0.12
+const PUNCH_HIT_AT := 0.20      # لحظة وصول القبضة (ذروة المدّ في مقطع اللكمة ≈ 0.22 ث)
+const PUNCH_REACH_X := 2.0      # أقصى بُعد جانبي للإصابة (م)
+const SHOVE_DECAY := 18.0
 const RIVAL_COOLDOWN := 2.5      # انتظار بعد إصابة منافس فعليًا
 const PUNCH_COOLDOWN := 0.50     # دورة التأرجح (الانتظار 2.5ث يخص ضرب المنافسين لاحقًا)
 const DASH_TIME := 1.0
@@ -55,6 +57,7 @@ var x := 0.0
 var y := 0.0
 var vy := 0.0
 var lat_v := 0.0
+var shove_v := 0.0             # دفع جانبي يتلاشى (من لكمة خصم)
 var speed := 0.0
 var time := 0.0
 var finish_time := 0.0
@@ -211,7 +214,8 @@ func _steer(dt: float) -> void:
 	var lim := MAX_LAT * (0.5 if state == State.STUMBLE else 1.0)
 	var target := clampf(input.steer, -1.0, 1.0) * lim
 	lat_v = move_toward(lat_v, target, LAT_ACCEL * dt)
-	x = clampf(x + lat_v * dt, -RAIL, RAIL)
+	shove_v = move_toward(shove_v, 0.0, SHOVE_DECAY * dt)
+	x = clampf(x + (lat_v + shove_v) * dt, -RAIL, RAIL)
 	if absf(x) >= RAIL - 0.001 and signf(lat_v) == signf(x):
 		lat_v = 0.0
 
@@ -406,6 +410,11 @@ func take_hit() -> bool:
 	_stumble("hit")
 	stumbles -= 1   # لا تُحسب ضمن عثرات المسار
 	return true
+
+
+## دفع جانبي معتدل (≈1 م بقوة 6): dir_sign = ±1 (+ لليمين).
+func shove(dir_sign: float, strength := 6.0) -> void:
+	shove_v = signf(dir_sign) * strength
 
 
 func mark_rival_hit() -> void:

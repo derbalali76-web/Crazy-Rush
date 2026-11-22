@@ -82,7 +82,7 @@ func update(dt: float, r: Runner, others: Array) -> void:
 			if other == r or other.t_invuln > 0.0:
 				continue
 			var ds: float = other.s - r.s
-			if ds > 0.2 and ds < Runner.PUNCH_RANGE - 0.2 and absf(other.x - r.x) < 1.1:
+			if ds > -0.2 and ds < Runner.PUNCH_RANGE - 0.2 and absf(other.x - r.x) < 1.5:
 				if _rng.randf() < aggression * (0.35 + 0.65 * skill):
 					r.input.punch = true
 					break
