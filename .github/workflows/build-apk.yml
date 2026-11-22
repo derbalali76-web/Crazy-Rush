@@ -1,0 +1,109 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master, "claude/**"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.5.1"
+  GODOT_BASE: "https://github.com/godotengine/godot-builds/releases/download/4.5.1-stable"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          set -e
+          mkdir -p "$HOME/godot" && cd "$HOME/godot"
+          curl -fsSL -o godot.zip "$GODOT_BASE/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -fsSL -o templates.tpz "$GODOT_BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q godot.zip
+          sudo mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          godot --version
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK pieces
+        run: |
+          set -e
+          export ANDROID_HOME="$HOME/android-sdk"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          cd "$ANDROID_HOME/cmdline-tools"
+          curl -fsSL -o cmdtools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdtools.zip
+          mv cmdline-tools latest
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "build-tools;35.0.1" "platforms;android-35" "cmdline-tools;latest" > /dev/null
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+      - name: Debug keystore and Godot editor settings
+        run: |
+          set -e
+          mkdir -p "$HOME/.config/godot" build
+          keytool -genkeypair -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey \
+            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          cat > "$HOME/.config/godot/editor_settings-4.5.tres" <<EOT
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/shutdown_adb_on_exit = true
+          EOT
+          sed -i 's/^          //' "$HOME/.config/godot/editor_settings-4.5.tres"
+
+      - name: Import project
+        run: godot --headless --import || true
+
+      - name: Run headless tests
+        run: |
+          mkdir -p logs
+          godot --headless -s tests/run_tests.gd 2>&1 | tee logs/tests.log
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Export debug APK
+        run: |
+          godot --headless --export-debug "Android" build/CrazyRush.apk 2>&1 | tee logs/export.log
+          test -s build/CrazyRush.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrazyRush-debug-apk
+          path: build/CrazyRush.apk
+
+      - name: Publish rolling release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete phase1-latest --yes --cleanup-tag || true
+          gh release create phase1-latest build/CrazyRush.apk --title "Crazy Rush — Phase 1 (latest build)" \
+            --notes "Debug APK built automatically from commit ${GITHUB_SHA}." --prerelease
+
+      - name: Push logs to ci-logs branch
+        if: always()
+        run: |
+          set -e
+          mkdir -p logs
+          echo "run ${GITHUB_RUN_ID} sha ${GITHUB_SHA}" > logs/meta.txt
+          git config --global user.email "ci@users.noreply.github.com"
+          git config --global user.name "ci"
+          cd logs && git init -q && git checkout -q -b ci-logs && git add . && git commit -q -m "ci logs ${GITHUB_RUN_ID}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-logs || true
