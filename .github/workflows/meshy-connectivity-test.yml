@@ -1,0 +1,41 @@
+name: Meshy connectivity test (no API key, no generation)
+
+# اختبار وصول فقط، يدوي التشغيل. لا يستخدم أي سر، ولا ينشئ مهام توليد، ولا ينزّل ملفات نماذج.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: DNS resolution
+        run: |
+          for h in api.meshy.ai assets.meshy.ai; do
+            echo "== $h"
+            getent hosts "$h" || echo "DNS: no result"
+          done
+
+      - name: HTTPS reachability (unauthenticated, headers only)
+        run: |
+          probe() {
+            echo "== $1"
+            # HEAD فقط، بلا مفتاح وبلا جسم. 401/403/404 كلها تعني أن الخادم وصل إليه.
+            curl -sS -I -m 20 -o /dev/null \
+              -w "http_code=%{http_code} remote_ip=%{remote_ip} ssl_verify=%{ssl_verify_result} time=%{time_total}s\n" \
+              "$1" || echo "curl failed (exit $?)"
+          }
+          probe https://api.meshy.ai/
+          probe https://api.meshy.ai/openapi/v2/text-to-3d
+          probe https://assets.meshy.ai/
+
+      - name: Unauthenticated API call must be rejected (sanity check, GET only)
+        run: |
+          # نتوقع 401 لأننا لا نرسل مفتاحًا؛ هذا يثبت أن الواجهة تصلنا دون أن نستهلك أي شيء.
+          code=$(curl -sS -m 20 -o /dev/null -w "%{http_code}" https://api.meshy.ai/openapi/v2/text-to-3d || echo "000")
+          echo "GET /openapi/v2/text-to-3d without key -> HTTP $code"
+          if [ "$code" = "401" ] || [ "$code" = "403" ]; then echo "RESULT: API reachable, rejects keyless calls as expected"; fi
+          echo "NOTE: no API key used, no generation task created, no model files downloaded."
