@@ -427,6 +427,28 @@ func break_crate(o: Dictionary) -> Array:
 
 
 # ------------------------------------------------------------------ عناصر بعيدة
+
+## أقصر مسافة أفقية بين نقطة في العالم ومحور المسار (للتأكد أن العناصر البعيدة لا تقع فوق منعطفات الحلبة المتعرجة).
+func _dist_to_track(w: Vector3) -> float:
+	var best := 1e9
+	for i in range(0, data.pos.size(), 4):
+		var d := Vector2(data.pos[i].x - w.x, data.pos[i].z - w.z).length()
+		if d < best:
+			best = d
+	return best
+
+
+## يجرّب جانبي المسار ومسافتين إضافيتين حتى يجد موضعًا بعيدًا بما يكفي؛ يعيد null إن لم يجد. في التخطيط 0 يعيد الموضع الأصلي كما هو.
+func _far_place(s: float, sd: float, lat: float, y: float, yaw: float, scl: float, clearance: float) -> Variant:
+	var xf := _place(s, sd * lat, y, yaw, scl)
+	if TrackData.layout == 0:
+		return xf
+	for mult in [1.0, -1.0, 1.5, -1.5, 2.0, -2.0]:
+		xf = _place(s, sd * lat * mult, y, yaw, scl)
+		if _dist_to_track(xf.origin) >= clearance:
+			return xf
+	return null
+
 func _build_far() -> void:
 	far_nodes = Node3D.new()
 	far_nodes.name = "Far"
@@ -437,13 +459,18 @@ func _build_far() -> void:
 	for k in range(castle_s.size()):
 		var sd := -1.0 if k % 2 == 0 else 1.0
 		var s: float = castle_s[k]
-		var xf := _place(s, sd * rng.randf_range(95.0, 125.0), rng.randf_range(34.0, 48.0), 0.0, 1.35)
-		_mesh_node("castle", xf, far_nodes, Toon.solid(false), false)
+		var xf: Variant = _far_place(s, sd, rng.randf_range(95.0, 125.0), rng.randf_range(34.0, 48.0), 0.0, 1.35, 70.0)
+		if xf != null:
+			_mesh_node("castle", xf, far_nodes, Toon.solid(false), false)
 	for k in range(9):
 		var s2 := float(k) * 125.0 + 30.0
 		var sd2 := -1.0 if k % 2 == 0 else 1.0
-		_mesh_node("mountain", _place(s2, sd2 * rng.randf_range(210.0, 280.0), -40.0, rng.randf() * TAU, rng.randf_range(1.2, 1.9)), far_nodes, Toon.solid(false), false)
-		_mesh_node("mountain", _place(s2 + 60.0, -sd2 * rng.randf_range(230.0, 300.0), -45.0, rng.randf() * TAU, rng.randf_range(1.2, 1.8)), far_nodes, Toon.solid(false), false)
+		var m1: Variant = _far_place(s2, sd2, rng.randf_range(210.0, 280.0), -40.0, rng.randf() * TAU, rng.randf_range(1.2, 1.9), 170.0)
+		if m1 != null:
+			_mesh_node("mountain", m1, far_nodes, Toon.solid(false), false)
+		var m2: Variant = _far_place(s2 + 60.0, -sd2, rng.randf_range(230.0, 300.0), -45.0, rng.randf() * TAU, rng.randf_range(1.2, 1.8), 170.0)
+		if m2 != null:
+			_mesh_node("mountain", m2, far_nodes, Toon.solid(false), false)
 	for k in range(16):
 		var s3 := rng.randf_range(0.0, TrackData.LENGTH)
 		var sd3 := -1.0 if k % 2 == 0 else 1.0

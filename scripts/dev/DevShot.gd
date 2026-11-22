@@ -12,6 +12,7 @@ func _ready() -> void:
 			args[kv[0]] = kv[1]
 	Toon.premium_enabled = args.get("premium", "0") == "1"
 	Toon.use_normal_maps = args.get("nrm", "1") == "1"
+	TrackData.layout = int(args.get("layout", "0"))
 	var mode: String = args.get("mode", "fox")
 	var out: String = args.get("out", "/tmp/shot.png")
 	var frames := int(args.get("frames", "20"))

@@ -10,6 +10,9 @@ const LENGTH := 1060.0
 const FINISH_S := 1000.0
 const START_S := 8.0
 
+## تخطيط الخط المركزي: 0 الحالي (شبه مستقيم، مستقر)، 1 «غابة متعرجة» تجريبي (فرع art-premium) بمنعطفات واضحة وتلال.
+static var layout := 0
+
 var count := 0
 var pos := PackedVector3Array()
 var fwd := PackedVector3Array()
@@ -41,11 +44,31 @@ static func _keys_value(keys: Array, s: float) -> float:
 	return keys[keys.size() - 1][1]
 
 
+## يبني مفاتيح الانحناء من قائمة منعطفات [بداية s، طول، زاوية بالدرجات (+ يمين)] بدخول/خروج ناعمين.
+static func _bends_to_keys(bends: Array) -> Array:
+	var keys := [[0.0, 0.0]]
+	for b in bends:
+		var s0: float = b[0]
+		var l: float = b[1]
+		var k := deg_to_rad(float(b[2])) / maxf(l - 25.0, 1.0)
+		keys.append([s0, 0.0])
+		keys.append([s0 + 25.0, k])
+		keys.append([s0 + l - 25.0, k])
+		keys.append([s0 + l, 0.0])
+	keys.append([LENGTH + 20.0, 0.0])
+	return keys
+
+
 func _build_centerline() -> void:
 	var curv := [[0, 0.0], [130, 0.0], [175, 0.0030], [240, 0.0030], [285, -0.0040], [370, -0.0040], [415, 0.0], [530, 0.0],
 		[575, 0.0030], [640, 0.0030], [685, -0.0028], [760, -0.0028], [800, 0.0], [LENGTH + 20, 0.0]]
 	var slope := [[0, 0.0], [210, 0.0], [250, 0.05], [290, 0.05], [330, -0.03], [370, 0.0], [560, 0.0], [600, 0.045],
 		[650, 0.045], [700, -0.04], [740, 0.0], [LENGTH + 20, 0.0]]
+	if layout == 1:
+		# أنصاف أقطار ≈ 60 إلى 70 م (الحافة الداخلية ≥ 54 م): آمنة لعرض 12 م وللكاميرا. مستقيم أخير ≥ 90 م قبل خط النهاية.
+		curv = _bends_to_keys([[130.0, 110.0, 75.0], [270.0, 140.0, -100.0], [450.0, 170.0, 120.0], [680.0, 100.0, -70.0], [800.0, 90.0, 55.0]])
+		slope = [[0, 0.0], [150, 0.0], [190, 0.05], [250, 0.05], [300, -0.045], [345, 0.0], [470, 0.0], [510, 0.04],
+			[570, 0.04], [620, -0.05], [665, 0.0], [820, 0.0], [850, 0.03], [890, 0.03], [930, -0.035], [960, 0.0], [LENGTH + 20, 0.0]]
 	count = int((LENGTH + 40.0) / STEP) + 1
 	pos.resize(count)
 	fwd.resize(count)
@@ -241,3 +264,34 @@ func _layout() -> void:
 	_crate(930, R)
 	_pad(950, M)
 	_coin_line(955, 990, M, 0.9, 3.0)
+
+
+## أصغر مسافة أفقية بين نقطتين من المسار تفصل بينهما مسافة قوسية ≥ arc_gap (للتحقق من عدم اقتراب المسار من نفسه).
+func min_self_distance(arc_gap := 120.0) -> float:
+	var best := 1e9
+	var i := 0
+	while i < count:
+		var j := i + int(arc_gap / STEP)
+		while j < count:
+			var d := Vector2(pos[i].x - pos[j].x, pos[i].z - pos[j].z).length()
+			best = minf(best, d)
+			j += 3
+		i += 3
+	return best
+
+
+## أقصى انحناء مطلق (1/م) على الخط المركزي.
+func max_curvature() -> float:
+	var m := 0.0
+	for i in range(1, count - 1):
+		var a := Vector2(fwd[i - 1].x, fwd[i - 1].z).normalized()
+		var b := Vector2(fwd[i + 1].x, fwd[i + 1].z).normalized()
+		m = maxf(m, absf(a.angle_to(b)) / (2.0 * STEP))
+	return m
+
+
+## مجموع تغيّر الاتجاه (درجات، موجب = يمين) بين بداية المسار ونهايته.
+func total_turn_deg() -> float:
+	var a := Vector2(fwd[0].x, fwd[0].z).normalized()
+	var b := Vector2(fwd[count - 2].x, fwd[count - 2].z).normalized()
+	return rad_to_deg(a.angle_to(b))
