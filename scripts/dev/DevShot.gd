@@ -24,6 +24,8 @@ func _ready() -> void:
 			await _scene_race()
 		"touch":
 			await _touch_test()
+		"measure":
+			await _measure()
 	for i in range(frames):
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -193,3 +195,30 @@ func _touch_test() -> void:
 	for i in range(3):
 		await get_tree().process_frame
 	print("punch cd=", r.runner.t_punch_cd, " flag=", r.runner.input.punch)
+
+
+## قياس كلفة المشهد (مضلعات/نداءات رسم) على البرمجيات؛ لا يمثل FPS الهاتف. الاستخدام: --mode=measure --q=0|1|2
+func _measure() -> void:
+	Settings.quality = int(args.get("q", "1"))
+	var r := Race.new()
+	add_child(r)
+	while r.phase == Race.Phase.LOADING:
+		await get_tree().process_frame
+	r._countdown_t = 99.0
+	r.phase = Race.Phase.RACING
+	r.logic.start()
+	var pai := RacerAI.new(1.0, 0.0, 11)
+	for s_target in [20.0, 120.0, 260.0]:
+		var guard := 0
+		while r.runner.s < s_target and guard < 60000:
+			pai.update(1.0 / 120.0, r.runner, r.logic.runners)
+			r.logic.step(1.0 / 120.0)
+			guard += 1
+		r.autopilot = pai
+		for i in 6:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		print("MEASURE q=%d s=%.0f prims=%d draws=%d objs=%d" % [Settings.quality, r.runner.s,
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)])
