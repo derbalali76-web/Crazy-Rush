@@ -92,7 +92,7 @@ func _move(idx: int, pos: Vector2) -> void:
 		return
 	_pad_pos = pos
 	# المرساة تلحق الإصبع كي يستجيب عكس الاتجاه فورًا
-	var lim := PAD_RADIUS * 0.62
+	var lim := _range()
 	_pad_anchor.x = clampf(_pad_anchor.x, pos.x - lim, pos.x + lim)
 	_update_steer()
 	var dy := pos.y - _steer_y0
@@ -120,12 +120,17 @@ func _up(idx: int, _pos: Vector2) -> void:
 		_btn_touch.erase(idx)
 
 
+## المسافة (بكسل) التي تعطي أقصى توجيه. السحب القصير = حركة خفيفة، والسحب الطويل = حركة قوية.
+func _range() -> float:
+	return 190.0 / clampf(sensitivity, 0.4, 1.8)
+
+
 func _update_steer() -> void:
-	var dx := (_pad_pos.x - _pad_anchor.x) / (PAD_RADIUS * 0.62) * sensitivity
+	var dx := (_pad_pos.x - _pad_anchor.x) / _range()
 	var v := clampf(dx, -1.0, 1.0)
-	if absf(v) < 0.06:
+	if absf(v) < 0.02:
 		v = 0.0
-	input.steer = signf(v) * pow(absf(v), 1.15)
+	input.steer = v
 
 
 func _process(delta: float) -> void:

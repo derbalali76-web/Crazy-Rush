@@ -53,8 +53,9 @@ jobs:
         run: |
           set -e
           mkdir -p "$HOME/.config/godot" build
-          keytool -genkeypair -v -keystore "$HOME/debug.keystore" -storepass android -alias androiddebugkey \
-            -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          # مفتاح توقيع ثابت داخل المستودع: يجعل كل تحديث يُثبَّت فوق القديم بدل حذفه.
+          cp ci/crazyrush.keystore "$HOME/debug.keystore"
+          sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/" export_presets.cfg
           cat > "$HOME/.config/godot/editor_settings-4.5.tres" <<EOT
           [gd_resource type="EditorSettings" format=3]
 
