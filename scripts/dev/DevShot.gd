@@ -22,6 +22,8 @@ func _ready() -> void:
 			add_child(Menu.new())
 		"race":
 			await _scene_race()
+		"touch":
+			await _touch_test()
 	for i in range(frames):
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -136,3 +138,31 @@ func _scene_race() -> void:
 		"punch": r.runner.input.punch = true
 	r.runner.input.steer = float(args.get("steer", "0"))
 	print("race s=", r.runner.s, " state=", r.runner.state, " coins=", r.runner.coins_got)
+
+
+func _touch_test() -> void:
+	var r := Race.new()
+	add_child(r)
+	while r.phase == Race.Phase.LOADING:
+		await get_tree().process_frame
+	r._countdown_t = 99.0
+	r.phase = Race.Phase.RACING
+	r.runner.start_race()
+	r.hud.controls.enabled = true
+	await get_tree().process_frame
+	print("controls size=", r.hud.controls.size, " input_set=", r.hud.controls.input != null)
+	var t := InputEventScreenTouch.new()
+	t.index = 0
+	t.position = Vector2(200, 500)
+	t.pressed = true
+	Input.parse_input_event(t)
+	await get_tree().process_frame
+	var d := InputEventScreenDrag.new()
+	d.index = 0
+	d.position = Vector2(260, 500)
+	Input.parse_input_event(d)
+	await get_tree().process_frame
+	print("steer after drag right=", r.runner.input.steer)
+	for i in range(30):
+		await get_tree().process_frame
+	print("x=", r.runner.x, " steer=", r.runner.input.steer)

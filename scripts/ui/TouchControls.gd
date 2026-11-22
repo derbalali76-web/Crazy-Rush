@@ -28,8 +28,12 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 
 
+func _vp() -> Vector2:
+	return get_viewport().get_visible_rect().size
+
+
 func _btn_defs() -> Dictionary:
-	var sz := size
+	var sz := _vp()
 	return {
 		"jump": {"c": Vector2(sz.x - 132, sz.y - 128), "r": 80.0},
 		"slide": {"c": Vector2(sz.x - 296, sz.y - 88), "r": 58.0},
@@ -39,7 +43,7 @@ func _btn_defs() -> Dictionary:
 
 
 func _default_pad_center() -> Vector2:
-	return Vector2(176.0, size.y - 128.0)
+	return Vector2(176.0, _vp().y - 128.0)
 
 
 # ------------------------------------------------------------------ إدخال
@@ -81,13 +85,13 @@ func _down(idx: int, pos: Vector2) -> void:
 					if special_cd <= 0.0 and special_enabled:
 						input.special = true
 			return
-	if pos.x < size.x * 0.5 and _pad_touch == -1:
+	if pos.x < _vp().x * 0.5 and _pad_touch == -1:
 		_pad_touch = idx
-		var c := Vector2(clampf(pos.x, PAD_RADIUS + 20.0, size.x * 0.5 - 40.0), clampf(pos.y, size.y * 0.45, size.y - PAD_RADIUS - 10.0))
+		var c := Vector2(clampf(pos.x, PAD_RADIUS + 20.0, _vp().x * 0.5 - 40.0), clampf(pos.y, _vp().y * 0.45, _vp().y - PAD_RADIUS - 10.0))
 		_pad_anchor = c
 		_pad_pos = pos
 		_update_steer()
-	elif pos.x >= size.x * 0.5:
+	elif pos.x >= _vp().x * 0.5:
 		_gest[idx] = {"start": pos, "t": Time.get_ticks_msec(), "done": false}
 
 
