@@ -28,6 +28,28 @@ var lean := 0.0               # -1..1 ميل التوجيه
 var vy := 0.0                 # السرعة الرأسية (للقفز)
 var punch_t := -1.0           # >= 0 أثناء الضرب
 var invuln_flash := false
+var height_above := 0.0       # ارتفاع القدمين عن الأرض (لاستعداد الهبوط)
+
+var ear_l: Node3D
+var ear_r: Node3D
+var lid_l: Node3D
+var lid_r: Node3D
+var mouth: Node3D
+var _ear_pos := [0.0, 0.0]
+var _ear_vel := [0.0, 0.0]
+var _lid := 0.0
+var _lid_target := 0.0
+var _mouth := 0.0
+var _mouth_target := 0.0
+var _blink_t := 2.0
+var _blink := 0.0
+var _squash := 0.0            # +انضغاط / -تمدد
+var _land_t := 0.0
+var _hit_t := -1.0
+var _hit_power := 1.0
+var _lean_s := 0.0
+var _prev_hip_y := 0.7
+var _ear_twitch := 0.0
 
 var _phase := 0.0
 var _time := 0.0
@@ -184,16 +206,10 @@ func _build_head(mat: Material, mat_gloss: Material) -> void:
 		mb.add_cylinder(0.075, 0.0, 0.26, C_CREAM, _aim(Vector3(0.38 * s, -0.08, -0.12), Vector3(1.0 * s, -0.1, 0.25)), 8)
 		mb.add_cylinder(0.065, 0.0, 0.22, C_CREAM, _aim(Vector3(0.36 * s, -0.17, -0.07), Vector3(0.85 * s, -0.45, 0.2)), 8)
 		mb.add_cylinder(0.06, 0.0, 0.2, C_CREAM, _aim(Vector3(0.37 * s, 0.01, -0.12), Vector3(0.9 * s, 0.3, 0.2)), 8)
-	# الأذنان
-	for s: float in [-1.0, 1.0]:
-		var dirv := Vector3(0.38 * s, 1.0, 0.12).normalized()
-		var base_pos := Vector3(0.26 * s, 0.25, 0.01)
-		mb.add_cylinder(0.185, 0.0, 0.52, C_ORANGE, _aim(base_pos, dirv, Vector3(1, 1, 0.55)), 12)
-		mb.add_cylinder(0.12, 0.0, 0.40, C_CREAM.darkened(0.08), _aim(base_pos + Vector3(0, 0.0, -0.045), dirv, Vector3(1, 1, 0.5)), 10)
-		mb.add_cylinder(0.075, 0.0, 0.17, C_BLACK, _aim(base_pos + dirv * 0.37 + Vector3(0, 0, 0.002), dirv, Vector3(1, 1, 0.55)), 10)
 	# حزام النظارات
 	mb.add_torus(0.305, 0.034, C_STRAP, _xf(Vector3(0, 0.255, 0.0), Vector3(-0.1, 0, 0), Vector3(1.0, 1.0, 0.88)), 22, 6)
 	_mi(mb, head, mat)
+	_build_ears(mat)
 
 	# عدسات النظارات (لامعة) + العينان
 	var mg := MeshBuilder.new()
@@ -211,6 +227,46 @@ func _build_head(mat: Material, mat_gloss: Material) -> void:
 		mg.add_ellipsoid(Vector3(0.024, 0.03, 0.02), Color(1, 1, 1, 0.1), _xf(Vector3(ex - 0.025 * s, 0.1, -0.413), Vector3(0, 0.2 * s, 0)), 8, 6)
 		mg.add_ellipsoid(Vector3(0.012, 0.014, 0.01), Color(1, 1, 1, 0.1), _xf(Vector3(ex + 0.03 * s, 0.0, -0.42), Vector3(0, 0.2 * s, 0)), 6, 5)
 	_mi(mg, head, mat_gloss)
+	_build_lids_and_mouth(mat)
+
+
+func _build_ears(mat: Material) -> void:
+	for s: float in [-1.0, 1.0]:
+		var piv := _pivot(head, Vector3(0.26 * s, 0.25, 0.01))
+		var mb := MeshBuilder.new()
+		var dirv := Vector3(0.38 * s, 1.0, 0.12).normalized()
+		mb.add_cylinder(0.185, 0.0, 0.52, C_ORANGE, _aim(Vector3.ZERO, dirv, Vector3(1, 1, 0.55)), 12)
+		mb.add_cylinder(0.12, 0.0, 0.40, C_CREAM.darkened(0.08), _aim(Vector3(0, 0.0, -0.045), dirv, Vector3(1, 1, 0.5)), 10)
+		mb.add_cylinder(0.075, 0.0, 0.17, C_BLACK, _aim(dirv * 0.37 + Vector3(0, 0, 0.002), dirv, Vector3(1, 1, 0.55)), 10)
+		_mi(mb, piv, mat)
+		if s < 0.0:
+			ear_l = piv
+		else:
+			ear_r = piv
+
+
+## جفون (لتعابير الوجه والرمش) وفم متحرك.
+func _build_lids_and_mouth(mat: Material) -> void:
+	for s: float in [-1.0, 1.0]:
+		var top := Vector3(0.185 * s, 0.055 + 0.15, -0.36)
+		var piv := _pivot(head, top)
+		piv.rotation = Vector3(0, 0.22 * s, 0)
+		var mb := MeshBuilder.new()
+		mb.add_ellipsoid(Vector3(0.122, 0.158, 0.115), C_ORANGE, _xf(Vector3(0, -0.15, -0.01)), 14, 10, C_ORANGE.lightened(0.05))
+		_mi(mb, piv, mat)
+		piv.scale = Vector3(1, 0.001, 1)
+		piv.visible = false
+		if s < 0.0:
+			lid_l = piv
+		else:
+			lid_r = piv
+	mouth = _pivot(head, Vector3(0, -0.135, -0.505))
+	var mm := MeshBuilder.new()
+	mm.add_ellipsoid(Vector3(0.085, 0.07, 0.045), Color("5a1220"), Transform3D.IDENTITY, 12, 8)
+	mm.add_ellipsoid(Vector3(0.05, 0.03, 0.03), Color("ff7a8a"), _xf(Vector3(0, -0.032, -0.012)), 8, 6)
+	_mi(mm, mouth, Toon.solid(false))
+	mouth.scale = Vector3(1, 0.001, 1)
+	mouth.visible = false
 
 
 # ------------------------------------------------------------------ الذراعان
@@ -313,6 +369,24 @@ func start_punch() -> void:
 	punch_t = 0.0
 
 
+## أحداث من اللعبة لتحريك التمدد والانضغاط والارتداد.
+func notify_jump() -> void:
+	_squash = -1.0          # تمدد عند الانطلاق (استجابة فورية، بلا تأخير للتحكم)
+	_land_t = 0.0
+	_ear_twitch = 1.0
+
+
+func notify_land(hard: bool) -> void:
+	_squash = 1.0 if hard else 0.65
+	_land_t = 0.22 if hard else 0.14
+
+
+func notify_hit(power := 1.0) -> void:
+	_hit_t = 0.0
+	_hit_power = clampf(power, 0.4, 1.4)
+	_ear_twitch = 1.0
+
+
 func _process(delta: float) -> void:
 	if body == null:
 		return
@@ -321,8 +395,118 @@ func _process(delta: float) -> void:
 	var k := 1.0 - exp(-delta * (16.0 if anim != Anim.IDLE else 8.0))
 	for i in range(P_COUNT):
 		_pose[i] = lerpf(_pose[i], _target[i], k)
+	_lean_s = lerpf(_lean_s, lean, 1.0 - exp(-delta * 7.0))
 	_apply_pose()
 	_update_chains(delta)
+	_update_secondary(delta)
+
+
+func _update_secondary(delta: float) -> void:
+	# ---- تمدد وانضغاط
+	_squash = move_toward(_squash, 0.0, delta * (4.5 if _squash > 0.0 else 7.0))
+	_land_t = maxf(_land_t - delta, 0.0)
+	var q := _squash
+	var sy := 1.0 - q * 0.17
+	var sxz := 1.0 + q * 0.10
+	# ثني استعدادًا للهبوط: نمدد قليلًا عند الصعود السريع
+	if anim == Anim.JUMP and vy > 3.0:
+		sy += 0.05
+		sxz -= 0.03
+	body.scale = Vector3(sxz, sy, sxz)
+	body.position.x = 0.0
+	# ---- ارتداد الاصطدام
+	var hip_y := hips.position.y
+	if _hit_t >= 0.0:
+		_hit_t += delta
+		var u := _hit_t / 0.55
+		if u >= 1.0:
+			_hit_t = -1.0
+			body.rotation = Vector3.ZERO
+			body.position = Vector3.ZERO
+		else:
+			var env := sin(u * PI)
+			body.rotation = Vector3(-env * 0.45 * _hit_power, sin(u * 18.0) * 0.14 * (1.0 - u) * _hit_power, sin(u * 12.0) * 0.12 * (1.0 - u))
+			body.position = Vector3(0, env * 0.16 * _hit_power, env * 0.22 * _hit_power)
+	else:
+		# انعطاف: يدور الجسم قليلًا نحو المنعطف (يتغير تدريجيًا)
+		body.rotation = Vector3(0.0, -_lean_s * 0.30, 0.0)
+		body.position = Vector3.ZERO
+	# ---- الأذنان: نابض مخمّد يتأثر بحركة الجسم
+	var vel_y := (hip_y - _prev_hip_y) / maxf(delta, 0.0001)
+	_prev_hip_y = hip_y
+	_ear_twitch = maxf(_ear_twitch - delta * 3.0, 0.0)
+	var base := 0.18
+	var flutter := 0.0
+	match anim:
+		Anim.RUN:
+			base = 0.22 + clampf(run_speed - 8.0, 0.0, 10.0) * 0.028
+			flutter = 0.07
+		Anim.DASH:
+			base = 0.75
+			flutter = 0.12
+		Anim.JUMP:
+			base = -0.12 if vy > 0.0 else 0.55
+		Anim.SLIDE:
+			base = 0.85
+		Anim.STUMBLE:
+			base = 0.1 + sin(_time * 24.0) * 0.5
+		Anim.FALL:
+			base = 0.9
+			flutter = 0.2
+		Anim.CHEER:
+			base = -0.08
+			flutter = 0.05
+		_:
+			base = 0.05 + (0.35 * maxf(0.0, sin(_time * 0.7 + 1.3)) if int(_time * 0.7) % 3 == 0 else 0.0)
+	for i in range(2):
+		var tgt: float = base + sin(_time * 17.0 + float(i) * 1.7) * flutter + _ear_twitch * 0.35 * (1.0 if i == 0 else -0.6)
+		tgt += clampf(-vel_y * 0.22, -0.5, 0.5)
+		var acc: float = (tgt - _ear_pos[i]) * 190.0 - _ear_vel[i] * 15.0
+		_ear_vel[i] += acc * delta
+		_ear_pos[i] += _ear_vel[i] * delta
+	if ear_l:
+		ear_l.rotation = Vector3(_ear_pos[0], 0.0, -0.06 - _lean_s * 0.1)
+		ear_r.rotation = Vector3(_ear_pos[1], 0.0, 0.06 - _lean_s * 0.1)
+	# ---- تعابير الوجه
+	_blink_t -= delta
+	if _blink_t <= 0.0:
+		_blink = 0.16
+		_blink_t = randf_range(1.8, 4.2)
+	_blink = maxf(_blink - delta, 0.0)
+	var blink_amt := sin(clampf(_blink / 0.16, 0.0, 1.0) * PI) if _blink > 0.0 else 0.0
+	match anim:
+		Anim.DASH:
+			_lid_target = 0.38
+			_mouth_target = 0.55
+		Anim.SLIDE:
+			_lid_target = 0.30
+			_mouth_target = 0.2
+		Anim.JUMP:
+			_lid_target = 0.0
+			_mouth_target = 0.65 if vy > 0.0 else 0.35
+		Anim.STUMBLE, Anim.FALL:
+			_lid_target = 0.0
+			_mouth_target = 1.0
+		Anim.CHEER:
+			_lid_target = 0.52
+			_mouth_target = 0.9
+		Anim.RUN:
+			_lid_target = 0.12
+			_mouth_target = 0.22 + 0.1 * sin(_phase * 2.0)
+		_:
+			_lid_target = 0.0
+			_mouth_target = 0.0
+	var fk := 1.0 - exp(-delta * 14.0)
+	_lid = lerpf(_lid, _lid_target, fk)
+	_mouth = lerpf(_mouth, _mouth_target, fk)
+	var lid_amt := maxf(_lid, blink_amt)
+	for lid in [lid_l, lid_r]:
+		if lid:
+			lid.visible = lid_amt > 0.04
+			lid.scale = Vector3(1, maxf(lid_amt, 0.001), 1)
+	if mouth:
+		mouth.visible = _mouth > 0.06
+		mouth.scale = Vector3(1.0 + _mouth * 0.15, maxf(_mouth, 0.001), 1.0)
 
 
 func _compute_target(delta: float) -> void:
@@ -334,7 +518,7 @@ func _compute_target(delta: float) -> void:
 		Anim.RUN, Anim.DASH:
 			var sp := maxf(run_speed, 6.0)
 			var mult := 1.0 if anim == Anim.RUN else 1.35
-			_phase += delta * (sp * 0.62) * mult
+			_phase += delta * (sp * 1.38) * mult
 			var ph := _phase
 			var s := sin(ph)
 			var c := cos(ph)
@@ -344,10 +528,10 @@ func _compute_target(delta: float) -> void:
 			var dash := 1.0 if anim == Anim.DASH else 0.0
 			t[P_HIPY] = absf(s) * 0.07 - 0.05 - 0.02 * dash
 			t[P_HRX] = -0.2 - 0.05 * clampf(sp - 10.0, 0.0, 6.0) / 6.0 - 0.35 * dash
-			t[P_HRY] = s * 0.14 - lean * 0.28
-			t[P_HRZ] = -lean * 0.24 + s * 0.04
+			t[P_HRY] = s * 0.14 - _lean_s * 0.28
+			t[P_HRZ] = -_lean_s * 0.24 + s * 0.04
 			t[P_HDX] = 0.18 + 0.2 * dash
-			t[P_HDZ] = lean * 0.1
+			t[P_HDZ] = _lean_s * 0.1
 			t[P_LLX] = s * 0.95 + 0.1 * dash
 			t[P_LKL] = -(0.25 + 1.05 * maxf(0.0, c))
 			t[P_LRX] = s2 * 0.95 + 0.1 * dash
@@ -371,7 +555,7 @@ func _compute_target(delta: float) -> void:
 			var rising := vy > 0.0
 			t[P_HIPY] = 0.02
 			t[P_HRX] = -0.12 if rising else 0.05
-			t[P_HRZ] = -lean * 0.15
+			t[P_HRZ] = -_lean_s * 0.15
 			t[P_HDX] = 0.2
 			if rising:
 				t[P_ALX] = 2.7
@@ -385,22 +569,25 @@ func _compute_target(delta: float) -> void:
 				t[P_LRX] = -0.3
 				t[P_LKR] = -1.1
 			else:
+				# استعداد للهبوط: الركبتان تتجهزان للثني عندما تقترب القدمان من الأرض
+				var ready := clampf(1.0 - height_above / 1.2, 0.0, 1.0)
 				t[P_ALX] = 1.3
 				t[P_ARX] = 1.3
 				t[P_ALZ] = 1.0
 				t[P_ARZ] = -1.0
 				t[P_AEL] = 0.4
 				t[P_AER] = 0.4
-				t[P_LLX] = 0.55
-				t[P_LKL] = -0.6
-				t[P_LRX] = -0.15
-				t[P_LKR] = -0.5
+				t[P_LLX] = 0.55 + 0.35 * ready
+				t[P_LKL] = -0.6 - 0.45 * ready
+				t[P_LRX] = -0.15 + 0.4 * ready
+				t[P_LKR] = -0.5 - 0.4 * ready
+				t[P_ALX] = 1.3 - 0.5 * ready
 			t[P_TAIL] = 1.0 if rising else 0.2
 		Anim.SLIDE:
 			t[P_HIPY] = -0.40
 			t[P_HRX] = 1.0
 			t[P_HDX] = -0.75
-			t[P_HRZ] = -lean * 0.12
+			t[P_HRZ] = -_lean_s * 0.12
 			t[P_LLX] = 1.35
 			t[P_LKL] = -0.1
 			t[P_LRX] = 1.15
@@ -479,6 +666,15 @@ func _compute_target(delta: float) -> void:
 			t[P_LKL] = -0.12
 			t[P_LKR] = -0.22
 			t[P_TAIL] = 0.3 + br * 0.1
+	# ثني الركبتين لحظة الملامسة (يُمتصّ الهبوط بسلاسة)
+	if _land_t > 0.0 and (anim == Anim.RUN or anim == Anim.DASH or anim == Anim.IDLE):
+		var lk := clampf(_land_t / 0.2, 0.0, 1.0)
+		t[P_HIPY] -= 0.2 * lk
+		t[P_LKL] -= 0.7 * lk
+		t[P_LKR] -= 0.7 * lk
+		t[P_LLX] += 0.35 * lk
+		t[P_LRX] += 0.35 * lk
+		t[P_HRX] += 0.18 * lk
 	_target = t
 
 

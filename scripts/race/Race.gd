@@ -48,6 +48,13 @@ var _ghost_timer := 0.0
 var _head_rig: Node3D
 var _total_coins := 0
 var _sky_node: WorldEnvironment
+var autopilot: RacerAI          # للاختبار/اللقطات فقط
+var _speed_rect: ColorRect
+var _speed_mat: ShaderMaterial
+var _speed_i := 0.0
+var _roll := 0.0
+var _blob: MeshInstance3D
+var _rival_blobs: Array = []
 
 
 func _ready() -> void:
@@ -98,8 +105,10 @@ func _setup_environment() -> void:
 	var prof := Settings.profile()
 	var sky := Sky.new()
 	var pm := ProceduralSkyMaterial.new()
-	pm.sky_top_color = Color("3f86e8")
-	pm.sky_horizon_color = Color("bfe0ff")
+	pm.sky_top_color = Color("2f78e0")
+	pm.sky_horizon_color = Color("cfe8ff")
+	pm.sky_curve = 0.22
+	pm.sky_energy_multiplier = 1.05
 	pm.ground_horizon_color = Color("bfe0ff")
 	pm.ground_bottom_color = Color("8fc6e8")
 	pm.sun_angle_max = 25.0
@@ -170,11 +179,48 @@ func _build_rivals() -> void:
 		f.add_child(lb)
 		var rr := logic.runners[i]
 		rr.punch_started.connect(func(): f.start_punch())
+		rr.jumped.connect(func(): f.notify_jump())
+		rr.landed.connect(func(hard: bool): f.notify_land(hard))
+		rr.stumbled.connect(func(kind: String): f.notify_hit(_hit_power(kind)))
 		rivals.append({"foxy": f, "idx": i, "label": lb, "color": lb.modulate})
 		k += 1
 
 
 func _build_fx() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 0
+	add_child(layer)
+	_speed_rect = ColorRect.new()
+	_speed_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_speed_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_speed_mat = ShaderMaterial.new()
+	var sh := Shader.new()
+	sh.code = FileAccess.get_file_as_string("res://shaders/speed_lines.gdshader")
+	_speed_mat.shader = sh
+	_speed_rect.material = _speed_mat
+	_speed_rect.visible = Settings.quality != Settings.Quality.LOW
+	layer.add_child(_speed_rect)
+	# ظل دائري تحت القدمين: يوضّح الارتفاع عند القفز حين تُغلق الظلال الحقيقية (جودة منخفضة)
+	var blob_mb := MeshBuilder.new()
+	blob_mb.add_cylinder(0.55, 0.55, 0.01, Color(0, 0, 0, 1), Transform3D.IDENTITY, 14)
+	var blob_mesh := blob_mb.build()
+	var bm := StandardMaterial3D.new()
+	bm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	bm.albedo_color = Color(0, 0, 0, 0.30)
+	bm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	bm.vertex_color_use_as_albedo = false
+	_blob = MeshInstance3D.new()
+	_blob.mesh = blob_mesh
+	_blob.material_override = bm
+	_blob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_blob)
+	for rv in rivals:
+		var b := MeshInstance3D.new()
+		b.mesh = blob_mesh
+		b.material_override = bm
+		b.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(b)
+		_rival_blobs.append(b)
 	_dust = CPUParticles3D.new()
 	_dust.amount = 18
 	_dust.lifetime = 0.55
@@ -242,14 +288,21 @@ func _build_fx() -> void:
 
 
 func _connect_runner() -> void:
-	runner.jumped.connect(func(): _buzz(18))
+	runner.jumped.connect(func():
+		_buzz(18)
+		if foxy:
+			foxy.notify_jump())
 	runner.landed.connect(func(hard: bool):
 		if hard:
 			_shake = maxf(_shake, 0.12)
+		if foxy:
+			foxy.notify_land(hard)
 		_puff())
 	runner.stumbled.connect(func(kind: String):
 		_shake = 0.35
 		_buzz(60)
+		if foxy:
+			foxy.notify_hit(_hit_power(kind))
 		hud.show_banner("أُصبتَ بضربة!" if kind == "hit" else "أوه! اصطدام", Color("ff9a8a")))
 	runner.punch_started.connect(func():
 		if foxy:
@@ -263,6 +316,19 @@ func _connect_runner() -> void:
 	runner.fell.connect(func(): hud.show_banner("سقطت!", Color("ff9a8a")))
 	runner.finished.connect(_on_finished)
 	runner.dashed.connect(func(): _ghost_timer = 0.0)
+
+
+static func _hit_power(kind: String) -> float:
+	match kind:
+		"hammer":
+			return 1.35
+		"hit":
+			return 1.0
+		"crate":
+			return 0.7
+		"vine":
+			return 0.8
+	return 0.95
 
 
 func _buzz(ms: int) -> void:
@@ -369,6 +435,8 @@ func _run_sim(delta: float) -> void:
 	_acc += delta
 	var n := 0
 	while _acc >= FIXED_DT and n < 12:
+		if autopilot:
+			autopilot.update(FIXED_DT, runner, logic.runners)
 		logic.step(FIXED_DT)
 		_acc -= FIXED_DT
 		n += 1
@@ -521,6 +589,7 @@ func _pose_foxy(f: Foxy, r: Runner) -> void:
 	f.run_speed = r.speed
 	f.lean = clampf(r.lat_v / Runner.MAX_LAT, -1.0, 1.0)
 	f.vy = r.vy
+	f.height_above = r.y
 	f.set_flash(r.is_invulnerable() and r.state != Runner.State.FALLING)
 	match r.state:
 		Runner.State.WAIT:
@@ -565,38 +634,64 @@ func _reset_camera() -> void:
 func _update_camera(delta: float) -> void:
 	var s_use := runner.s
 	var fw := data.forward(s_use)
-	_cam_fwd = _cam_fwd.lerp(fw, 1.0 - exp(-delta * 6.0)).normalized()
+	# دوران سلس مع المنعطف + ميل جانبي (Roll) يتناسب مع سرعة الانعطاف
+	var turn := _cam_fwd.cross(fw).y
+	_cam_fwd = _cam_fwd.lerp(fw, 1.0 - exp(-delta * 5.0)).normalized()
+	_roll = lerpf(_roll, clampf(turn * 3.0, -0.06, 0.06) - runner.lat_v / Runner.MAX_LAT * 0.03, 1.0 - exp(-delta * 4.0))
 	var y_follow := runner.y * 0.55
 	if runner.state == Runner.State.FALLING:
 		y_follow = maxf(runner.y, -1.0) * 0.2
-	var base := data.world(s_use, runner.x * 0.72, y_follow)
+	# الكاميرا تتبع الجانب بنسبة أقل (يبقى المسار أمامك واضحًا) وتتقدم قليلًا باتجاه الحركة الجانبية
+	var base := data.world(s_use, clampf(runner.x * 0.70 + runner.lat_v * 0.06, -4.6, 4.6), y_follow)
+	var boost_k := 1.0 if runner.t_dash > 0.0 else (0.6 if runner.t_boost > 0.0 else 0.0)
 	var extra_h := 0.0
-	var extra_d := 0.0
+	var extra_d := clampf(runner.speed - 13.0, 0.0, 8.0) * 0.10 + boost_k * 0.7
 	if phase == Phase.FINISHED:
 		extra_d = -minf(_finish_t * 2.2, 3.4)
 		extra_h = minf(_finish_t * 0.5, 0.9)
 	var want_pos := base - _cam_fwd * (FOLLOW_DIST + extra_d) + Vector3.UP * (FOLLOW_HEIGHT + extra_h + (0.3 if runner.state == Runner.State.SLIDE else 0.0))
-	var want_look := base + _cam_fwd * LOOK_AHEAD + Vector3.UP * (0.75 + runner.y * 0.25)
-	_cam_pos = _cam_pos.lerp(want_pos, 1.0 - exp(-delta * 9.0))
-	_cam_look = _cam_look.lerp(want_look, 1.0 - exp(-delta * 11.0))
+	# حماية: لا تنزل الكاميرا تحت سطح الجسر ولا تخرج عن حواف المسار (لا اختراق للمجسمات الجانبية)
+	var deck := data.center(s_use).y
+	if runner.state != Runner.State.FALLING:
+		want_pos.y = maxf(want_pos.y, deck + 1.7)
+	var want_look := base + _cam_fwd * LOOK_AHEAD + data.right(s_use) * (runner.lat_v * 0.10) + Vector3.UP * (0.75 + runner.y * 0.25)
+	_cam_pos = _cam_pos.lerp(want_pos, 1.0 - exp(-delta * 8.0))
+	_cam_look = _cam_look.lerp(want_look, 1.0 - exp(-delta * 10.0))
 	var shake_off := Vector3.ZERO
 	if _shake > 0.0:
-		_shake = maxf(_shake - delta * 1.2, 0.0)
-		shake_off = Vector3(randf_range(-1, 1), randf_range(-1, 1), 0.0) * _shake * 0.35
+		_shake = maxf(_shake - delta * 1.4, 0.0)
+		# اهتزاز ناعم (جيبي) بدل العشوائي: لا يسبب إزعاجًا
+		var tt := Time.get_ticks_msec() * 0.001
+		shake_off = Vector3(sin(tt * 53.0), sin(tt * 61.0 + 1.3), 0.0) * _shake * 0.25
 	cam.global_position = _cam_pos + shake_off
 	cam.look_at(_cam_look, Vector3.UP)
-	cam.rotate_object_local(Vector3(0, 0, 1), -runner.lat_v / Runner.MAX_LAT * 0.035)
-	var boost := 0.0
-	if runner.t_dash > 0.0:
-		boost = 9.0
-	elif runner.t_boost > 0.0:
-		boost = 5.0
-	cam.fov = lerpf(cam.fov, 56.0 + boost + clampf(runner.speed - 13.0, 0.0, 8.0) * 0.4, 1.0 - exp(-delta * 5.0))
+	cam.rotate_object_local(Vector3(0, 0, 1), _roll)
+	var fov_goal := 56.0 + boost_k * 10.0 + clampf(runner.speed - 13.0, 0.0, 8.0) * 0.35
+	cam.fov = lerpf(cam.fov, fov_goal, 1.0 - exp(-delta * 4.0))
 	# الشمس تتبع اللاعب كي تبقى الظلال حادة
 	sun.global_position = foxy.global_position + Vector3(0, 30, 0)
+	# خطوط السرعة: خفيفة دائمًا وأقوى مع التيربو
+	var si := clampf((runner.speed - 11.0) / 12.0, 0.0, 0.5) + boost_k * 0.55
+	_speed_i = lerpf(_speed_i, si, 1.0 - exp(-delta * 5.0))
+	if _speed_mat:
+		_speed_mat.set_shader_parameter("intensity", _speed_i)
+
+
+func _place_blob(b: MeshInstance3D, r: Runner, show: bool) -> void:
+	var over := show and r.state != Runner.State.FALLING and data.solid_at(r.s, r.x)
+	b.visible = over
+	if not over:
+		return
+	var fr := data.frame(r.s)
+	b.global_transform = Transform3D(fr.basis * Basis.from_scale(Vector3.ONE * (1.0 / (1.0 + maxf(r.y, 0.0) * 0.35))), data.center(r.s) + data.right(r.s) * r.x + Vector3.UP * 0.04)
 
 
 func _update_fx(delta: float) -> void:
+	var no_real_shadows := not bool(Settings.profile().shadows)
+	_place_blob(_blob, runner, no_real_shadows)
+	for i in range(rivals.size()):
+		var rv: Dictionary = rivals[i]
+		_place_blob(_rival_blobs[i], logic.runners[rv.idx], no_real_shadows and rv.foxy.visible)
 	_dust.global_position = foxy.global_position + Vector3(0, 0.1, 0)
 	_dust.emitting = runner.state == Runner.State.RUN or runner.state == Runner.State.SLIDE
 	_dust.amount = 26 if runner.state == Runner.State.SLIDE else 14

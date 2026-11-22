@@ -121,6 +121,7 @@ func _scene_race() -> void:
 		pai.update(1.0 / 120.0, r.runner, r.logic.runners)
 		r.logic.step(1.0 / 120.0)
 		guard += 1
+	r.autopilot = pai
 	match act:
 		"jump": r.runner.input.jump = true
 		"slide": r.runner.input.slide = true

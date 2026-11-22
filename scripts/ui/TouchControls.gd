@@ -16,6 +16,8 @@ const SWIPE_PX := 55.0
 var _pad_touch := -1
 var _pad_anchor := Vector2.ZERO
 var _steer_y0 := 0.0
+var _flick := 0.0
+var _last_x := 0.0
 var _pad_pos := Vector2.ZERO
 var _btn_touch: Dictionary = {}     # index -> اسم الزر
 var _gest: Dictionary = {}          # index -> {start, t, done}
@@ -81,6 +83,8 @@ func _down(idx: int, pos: Vector2) -> void:
 	# أي مكان آخر على الشاشة: إصبع التوجيه (الأول فقط). حركة أفقية = توجيه، سحب لأعلى/أسفل = قفز/انزلاق.
 	if _pad_touch == -1:
 		_pad_touch = idx
+		_last_x = pos.x
+		_flick = 0.0
 		_pad_anchor = pos
 		_pad_pos = pos
 		_steer_y0 = pos.y
@@ -90,6 +94,10 @@ func _down(idx: int, pos: Vector2) -> void:
 func _move(idx: int, pos: Vector2) -> void:
 	if idx != _pad_touch:
 		return
+	# ضربة سريعة (Flick) تعطي دفعة توجيه فورية إضافية تتلاشى سريعًا
+	var vx := pos.x - _last_x
+	_last_x = pos.x
+	_flick = clampf(_flick * 0.6 + vx / 90.0, -0.45, 0.45)
 	_pad_pos = pos
 	# المرساة تلحق الإصبع كي يستجيب عكس الاتجاه فورًا
 	var lim := _range()
@@ -130,12 +138,15 @@ func _update_steer() -> void:
 	var v := clampf(dx, -1.0, 1.0)
 	if absf(v) < 0.02:
 		v = 0.0
-	input.steer = v
+	input.steer = clampf(v + _flick, -1.0, 1.0)
 
 
 func _process(delta: float) -> void:
 	if not enabled or input == null:
 		return
+	if absf(_flick) > 0.001 and _pad_touch != -1:
+		_flick = move_toward(_flick, 0.0, delta * 2.2)
+		_update_steer()
 	# لوحة المفاتيح (للاختبار على الحاسوب)
 	var k := 0.0
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):

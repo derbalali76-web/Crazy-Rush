@@ -182,6 +182,72 @@ static func _make_pillar() -> ArrayMesh:
 	return mb.build()
 
 
+static func _make_tree_round() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_cylinder(0.32, 0.22, 2.4, Color("8a5a34"), Transform3D.IDENTITY, 8, true, Color("a8703f"))
+	mb.add_ellipsoid(Vector3(1.9, 1.5, 1.9), Color("2f9a3c"), _xf(Vector3(0, 3.1, 0)), 12, 8, Color("5ccf47"))
+	mb.add_ellipsoid(Vector3(1.3, 1.1, 1.3), Color("3fae3b"), _xf(Vector3(1.0, 4.0, 0.4)), 10, 7, Color("6fdc4f"))
+	mb.add_ellipsoid(Vector3(1.1, 0.95, 1.1), Color("2a8f3c"), _xf(Vector3(-0.9, 3.7, -0.5)), 10, 7, Color("56c845"))
+	for k in range(4):
+		var a := TAU * float(k) / 4.0 + 0.4
+		mb.add_ellipsoid(Vector3(0.14, 0.14, 0.14), Color("ff4d4d") if k % 2 == 0 else Color("ffd23a"), _xf(Vector3(cos(a) * 1.75, 2.9 + float(k) * 0.12, sin(a) * 1.75)), 6, 5)
+	return mb.build()
+
+
+static func _make_tree_cone() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_cylinder(0.26, 0.2, 1.6, Color("7a4a2a"), Transform3D.IDENTITY, 8)
+	var cols := [Color("1f8a52"), Color("27a05c"), Color("34b866"), Color("47cf75")]
+	for k in range(4):
+		var r := 1.7 - 0.38 * float(k)
+		mb.add_cylinder(r, 0.05, 1.5, cols[k], _xf(Vector3(0, 1.3 + 0.95 * float(k), 0)), 10, true, cols[k].lightened(0.1))
+	mb.add_ellipsoid(Vector3(0.14, 0.14, 0.14), Color("ffd23a"), _xf(Vector3(0, 5.15, 0)), 6, 5)
+	return mb.build()
+
+
+static func _make_tuft() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	for k in range(5):
+		var a := TAU * float(k) / 5.0
+		var lean := Vector3(cos(a) * 0.35, 1.0, sin(a) * 0.35)
+		mb.add_cylinder(0.07, 0.0, 0.42 + 0.1 * float(k % 2), Color("3fb347") if k % 2 == 0 else Color("66d84a"), _aim_t(Vector3(cos(a) * 0.05, 0, sin(a) * 0.05), lean), 5)
+	return mb.build()
+
+
+static func _aim_t(pos: Vector3, dir: Vector3) -> Transform3D:
+	var y := dir.normalized()
+	var ref := Vector3.FORWARD if absf(y.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT
+	var x := y.cross(ref).normalized()
+	var z := x.cross(y).normalized()
+	return Transform3D(Basis(x, y, z), pos)
+
+
+static func _make_flower_b() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_cylinder(0.025, 0.02, 0.5, GRASS_D, Transform3D.IDENTITY, 5)
+	for k in range(6):
+		var a := TAU * float(k) / 6.0
+		mb.add_ellipsoid(Vector3(0.08, 0.03, 0.08), Color("fff6d8"), _xf(Vector3(cos(a) * 0.1, 0.51, sin(a) * 0.1)), 6, 4)
+	mb.add_ellipsoid(Vector3(0.06, 0.05, 0.06), Color("ff9a2a"), _xf(Vector3(0, 0.53, 0)), 6, 4)
+	return mb.build()
+
+
+static func _make_boulder() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_ellipsoid(Vector3(2.2, 1.7, 2.0), STONE_D, _xf(Vector3(0, 1.0, 0)), 10, 7, STONE)
+	mb.add_ellipsoid(Vector3(1.3, 1.0, 1.2), STONE_D.lightened(0.05), _xf(Vector3(1.6, 0.6, 0.8)), 8, 6, STONE)
+	mb.add_ellipsoid(Vector3(1.9, 0.5, 1.7), GRASS_D, _xf(Vector3(0, 2.2, 0)), 10, 6, GRASS)
+	return mb.build()
+
+
+static func _make_lantern() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_cylinder(0.05, 0.05, 0.55, WOOD_D, _xf(Vector3(0, 1.6, 0)), 6)
+	mb.add_ellipsoid(Vector3(0.2, 0.26, 0.2), Color(1.0, 0.86, 0.45, 0.15), _xf(Vector3(0, 2.0, 0)), 10, 7)
+	mb.add_cylinder(0.24, 0.0, 0.16, Color("c0392b"), _xf(Vector3(0, 2.22, 0)), 8)
+	return mb.build()
+
+
 static func _make_flower() -> ArrayMesh:
 	var mb := MeshBuilder.new()
 	mb.add_cylinder(0.025, 0.02, 0.45, GRASS_D, Transform3D.IDENTITY, 5)
@@ -278,10 +344,14 @@ static func _make_hammer_arm() -> ArrayMesh:
 
 static func _make_pad() -> ArrayMesh:
 	var mb := MeshBuilder.new()
-	mb.add_rbox(Vector3(3.4, 0.14, 3.0), 0.05, Color("3e6fe0"), _xf(Vector3(0, 0.07, 0)), 3)
+	mb.add_rbox(Vector3(3.4, 0.14, 3.0), 0.05, Color("3e6fe0"), _xf(Vector3(0, 0.07, 0)), 3, Color("5a8cff"))
+	mb.add_rbox(Vector3(3.55, 0.08, 3.15), 0.04, Color("ffd23a"), _xf(Vector3(0, 0.03, 0)), 2)
+	for sx in [-1.55, 1.55]:
+		for sz in [-1.3, 1.3]:
+			mb.add_ellipsoid(Vector3(0.1, 0.1, 0.1), Color(0.5, 1.0, 0.9, 0.2), _xf(Vector3(sx, 0.2, sz)), 8, 6)
 	for k in range(2):
 		var z := 0.5 - float(k) * 0.95
-		var c := Color("ffd23a")
+		var c := Color(1.0, 0.85, 0.25, 0.30)
 		# شيفرون مبني من أربعة مثلثات سميكة قليلًا
 		var y := 0.17
 		mb.add_triangle(Vector3(0, y, z - 0.55), Vector3(-0.95, y, z + 0.1), Vector3(-0.95, y, z + 0.45), c)
