@@ -111,26 +111,15 @@ func _scene_race() -> void:
 		await get_tree().process_frame
 	r._countdown_t = 99.0
 	r.phase = Race.Phase.RACING
-	r.runner.start_race()
+	r.logic.start()
 	r.hud.controls.enabled = true
 	var target_s := float(args.get("s", "30"))
 	var act: String = args.get("act", "")
 	var guard := 0
+	var pai := RacerAI.new(1.0, float(args.get("aggr", "0.0")), 11)
 	while r.runner.s < target_s and guard < 60000:
-		var rn := r.runner
-		if not rn.track.pit_at(rn.s + 2.2, rn.x).is_empty():
-			rn.input.jump = true
-		for o in rn.track.obstacles:
-			var d: float = o.s0 - rn.s
-			if not o.alive or d < 0.0 or d > 3.0 or o.type == "hammer":
-				continue
-			if rn.x < o.x0 - 0.5 or rn.x > o.x1 + 0.5:
-				continue
-			match o.type:
-				"log": if d < 2.2: rn.input.jump = true
-				"vine": if d < 2.4: rn.input.slide = true
-				"crate": if d < 1.6: rn.input.punch = true
-		rn.step(1.0 / 120.0)
+		pai.update(1.0 / 120.0, r.runner, r.logic.runners)
+		r.logic.step(1.0 / 120.0)
 		guard += 1
 	match act:
 		"jump": r.runner.input.jump = true

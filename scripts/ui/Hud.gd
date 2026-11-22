@@ -9,6 +9,8 @@ signal home_pressed
 
 class ProgressView extends Control:
 	var value := 0.0
+	var rivals: Array = []      # قيم 0..1 للمنافسين
+	var rival_colors: Array = []
 	func _draw() -> void:
 		var w := size.x
 		var h := 22.0
@@ -25,6 +27,11 @@ class ProgressView extends Control:
 			for j in range(2):
 				var cc := Color.WHITE if (i + j) % 2 == 0 else Color.BLACK
 				draw_rect(Rect2(fx + 2 + i * 9, y - 12 + j * 9, 9, 9), cc, true)
+		for k in range(rivals.size()):
+			var rx := 3.0 + (w - 6.0) * clampf(float(rivals[k]), 0.0, 1.0)
+			var rc: Color = rival_colors[k] if k < rival_colors.size() else Color.WHITE
+			draw_circle(Vector2(rx, y + h * 0.5), 8.0, Color.WHITE)
+			draw_circle(Vector2(rx, y + h * 0.5), 6.0, rc)
 		# علامة اللاعب (رأس ثعلب مبسّط)
 		var px := 3.0 + (w - 6.0) * value
 		var c := Vector2(px, y + h * 0.5)
@@ -40,6 +47,7 @@ var root: Control
 var progress_view: ProgressView
 var time_label: Label
 var coin_label: Label
+var rank_label: Label
 var coin_icon: Control
 var countdown: Label
 var toast: Label
@@ -122,6 +130,10 @@ func _build() -> void:
 	countdown.size = Vector2(900, 260)
 	root.add_child(countdown)
 
+	rank_label = UiKit.label("", 46, Color("ffe45a"), 9, HORIZONTAL_ALIGNMENT_LEFT)
+	rank_label.size = Vector2(300, 64)
+	root.add_child(rank_label)
+
 	banner = UiKit.label("", 54, Color("7dffb0"), 10)
 	banner.size = Vector2(800, 80)
 	root.add_child(banner)
@@ -147,7 +159,18 @@ func _layout() -> void:
 	countdown.position = Vector2((vp.x - 900.0) * 0.5, vp.y * 0.5 - 200)
 	banner.position = Vector2((vp.x - 800.0) * 0.5, vp.y * 0.30)
 	toast.position = Vector2((vp.x - 900.0) * 0.5, vp.y * 0.18)
-	fps_label.position = Vector2(14, 64)
+	rank_label.position = Vector2(20, 12)
+	fps_label.position = Vector2(14, 84)
+
+
+func set_rank(rank: int, total: int) -> void:
+	rank_label.text = "المركز %d" % rank
+	rank_label.add_theme_color_override("font_color", [Color("ffe45a"), Color("e8eef8"), Color("ffb77a")][rank - 1] if rank <= 3 else Color.WHITE)
+
+
+func set_rivals(values: Array, colors: Array) -> void:
+	progress_view.rivals = values
+	progress_view.rival_colors = colors
 
 
 func set_time(t: float) -> void:
@@ -252,33 +275,60 @@ func hide_overlay() -> void:
 
 
 func show_result(r: Dictionary) -> void:
-	var o := _make_overlay("نتيجة السباق", 780.0, 600.0)
+	var o := _make_overlay("نتيجة السباق", 1020.0, 640.0)
 	var p: Panel = o.get_meta("panel")
+	var rank: int = int(r.get("rank", 1))
 	var lines := [
+		"المركز %d من %d" % [rank, int(r.get("total", 8))],
 		"الزمن:  %s%s" % [_fmt(r.time), "   (رقم قياسي جديد!)" if r.get("new_best", false) else ""],
 		"العملات:  %d / %d" % [r.coins, r.coins_total],
 		"أفضل زمن:  %s" % _fmt(r.best),
-		"تعثّر:  %d      سقوط:  %d      صناديق محطّمة:  %d" % [r.stumbles, r.falls, r.crates],
+		"ضربات للمنافسين: %d    أُصبتَ: %d" % [int(r.get("rival_hits", 0)), int(r.get("times_hit", 0))],
+		"تعثّر: %d    سقوط: %d    صناديق: %d" % [r.stumbles, r.falls, r.crates],
 	]
-	var y := 100.0
+	var y := 96.0
 	for i in range(lines.size()):
-		var l := UiKit.label(lines[i], 34 if i == 0 else 28, Color("fff2b0") if i == 0 else Color.WHITE, 6)
-		l.size = Vector2(p.size.x - 40, 48)
+		var col := Color("fff2b0") if i < 2 else Color.WHITE
+		var l := UiKit.label(lines[i], 40 if i == 0 else (32 if i == 1 else 25), col, 6)
+		l.size = Vector2(480, 46)
 		l.position = Vector2(20, y)
 		p.add_child(l)
-		y += 56.0
-	var perf := UiKit.label("الأداء على هذا الجهاز:  متوسط %.0f إطار/ث  •  أبطأ 5%% من الإطارات: %.0f مللي ث  •  الجودة: %s" % [r.avg_fps, r.p95_ms, r.quality], 21, Color("c9ffd6"), 4)
-	perf.size = Vector2(p.size.x - 40, 40)
-	perf.position = Vector2(20, y + 4)
+		y += 62.0 if i < 2 else 48.0
+	# جدول الترتيب
+	var st: Array = r.get("standings", [])
+	var ty := 96.0
+	for k in range(st.size()):
+		var e: Dictionary = st[k]
+		var row := Panel.new()
+		row.size = Vector2(470, 40)
+		row.position = Vector2(520, ty)
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("ffd23a") if e.player else Color(1, 1, 1, 0.12)
+		sb.set_corner_radius_all(10)
+		row.add_theme_stylebox_override("panel", sb)
+		p.add_child(row)
+		var tc := Color("1b2a6b") if e.player else Color.WHITE
+		var n := UiKit.label("%d.  %s" % [k + 1, e.name], 24, tc, 0, HORIZONTAL_ALIGNMENT_RIGHT)
+		n.size = Vector2(250, 40)
+		n.position = Vector2(200, 0)
+		row.add_child(n)
+		var tm := UiKit.label(e.time_text, 22, tc, 0, HORIZONTAL_ALIGNMENT_LEFT)
+		tm.size = Vector2(190, 40)
+		tm.position = Vector2(16, 0)
+		row.add_child(tm)
+		ty += 46.0
+	var perf := UiKit.label("الأداء:  متوسط %.0f إطار/ث  •  أبطأ 5%%: %.0f مللي ث  •  الجودة: %s" % [r.avg_fps, r.p95_ms, r.quality], 19, Color("c9ffd6"), 4)
+	perf.size = Vector2(p.size.x - 40, 36)
+	perf.position = Vector2(20, p.size.y - 150)
 	p.add_child(perf)
 	var b1 := UiKit.button("إعادة", UiKit.C_GOLD_TOP, UiKit.C_GOLD_BOT, Vector2(300, 74), 32)
 	b1.size = Vector2(300, 74)
-	b1.position = Vector2(p.size.x * 0.5 + 20, p.size.y - 110)
+	b1.position = Vector2(p.size.x * 0.5 + 20, p.size.y - 100)
 	b1.pressed.connect(func(): restart_pressed.emit())
 	p.add_child(b1)
 	var b2 := UiKit.button("الرئيسية", UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, Vector2(300, 74), 32)
 	b2.size = Vector2(300, 74)
-	b2.position = Vector2(p.size.x * 0.5 - 320, p.size.y - 110)
+	b2.position = Vector2(p.size.x * 0.5 - 320, p.size.y - 100)
 	b2.pressed.connect(func(): home_pressed.emit())
 	p.add_child(b2)
 

@@ -7,8 +7,20 @@ uniform float rim_amount = 0.20;
 uniform vec4 tint : source_color = vec4(1.0);
 uniform float spec_amount = 0.0;
 uniform float wind_amount = 0.0;
+uniform float hue_shift = 0.0;
 varying vec3 v_col;
 varying float v_emit;
+
+vec3 hue_rot(vec3 c, float a) {
+	float ca = cos(a);
+	float sa = sin(a) * 0.57735;
+	float k = (1.0 - ca) / 3.0;
+	mat3 m = mat3(
+		vec3(ca + k, k + sa, k - sa),
+		vec3(k - sa, ca + k, k + sa),
+		vec3(k + sa, k - sa, ca + k));
+	return clamp(m * c, 0.0, 1.0);
+}
 
 void vertex() {
 	v_col = COLOR.rgb;
@@ -22,7 +34,8 @@ void vertex() {
 }
 
 void fragment() {
-	ALBEDO = v_col * tint.rgb;
+	vec3 base = hue_shift != 0.0 ? hue_rot(v_col, hue_shift) : v_col;
+	ALBEDO = base * tint.rgb;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 	float f = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), rim_power);

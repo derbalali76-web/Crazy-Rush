@@ -9,6 +9,7 @@ signal slid
 signal stumbled(kind: String)
 signal punch_started
 signal punch_hit(target: Dictionary)
+signal punch_strike
 signal punch_missed
 signal coin_collected(index: int)
 signal boosted
@@ -34,6 +35,7 @@ const FALL_RESPAWN := 1.50
 const PUNCH_RANGE := 1.8
 const PUNCH_WIDTH := 1.25
 const PUNCH_HIT_AT := 0.12
+const RIVAL_COOLDOWN := 2.5      # انتظار بعد إصابة منافس فعليًا
 const PUNCH_COOLDOWN := 0.50     # دورة التأرجح (الانتظار 2.5ث يخص ضرب المنافسين لاحقًا)
 const DASH_TIME := 1.0
 const DASH_COOLDOWN := 7.0
@@ -56,6 +58,10 @@ var lat_v := 0.0
 var speed := 0.0
 var time := 0.0
 var finish_time := 0.0
+var speed_scale := 1.0     # للمتسابقين الآليين (مستوى المهارة والتعويض)
+var rival_hits := 0
+var times_hit := 0
+var rival_hit_now := false
 var coins_got := 0
 var stumbles := 0
 var falls := 0
@@ -211,7 +217,7 @@ func _steer(dt: float) -> void:
 
 
 func _speed_update(dt: float) -> void:
-	var tgt := BASE_SPEED
+	var tgt := BASE_SPEED * speed_scale
 	if t_dash > 0.0:
 		tgt *= 1.38
 	if t_boost > 0.0:
@@ -295,6 +301,10 @@ func _punch_update(dt: float) -> void:
 	if not _punch_resolved and t_punch >= PUNCH_HIT_AT:
 		_punch_resolved = true
 		var hit_any := false
+		rival_hit_now = false
+		punch_strike.emit()
+		if rival_hit_now:
+			hit_any = true
 		for o in track.obstacles:
 			if not o.alive or o.type != "crate":
 				continue
@@ -386,6 +396,22 @@ func _check_obstacles() -> void:
 			punch_hit.emit(o)
 		_stumble(o.type)
 		return
+
+
+## إصابة من منافس: تعثّر قصير ثم حماية مؤقتة (لا تُصاب مرتين متتاليتين).
+func take_hit() -> bool:
+	if t_invuln > 0.0 or state == State.FALLING or state == State.FINISHED or state == State.WAIT:
+		return false
+	times_hit += 1
+	_stumble("hit")
+	stumbles -= 1   # لا تُحسب ضمن عثرات المسار
+	return true
+
+
+func mark_rival_hit() -> void:
+	rival_hit_now = true
+	rival_hits += 1
+	t_punch_cd = RIVAL_COOLDOWN
 
 
 func _stumble(kind: String) -> void:

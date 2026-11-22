@@ -19,6 +19,8 @@ func _init() -> void:
 	test_slide()
 	test_full_race_survives()
 	test_track_consistency()
+	test_race8()
+	test_direct_strike()
 	print("RESULT fails=", fails)
 	quit(1 if fails > 0 else 0)
 
@@ -112,3 +114,63 @@ func test_track_consistency() -> void:
 			ok = false
 	check(ok, "track frame finite along entire length")
 	check(d.solid_at(0.0, 0.0), "start area is solid")
+
+
+func test_race8() -> void:
+	var pr := Runner.new(TrackData.new())
+	var logic := RaceLogic.new(pr, 3, 99)
+	check(logic.runners.size() == 8, "8 racers in the race")
+	var hit_box := [0]
+	logic.racer_hit.connect(func(_v, _a): hit_box[0] += 1)
+	logic.start()
+	# اللاعب نفسه يُدار بنفس الذكاء الآلي لاختبار السباق كاملًا
+	var pai := RacerAI.new(0.9, 0.5, 7)
+	var t := 0
+	var done := 0
+	while t < 120 * 300:
+		pai.update(1.0 / 120.0, pr, logic.runners)
+		logic.step(1.0 / 120.0)
+		t += 1
+		done = 0
+		for r in logic.runners:
+			if r.state == Runner.State.FINISHED:
+				done += 1
+		if done == 8:
+			break
+	check(done >= 7, "at least 7/8 racers finish within 300s (finished=%d, t=%.0fs)" % [done, float(t) / 120.0])
+	var order := logic.standings()
+	check(order.size() == 8 and order[0] != order[1], "standings produced; winner idx=%d" % order[0])
+	var hits: int = hit_box[0]
+	check(hits > 0, "rival punches land during the race (hits=%d)" % hits)
+	var total_hit := 0
+	for r in logic.runners:
+		total_hit += r.times_hit
+	check(total_hit == hits, "hit count consistent")
+	# حماية: الضربة الثانية مباشرة لا تؤثر
+	var a := Runner.new(TrackData.new())
+	var v := Runner.new(TrackData.new())
+	a.start_race()
+	v.start_race()
+	check(v.take_hit(), "first hit lands")
+	check(not v.take_hit(), "victim is protected right after a hit")
+
+
+func test_direct_strike() -> void:
+	var pr := Runner.new(TrackData.new())
+	var logic := RaceLogic.new(pr, 0, 5)
+	logic.start()
+	for r in logic.runners:
+		r.s = 100.0
+		r.x = -5.0 + 0.0
+	logic.runners[0].x = 0.0
+	logic.runners[1].x = 0.3
+	logic.runners[1].s = 101.0
+	for i in range(2, 8):
+		logic.runners[i].x = 5.0
+		logic.runners[i].s = 300.0 + 10.0 * i
+	logic.runners[0].input.punch = true
+	for i in range(60):
+		logic.runners[0].step(1.0 / 120.0)
+	check(logic.runners[1].times_hit == 1, "punch hits rival in front (times_hit=%d)" % logic.runners[1].times_hit)
+	check(logic.runners[0].t_punch_cd > 1.5 or logic.runners[0].rival_hits == 1, "rival hit sets longer cooldown")
+	check(logic.runners[1].is_invulnerable(), "victim gets short protection")

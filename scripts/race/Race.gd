@@ -14,6 +14,10 @@ const FIXED_DT := 1.0 / 120.0
 
 var data: TrackData
 var runner: Runner
+var logic: RaceLogic
+var rivals: Array = []          # {foxy, idx, label}
+var _final_standings: Array = []
+var _final_rank := 1
 var foxy: Foxy
 var view: TrackView
 var hud: Hud
@@ -63,12 +67,15 @@ func _load() -> void:
 	data = TrackData.new()
 	_total_coins = data.coins.size()
 	runner = Runner.new(data)
+	logic = RaceLogic.new(runner, 3, randi())
 	_connect_runner()
+	logic.racer_hit.connect(_on_racer_hit)
 	view = TrackView.new()
 	add_child(view)
 	var prof := Settings.profile()
 	await view.build(data, float(prof.density), func(_p: float): await get_tree().process_frame)
 	_build_player()
+	_build_rivals()
 	_build_fx()
 	hud.controls.input = runner.input
 	hud.controls.sensitivity = Settings.steer_sensitivity
@@ -135,6 +142,36 @@ func _build_player() -> void:
 	foxy.build(true)
 	add_child(foxy)
 	_sync_foxy(0.0)
+
+
+func _build_rivals() -> void:
+	var prof := Settings.profile()
+	var k := 0
+	var font := UiKit.font()
+	for i in range(RaceLogic.RACERS):
+		if i == logic.player:
+			continue
+		var f := Foxy.new()
+		f.build(bool(prof.outline))
+		f.set_hue(float(RaceLogic.HUES[k]))
+		add_child(f)
+		var lb := Label3D.new()
+		lb.text = RaceLogic.NAMES[k]
+		lb.font = font
+		lb.font_size = 56
+		lb.pixel_size = 0.0042
+		lb.outline_size = 14
+		lb.outline_modulate = Color("1a1040")
+		lb.modulate = Color.from_hsv(fposmod(0.08 + float(RaceLogic.HUES[k]) / TAU, 1.0), 0.55, 1.0)
+		lb.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		lb.no_depth_test = true
+		lb.fixed_size = false
+		lb.position = Vector3(0, 2.45, 0)
+		f.add_child(lb)
+		var rr := logic.runners[i]
+		rr.punch_started.connect(func(): f.start_punch())
+		rivals.append({"foxy": f, "idx": i, "label": lb, "color": lb.modulate})
+		k += 1
 
 
 func _build_fx() -> void:
@@ -213,7 +250,7 @@ func _connect_runner() -> void:
 	runner.stumbled.connect(func(kind: String):
 		_shake = 0.35
 		_buzz(60)
-		hud.show_banner("أوه! اصطدام", Color("ff9a8a")))
+		hud.show_banner("أُصبتَ بضربة!" if kind == "hit" else "أوه! اصطدام", Color("ff9a8a")))
 	runner.punch_started.connect(func():
 		if foxy:
 			foxy.start_punch())
@@ -272,9 +309,23 @@ func _spawn_debris(pos: Vector3) -> void:
 			break
 
 
+func _on_racer_hit(victim: int, attacker: int) -> void:
+	var vr := logic.runners[victim]
+	var pos := data.world(vr.s, vr.x, vr.y + 1.0)
+	_spark(pos)
+	if attacker == logic.player:
+		hud.show_banner("ضربة موفّقة!", Color("ffe45a"))
+		_shake = maxf(_shake, 0.18)
+		_buzz(30)
+	elif victim == logic.player:
+		_buzz(60)
+
+
 func _on_finished(t: float) -> void:
 	phase = Phase.FINISHED
 	_finish_t = 0.0
+	_final_standings = logic.standings()
+	_final_rank = _final_standings.find(logic.player) + 1
 	hud.show_banner("خط النهاية!", Color("ffe45a"))
 	hud.controls.enabled = false
 	runner.input.steer = 0.0
@@ -318,10 +369,11 @@ func _run_sim(delta: float) -> void:
 	_acc += delta
 	var n := 0
 	while _acc >= FIXED_DT and n < 12:
-		runner.step(FIXED_DT)
+		logic.step(FIXED_DT)
 		_acc -= FIXED_DT
 		n += 1
-	hud.controls.punch_cd = runner.t_punch_cd / Runner.PUNCH_COOLDOWN
+	var cd_total := Runner.RIVAL_COOLDOWN if runner.t_punch_cd > Runner.PUNCH_COOLDOWN + 0.01 else Runner.PUNCH_COOLDOWN
+	hud.controls.punch_cd = clampf(runner.t_punch_cd / cd_total, 0.0, 1.0)
 	hud.controls.special_cd = runner.t_dash_cd / Runner.DASH_COOLDOWN
 
 
@@ -335,7 +387,7 @@ func _update_countdown(delta: float) -> void:
 		elif stage == 0:
 			hud.show_countdown("انطلق!", Color("7dffb0"))
 			phase = Phase.RACING
-			runner.start_race()
+			logic.start()
 			hud.controls.enabled = true
 
 
@@ -349,10 +401,33 @@ func _show_result() -> void:
 		"stumbles": runner.stumbles,
 		"falls": runner.falls,
 		"crates": runner.crates_broken,
+		"rank": _final_rank,
+		"total": RaceLogic.RACERS,
+		"rival_hits": runner.rival_hits,
+		"times_hit": runner.times_hit,
+		"standings": _standings_rows(),
 	}
 	r.merge(_perf_summary())
 	hud.show_result(r)
 	_buzz(25)
+
+
+func _standings_rows() -> Array:
+	var rows := []
+	var k := 0
+	var names := {}
+	for i in range(RaceLogic.RACERS):
+		if i == logic.player:
+			names[i] = "أنت (فوكسي)"
+		else:
+			names[i] = RaceLogic.NAMES[k]
+			k += 1
+	for i in _final_standings:
+		var r := logic.runners[i]
+		var done: bool = r.state == Runner.State.FINISHED and (i == logic.player or r.finish_time <= runner.finish_time)
+		var tt := Hud._fmt(r.finish_time) if done else "لم ينهِ"
+		rows.append({"name": names[i], "player": i == logic.player, "time_text": tt})
+	return rows
 
 
 func _perf_summary() -> Dictionary:
@@ -400,6 +475,17 @@ func _track_perf(delta: float) -> void:
 
 
 func _update_hud() -> void:
+	if phase != Phase.FINISHED:
+		hud.set_rank(logic.rank_of(logic.player), RaceLogic.RACERS)
+	else:
+		hud.set_rank(_final_rank, RaceLogic.RACERS)
+	var vals := []
+	var cols := []
+	for rv in rivals:
+		var rr := logic.runners[rv.idx]
+		vals.append((rr.s - TrackData.START_S) / (TrackData.FINISH_S - TrackData.START_S))
+		cols.append(rv.color)
+	hud.set_rivals(vals, cols)
 	hud.set_time(runner.time if phase != Phase.FINISHED else runner.finish_time)
 	hud.progress_view.value = clampf((runner.s - TrackData.START_S) / (TrackData.FINISH_S - TrackData.START_S), 0.0, 1.0)
 	hud.progress_view.queue_redraw()
@@ -407,35 +493,50 @@ func _update_hud() -> void:
 
 # ------------------------------------------------------------------ مزامنة فوكسي
 func _sync_foxy(delta: float) -> void:
-	var f := data.frame(runner.s)
-	var origin := data.center(runner.s) + data.right(runner.s) * runner.x + Vector3.UP * runner.y
-	if runner.state == Runner.State.FALLING:
-		origin.y = data.center(runner.s).y + runner.y
-	foxy.global_transform = Transform3D(f.basis, origin)
-	foxy.run_speed = runner.speed
-	foxy.lean = clampf(runner.lat_v / Runner.MAX_LAT, -1.0, 1.0)
-	foxy.vy = runner.vy
-	foxy.set_flash(runner.is_invulnerable() and runner.state != Runner.State.FALLING)
-	match runner.state:
-		Runner.State.WAIT:
-			foxy.anim = Foxy.Anim.IDLE
-		Runner.State.RUN:
-			foxy.anim = Foxy.Anim.DASH if runner.t_dash > 0.0 else Foxy.Anim.RUN
-		Runner.State.AIR:
-			foxy.anim = Foxy.Anim.JUMP
-		Runner.State.SLIDE:
-			foxy.anim = Foxy.Anim.SLIDE
-		Runner.State.STUMBLE:
-			foxy.anim = Foxy.Anim.STUMBLE
-		Runner.State.FALLING:
-			foxy.anim = Foxy.Anim.FALL
-		Runner.State.FINISHED:
-			foxy.anim = Foxy.Anim.CHEER
+	_pose_foxy(foxy, runner)
 	if runner.t_dash > 0.0:
 		_ghost_timer -= delta
 		if _ghost_timer <= 0.0:
 			_ghost_timer = 0.11
 			_spawn_ghost()
+	for rv in rivals:
+		var rr := logic.runners[rv.idx]
+		var f: Foxy = rv.foxy
+		var near := absf(rr.s - runner.s) < 75.0
+		f.set_process(near)
+		if not near:
+			f.visible = false
+		if near:
+			_pose_foxy(f, rr)
+			var d := f.global_position.distance_to(cam.global_position)
+			# لا نرسم من يمر قرب الكاميرا مباشرة حتى لا يحجب الرؤية
+			f.visible = d > 3.4
+			rv.label.visible = d > 7.0 and d < 38.0
+
+
+func _pose_foxy(f: Foxy, r: Runner) -> void:
+	var fr := data.frame(r.s)
+	var origin := data.center(r.s) + data.right(r.s) * r.x + Vector3.UP * r.y
+	f.global_transform = Transform3D(fr.basis, origin)
+	f.run_speed = r.speed
+	f.lean = clampf(r.lat_v / Runner.MAX_LAT, -1.0, 1.0)
+	f.vy = r.vy
+	f.set_flash(r.is_invulnerable() and r.state != Runner.State.FALLING)
+	match r.state:
+		Runner.State.WAIT:
+			f.anim = Foxy.Anim.IDLE
+		Runner.State.RUN:
+			f.anim = Foxy.Anim.DASH if r.t_dash > 0.0 else Foxy.Anim.RUN
+		Runner.State.AIR:
+			f.anim = Foxy.Anim.JUMP
+		Runner.State.SLIDE:
+			f.anim = Foxy.Anim.SLIDE
+		Runner.State.STUMBLE:
+			f.anim = Foxy.Anim.STUMBLE
+		Runner.State.FALLING:
+			f.anim = Foxy.Anim.FALL
+		Runner.State.FINISHED:
+			f.anim = Foxy.Anim.CHEER
 
 
 func _spawn_ghost() -> void:

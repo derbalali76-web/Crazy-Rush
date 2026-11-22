@@ -563,6 +563,20 @@ func _physics_process(_delta: float) -> void:
 		body.visible = true
 
 
+## يغيّر لون الفراء (دوران الصبغة) لتمييز المتسابقين؛ يبقى الأبيض والأسود كما هما.
+func set_hue(radians: float) -> void:
+	var cache := {}
+	for mi in _meshes:
+		var src: ShaderMaterial = mi.material_override as ShaderMaterial
+		if src == null:
+			continue
+		if not cache.has(src):
+			var m: ShaderMaterial = src.duplicate()
+			m.set_shader_parameter("hue_shift", radians)
+			cache[src] = m
+		mi.material_override = cache[src]
+
+
 ## نسخة جامدة شفافة (للخدعة الوهمية): لقطة من أوضاع المفاصل الحالية تشارك نفس الشبكات.
 func make_ghost(color := Color(0.45, 0.9, 1.0)) -> Node3D:
 	var g := Node3D.new()
