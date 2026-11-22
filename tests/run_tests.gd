@@ -22,6 +22,7 @@ func _init() -> void:
 	test_race8()
 	test_direct_strike()
 	await test_foxy_clips()
+	await test_foxy_glb()
 	print("RESULT fails=", fails)
 	quit(1 if fails > 0 else 0)
 
@@ -240,4 +241,68 @@ func test_foxy_clips() -> void:
 		f._process(1.0 / 60.0)
 		kmin = minf(kmin, f.knee_l.rotation.x)
 	check(kmin < -1.0, "landing bends the knees (%.2f)" % kmin)
+	f.queue_free()
+
+
+func test_foxy_glb() -> void:
+	var f := Foxy.create(true)
+	check(f is FoxyGLB, "Foxy.create returns the GLB-rigged Foxy")
+	var g := f as FoxyGLB
+	root.add_child(f)
+	await process_frame
+	check(g.skeleton != null and g.skeleton.get_bone_count() >= 19, "GLB skeleton has %d bones" % g.skeleton.get_bone_count())
+	var names: Array = Array(g.gplayer.get_animation_list())
+	var need := ["idle", "run", "dash", "jump", "fall", "land", "slide", "stumble", "pit_fall", "victory", "turn_l", "turn_r", "punch"]
+	var missing := []
+	for n in need:
+		if not (n in names):
+			missing.append(n)
+	check(missing.is_empty(), "GLB has all 13 clips (missing=%s)" % str(missing))
+	var thigh := g.skeleton.find_bone("thigh.L")
+	f.anim = Foxy.Anim.RUN
+	var cyc := []
+	for sp in [9.0, 18.0]:
+		f.run_speed = sp
+		for i in range(30):
+			f._process(1.0 / 60.0)
+		var crossings := 0
+		var prev := g.skeleton.get_bone_pose_rotation(thigh).get_euler().x
+		var lo := 9.0
+		var hi := -9.0
+		for i in range(240):
+			f._process(1.0 / 60.0)
+			var cur := g.skeleton.get_bone_pose_rotation(thigh).get_euler().x
+			lo = minf(lo, cur)
+			hi = maxf(hi, cur)
+			if prev < 0.0 and cur >= 0.0:
+				crossings += 1
+			prev = cur
+		cyc.append(crossings)
+		check(hi - lo > 0.8, "GLB run swings the thigh (range %.2f at speed %.0f)" % [hi - lo, sp])
+	check(cyc[1] >= cyc[0] * 1.7 and cyc[1] <= cyc[0] * 2.3, "GLB stride rate scales with speed (%s)" % str(cyc))
+	for pair in [[Foxy.Anim.JUMP, 6.0, "jump"], [Foxy.Anim.JUMP, -6.0, "fall"], [Foxy.Anim.STUMBLE, 0.0, "stumble"],
+			[Foxy.Anim.FALL, 0.0, "pit_fall"], [Foxy.Anim.CHEER, 0.0, "victory"], [Foxy.Anim.SLIDE, 0.0, "slide"]]:
+		f.anim = pair[0]
+		f.vy = pair[1]
+		for i in range(20):
+			f._process(1.0 / 60.0)
+		check(g._gstate == pair[2], "GLB state %s reached (got %s)" % [pair[2], g._gstate])
+	f.anim = Foxy.Anim.RUN
+	for i in range(30):
+		f._process(1.0 / 60.0)
+	f.notify_land(true)
+	f._process(1.0 / 60.0)
+	check(g._gstate == "land", "GLB landing clip triggers on notify_land")
+	f.lean = 1.0
+	for i in range(40):
+		f._process(1.0 / 60.0)
+	var bp: float = g.gtree.get("parameters/sm/run/turn/blend_position")
+	check(bp > 0.9, "GLB turn blend follows steering lean (%.2f)" % bp)
+	f.start_punch()
+	for i in range(8):
+		f._process(1.0 / 60.0)
+	check(g.punch_t >= 0.0, "GLB punch fires")
+	var ghost := f.make_ghost()
+	check(ghost != null and ghost.find_children("*", "MeshInstance3D", true, false).size() == 3, "GLB ghost copy built")
+	ghost.free()
 	f.queue_free()

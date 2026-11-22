@@ -41,8 +41,7 @@ func _ready() -> void:
 	pod.add_cylinder(2.3, 2.3, 0.2, Color("5a3fb0"), Transform3D(Basis(), Vector3(0, -0.55, 0)), 40)
 	Toon.mesh_instance(pod.build(), Toon.solid(), self)
 
-	_fox = Foxy.new()
-	_fox.build(true)
+	_fox = Foxy.create(true)
 	add_child(_fox)
 	_fox.anim = Foxy.Anim.IDLE
 	_fox.rotation_degrees.y = 160.0

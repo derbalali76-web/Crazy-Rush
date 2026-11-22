@@ -15,9 +15,9 @@ func _ready() -> void:
 	var frames := int(args.get("frames", "20"))
 	match mode:
 		"fox":
-			_scene_fox()
+			await _scene_fox()
 		"sheet":
-			_scene_fox()
+			await _scene_fox()
 		"menu":
 			add_child(Menu.new())
 		"race":
@@ -60,9 +60,18 @@ func _env(sky_top := Color("4a90e8"), sky_hor := Color("cfe6ff")) -> void:
 
 func _scene_fox() -> void:
 	_env()
-	var fox := Foxy.new()
-	fox.build(true)
+	Foxy.use_rig = args.get("classic", "0") != "1"
+	if args.has("glb"):
+		FoxyGLB.GLB_PATH = args["glb"]
+	var fox := Foxy.create(true)
 	add_child(fox)
+	await get_tree().process_frame
+	if args.get("plain", "0") == "1":
+		var pm := StandardMaterial3D.new()
+		pm.vertex_color_use_as_albedo = true
+		pm.cull_mode = BaseMaterial3D.CULL_BACK
+		for mi in fox._meshes:
+			mi.material_override = pm
 	var a: String = args.get("anim", "idle")
 	match a:
 		"run": fox.anim = Foxy.Anim.RUN; fox.run_speed = 13.0

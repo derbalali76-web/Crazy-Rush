@@ -7,6 +7,19 @@ enum Anim { IDLE, RUN, JUMP, SLIDE, STUMBLE, FALL, DASH, CHEER }
 
 const SCALE_FACTOR := 0.85
 
+## true = نموذج GLB المُرَكَّب (إن وُجد)، false = فوكسي الإجرائية القديمة.
+static var use_rig := true
+
+
+static func create(outline := true) -> Foxy:
+	var f: Foxy
+	if use_rig and FoxyGLB.available():
+		f = FoxyGLB.new()
+	else:
+		f = Foxy.new()
+	f.build(outline)
+	return f
+
 # ألوان (sRGB)
 const C_ORANGE := Color("ff7a18")
 const C_ORANGE_D := Color("e0560c")

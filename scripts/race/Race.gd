@@ -150,8 +150,7 @@ func _setup_environment() -> void:
 
 
 func _build_player() -> void:
-	foxy = Foxy.new()
-	foxy.build(true)
+	foxy = Foxy.create(true)
 	add_child(foxy)
 	_sync_foxy(0.0)
 
@@ -163,8 +162,7 @@ func _build_rivals() -> void:
 	for i in range(RaceLogic.RACERS):
 		if i == logic.player:
 			continue
-		var f := Foxy.new()
-		f.build(bool(prof.outline))
+		var f := Foxy.create(bool(prof.outline))
 		f.set_hue(float(RaceLogic.HUES[k]))
 		add_child(f)
 		var lb := Label3D.new()
@@ -616,9 +614,10 @@ func _spawn_ghost() -> void:
 	add_child(g)
 	var tw := create_tween()
 	tw.tween_method(func(a: float):
-		for c in g.get_children():
-			var m: StandardMaterial3D = (c as MeshInstance3D).material_override
-			m.albedo_color.a = a, 0.5, 0.0, 0.8)
+		for c in g.find_children("*", "MeshInstance3D", true, false):
+			var m: StandardMaterial3D = (c as MeshInstance3D).material_override as StandardMaterial3D
+			if m != null:
+				m.albedo_color.a = a, 0.5, 0.0, 0.8)
 	tw.tween_callback(g.queue_free)
 
 
