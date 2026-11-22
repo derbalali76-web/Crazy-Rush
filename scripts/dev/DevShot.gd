@@ -10,6 +10,8 @@ func _ready() -> void:
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
 			args[kv[0]] = kv[1]
+	Toon.premium_enabled = args.get("premium", "0") == "1"
+	Toon.use_normal_maps = args.get("nrm", "1") == "1"
 	var mode: String = args.get("mode", "fox")
 	var out: String = args.get("out", "/tmp/shot.png")
 	var frames := int(args.get("frames", "20"))
