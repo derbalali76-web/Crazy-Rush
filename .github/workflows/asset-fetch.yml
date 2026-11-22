@@ -1,0 +1,29 @@
+name: Fetch CC0 assets (no secrets)
+
+# يجلب الأصول المدرجة في tools/assets/manifest_jungle.json (CC0 فقط) ويدفعها إلى الفرع art-premium.
+# بلا أسرار ولا خدمات مدفوعة. يفشل إن لم تُذكر CC0 في صفحة الرخصة.
+on:
+  workflow_dispatch:
+  push:
+    branches: [art-premium]
+    paths: [tools/assets/fetch_assets.py, tools/assets/manifest_jungle.json, .github/workflows/asset-fetch.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    if: github.ref == 'refs/heads/art-premium'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pillow
+      - run: python3 tools/assets/fetch_assets.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions"; git config user.email "actions@users.noreply.github.com"
+          git add assets/src docs/art/license_snapshots docs/art/assets_lock.json
+          git diff --cached --quiet || git commit -m "chore: fetched CC0 assets + license snapshots + lock"
+          git pull --rebase origin art-premium || true
+          git push
