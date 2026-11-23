@@ -70,10 +70,6 @@ const T_TIMER := preload("res://assets/ui/hud/timer.png")
 const T_LAP := preload("res://assets/ui/hud/lap.png")
 const T_PAUSE := preload("res://assets/ui/hud/pause.png")
 const T_MEDAL := [preload("res://assets/ui/hud/medal1.png"), preload("res://assets/ui/hud/medal2.png"), preload("res://assets/ui/hud/medal3.png")]
-const FACES := {
-	"ليو": "leo", "ريكو": "riko", "زوي": "zoi", "فوكسي": "fox",
-	"باندا": "panda", "ماكس": "max", "توتو": "toto", "لولا": "lola",
-}
 const ROW0 := 162.0
 const ROW_DY := 53.0
 
@@ -308,8 +304,8 @@ func set_standings(order: Array) -> void:
 		var o: Dictionary = order[p]
 		var me: bool = o.player
 		row.name.text = o.name
-		var fid: String = FACES.get(o.name, "fox")
-		row.face.texture = load("res://assets/ui/hud/face_%s.png" % fid)
+		var fid: String = Characters.id_from_short(o.name)
+		row.face.texture = load("res://assets/ui/hud/face_fox.png") if fid == "fox" else Characters.icon(fid)
 		row.face.size = Vector2(66, 66) if me else Vector2(58, 58)
 		row.face.position = Vector2(62 if me else 66, ROW0 + ROW_DY * float(p) - (36 if me else 29))
 		row.hi.visible = me

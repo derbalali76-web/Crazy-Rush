@@ -51,9 +51,9 @@ func _ready() -> void:
 				await get_tree().process_frame
 			var nn := int(args.get("n", "4"))
 			var rows: Array = []
-			var nm := ["أنت", "ليو", "ريكو", "زوي", "باندا", "ماكس", "توتو", "لولا"]
+			var nm := ["أنت", "بومبو", "زيكو", "روبو", "لولو", "دينو", "بيبو", "بطبوط"]
 			for i in range(nn):
-				rows.append({"name": nm[i], "player": i == int(args.get("rank", "1")) - 1, "time_text": "01:%02d.%02d" % [28 + i, 36 + i * 7]})
+				rows.append({"name": nm[i], "player": i == int(args.get("rank", "1")) - 1, "time_text": "01:%02d.%02d" % [28 + i, 36 + i * 7], "character": Characters.id_from_short(nm[i])})
 			rr.hud.show_result({"rank": int(args.get("rank", "1")), "total": nn, "time": 88.4, "coins": 23, "coins_total": 60, "best": 79.9, "new_best": true, "standings": rows, "avg_fps": 28.0, "p95_ms": 41.0, "quality": "عالية"})
 		"pause":
 			var pr := Race.new()

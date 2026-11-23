@@ -517,17 +517,20 @@ func _standings_rows() -> Array:
 	var rows := []
 	var k := 0
 	var names := {}
+	var ids := {}
 	for i in range(RaceLogic.RACERS):
 		if i == logic.player:
-			names[i] = "أنت (فوكسي)"
+			names[i] = "أنت (%s)" % Characters.short_name(Settings.selected_character)
+			ids[i] = Settings.selected_character
 		else:
 			names[i] = RaceLogic.NAMES[k]
+			ids[i] = Characters.ROSTER[k]
 			k += 1
 	for i in _final_standings:
 		var r := logic.runners[i]
 		var done: bool = r.state == Runner.State.FINISHED and (i == logic.player or r.finish_time <= runner.finish_time)
 		var tt := Hud._fmt(r.finish_time) if done else "لم ينهِ"
-		rows.append({"name": names[i], "player": i == logic.player, "time_text": tt})
+		rows.append({"name": names[i], "player": i == logic.player, "time_text": tt, "character": ids[i]})
 	return rows
 
 
