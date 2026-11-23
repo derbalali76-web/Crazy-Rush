@@ -152,6 +152,10 @@ func _scene_race() -> void:
 	r.runner.input.steer = float(args.get("steer", "0"))
 	if args.get("nofar","0") == "1":
 		r.view.far_nodes.visible = false
+	if args.get("nomtn","0") == "1":
+		for n2 in r.view.far_nodes.get_children():
+			if (n2 as MeshInstance3D).get_aabb().size.x > 100.0:
+				n2.visible = false
 	if args.get("dbg","0") == "1":
 		for n in r.view.find_children("*", "MeshInstance3D", true, false):
 			var mi := n as MeshInstance3D

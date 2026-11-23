@@ -99,6 +99,10 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 				var tint := Color(v, v * 0.97, v * 0.93)
 				if int(s) % 2 == 0:
 					tint = tint.darkened(0.05)
+				if Toon.premium_enabled:
+					# خشب معتّق: بني رمادي بتفاوت بين الألواح (بدل الأصفر الساطع)
+					var wv := 0.52 + 0.20 * float((int(s) * 13 + col * 7) % 9) / 8.0
+					tint = Color(wv * 0.95, wv * 0.78, wv * 0.60)
 				board_cols.append(tint)
 		s += 1.0
 	# العوارض السفلية
@@ -532,6 +536,13 @@ func _far_mat() -> Material:
 	return m
 
 
+func _cliff_mat() -> Material:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("4a4638")
+	m.roughness = 1.0
+	return m
+
+
 func _build_far() -> void:
 	far_nodes = Node3D.new()
 	far_nodes.name = "Far"
@@ -565,7 +576,7 @@ func _build_far() -> void:
 			for sd4 in [-1.0, 1.0]:
 				var x4: float = sd4 * rng.randf_range(58.0, 80.0)
 				var xf4 := _place(s4, x4, -2.0, rng.randf() * TAU, 1.5)
-				_mesh_node("cliff", xf4, far_nodes, Toon.premium(3) if Toon.premium_enabled else Toon.solid(false), false)
+				_mesh_node("cliff", xf4, far_nodes, _cliff_mat() if Toon.premium_enabled else Toon.solid(false), false)
 				var fall := _mesh_node("waterfall", Transform3D(Basis(Vector3.UP, atan2(-sd4, 0.0) + (PI * 0.5 if sd4 > 0 else -PI * 0.5)), xf4.origin + Vector3(-sd4 * 17.0, 13.0, 0)), far_nodes, Toon.waterfall(), false)
 				fall.look_at_from_position(xf4.origin + data.right(s4) * (-sd4 * 17.0) + Vector3(0, 12.0, 0), data.center(s4) + Vector3(0, 12.0, 0), Vector3.UP)
 			s4 += 70.0
