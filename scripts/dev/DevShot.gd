@@ -30,6 +30,8 @@ func _ready() -> void:
 			add_child(ts)
 			await get_tree().process_frame
 			ts._select(int(args.get("sel", "0")))
+		"about":
+			add_child(AboutScreen.new())
 		"help":
 			add_child(HelpScreen.new())
 		"account":
