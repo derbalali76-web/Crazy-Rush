@@ -30,9 +30,21 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var back := ColorRect.new()
 	back.color = Color("0b1d55")
-	back.set_anchors_preset(Control.PRESET_FULL_RECT)
+	back.size = get_viewport_rect().size
 	add_child(back)
 	_bg_img = BG.get_image()
+	# خلفية ضبابية ناعمة من الصورة نفسها تملأ الأطراف على الشاشات الأعرض
+	var small := _bg_img.duplicate() as Image
+	small.resize(40, 22, Image.INTERPOLATE_BILINEAR)
+	var blur := TextureRect.new()
+	blur.texture = ImageTexture.create_from_image(small)
+	blur.size = get_viewport_rect().size
+	blur.stretch_mode = TextureRect.STRETCH_SCALE
+	blur.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	blur.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	blur.modulate = Color(0.75, 0.8, 0.95)
+	blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(blur)
 
 	var vp := get_viewport_rect().size
 	var s := minf(vp.x / W, vp.y / H)
@@ -50,7 +62,6 @@ func _ready() -> void:
 	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(bg)
-
 	# زر الإغلاق (✕ مرسومة في الصورة)
 	var x := Button.new()
 	x.flat = true
