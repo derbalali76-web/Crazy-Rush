@@ -37,6 +37,12 @@ func _ready() -> void:
 			await _scene_trees()
 		"settings":
 			add_child(SettingsPanel.new())
+		"pause":
+			var pr := Race.new()
+			add_child(pr)
+			while pr.phase == Race.Phase.LOADING:
+				await get_tree().process_frame
+			pr.hud.show_pause()
 	for i in range(frames):
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw

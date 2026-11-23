@@ -247,22 +247,60 @@ func _make_overlay(title: String, w := 620.0, h := 470.0) -> Control:
 
 
 func show_pause() -> void:
-	var o := _make_overlay("متوقف مؤقتًا", 600.0, 530.0)
-	var p: Panel = o.get_meta("panel")
+	# نافذة الإيقاف المؤقت بتصميم المرجع (صورة اللوحة + أزرار حقيقية شفافة فوقها)
+	_clear_overlay()
+	var vp := get_viewport().get_visible_rect().size
+	overlay = Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.02, 0.15, 0.5)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dim)
+	var tex: Texture2D = load("res://assets/ui/pause_panel.png")
+	var ts := tex.get_size()
+	var sc := minf((vp.y * 0.94) / ts.y, (vp.x * 0.9) / ts.x)
+	var panel := Control.new()
+	panel.size = ts
+	panel.scale = Vector2(sc, sc)
+	panel.position = (vp - ts * sc) * 0.5
+	overlay.add_child(panel)
+	var img := TextureRect.new()
+	img.texture = tex
+	img.size = ts
+	img.stretch_mode = TextureRect.STRETCH_SCALE
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	img.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.add_child(img)
 	var items := [
-		["متابعة", UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, func(): resume_pressed.emit()],
-		["إعادة السباق", UiKit.C_GOLD_TOP, UiKit.C_GOLD_BOT, func(): restart_pressed.emit()],
-		["الإعدادات", UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, func(): _open_settings()],
-		["الرئيسية", UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, func(): home_pressed.emit()],
+		[Rect2(400, 248, 575, 114), func(): resume_pressed.emit()],
+		[Rect2(400, 378, 575, 112), func(): restart_pressed.emit()],
+		[Rect2(400, 510, 575, 112), func(): _open_settings()],
+		[Rect2(400, 640, 575, 112), func(): home_pressed.emit()],
 	]
-	var y := 100.0
 	for it in items:
-		var b := UiKit.button(it[0], it[1], it[2], Vector2(380, 72), 32)
-		b.size = Vector2(380, 72)
-		b.position = Vector2((p.size.x - 380.0) * 0.5, y)
-		b.pressed.connect(it[3])
-		p.add_child(b)
-		y += 100.0
+		var r: Rect2 = it[0]
+		var hl := Panel.new()
+		hl.position = r.position
+		hl.size = r.size
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(1, 1, 1, 0.22)
+		sb.set_corner_radius_all(56)
+		hl.add_theme_stylebox_override("panel", sb)
+		hl.visible = false
+		hl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(hl)
+		var b := Button.new()
+		b.flat = true
+		b.position = r.position
+		b.size = r.size
+		b.focus_mode = Control.FOCUS_NONE
+		b.button_down.connect(func(): hl.visible = true)
+		b.button_up.connect(func(): hl.visible = false)
+		b.pressed.connect(it[1])
+		panel.add_child(b)
+	root.add_child(overlay)
 
 
 func _open_settings() -> void:
