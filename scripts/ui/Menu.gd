@@ -96,7 +96,7 @@ func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true) -> voi
 func _build() -> void:
 	# --- الأزرار الفعّالة
 	_hit(Rect2(1100, 775, 555, 145), func(): play_pressed.emit())      # العب الآن
-	_hit(Rect2(1158, 208, 500, 120), func(): play_pressed.emit())      # ضد الكمبيوتر
+	_hit(Rect2(1158, 208, 500, 120), _open_tracks)                    # ضد الكمبيوتر: اختيار الحلبة
 	_hit(Rect2(1562, 18, 104, 108), _open_settings)                   # الإعدادات
 
 	# --- عدّاد العملات الحقيقي (فوق الرقم المرسوم)
@@ -143,6 +143,20 @@ func _build() -> void:
 		best.position = Vector2(40, 165)
 		best.size = Vector2(430, 40)
 		_root.add_child(best)
+
+
+func _open_tracks() -> void:
+	if _settings:
+		return
+	var ts := TrackSelect.new()
+	ts.closed.connect(func(): _settings = null)
+	ts.start_pressed.connect(func(): play_pressed.emit())
+	ts.choose_character_pressed.connect(func():
+		ts.queue_free()
+		_settings = null
+		_open_select())
+	_settings = ts
+	add_child(ts)
 
 
 func _open_select() -> void:
