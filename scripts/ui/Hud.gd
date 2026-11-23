@@ -273,6 +273,21 @@ func show_pause() -> void:
 	img.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	img.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.add_child(img)
+	# صورة الشخصية المختارة (تتغير حسب Settings.selected_character)
+	var por := Characters.portrait(Settings.selected_character)
+	if por:
+		var slot := Rect2(44, 207, 333, 591)
+		var ps := por.get_size()
+		var k := minf(slot.size.x / ps.x, slot.size.y / ps.y)
+		var pr := TextureRect.new()
+		pr.texture = por
+		pr.size = ps * k
+		pr.position = Vector2(slot.position.x + (slot.size.x - pr.size.x) * 0.5, slot.position.y + slot.size.y - pr.size.y)
+		pr.stretch_mode = TextureRect.STRETCH_SCALE
+		pr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(pr)
 	var items := [
 		[Rect2(400, 248, 575, 114), func(): resume_pressed.emit()],
 		[Rect2(400, 378, 575, 112), func(): restart_pressed.emit()],
@@ -313,62 +328,14 @@ func hide_overlay() -> void:
 
 
 func show_result(r: Dictionary) -> void:
-	var o := _make_overlay("نتيجة السباق", 1020.0, 640.0)
-	var p: Panel = o.get_meta("panel")
-	var rank: int = int(r.get("rank", 1))
-	var lines := [
-		"المركز %d من %d" % [rank, int(r.get("total", 8))],
-		"الزمن:  %s%s" % [_fmt(r.time), "   (رقم قياسي جديد!)" if r.get("new_best", false) else ""],
-		"العملات:  %d / %d" % [r.coins, r.coins_total],
-		"أفضل زمن:  %s" % _fmt(r.best),
-		"ضربات للمنافسين: %d    أُصبتَ: %d" % [int(r.get("rival_hits", 0)), int(r.get("times_hit", 0))],
-		"تعثّر: %d    سقوط: %d    صناديق: %d" % [r.stumbles, r.falls, r.crates],
-	]
-	var y := 96.0
-	for i in range(lines.size()):
-		var col := Color("fff2b0") if i < 2 else Color.WHITE
-		var l := UiKit.label(lines[i], 40 if i == 0 else (32 if i == 1 else 25), col, 6)
-		l.size = Vector2(480, 46)
-		l.position = Vector2(20, y)
-		p.add_child(l)
-		y += 62.0 if i < 2 else 48.0
-	# جدول الترتيب
-	var st: Array = r.get("standings", [])
-	var ty := 96.0
-	for k in range(st.size()):
-		var e: Dictionary = st[k]
-		var row := Panel.new()
-		row.size = Vector2(470, 40)
-		row.position = Vector2(520, ty)
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color("ffd23a") if e.player else Color(1, 1, 1, 0.12)
-		sb.set_corner_radius_all(10)
-		row.add_theme_stylebox_override("panel", sb)
-		p.add_child(row)
-		var tc := Color("1b2a6b") if e.player else Color.WHITE
-		var n := UiKit.label("%d.  %s" % [k + 1, e.name], 24, tc, 0, HORIZONTAL_ALIGNMENT_RIGHT)
-		n.size = Vector2(250, 40)
-		n.position = Vector2(200, 0)
-		row.add_child(n)
-		var tm := UiKit.label(e.time_text, 22, tc, 0, HORIZONTAL_ALIGNMENT_LEFT)
-		tm.size = Vector2(190, 40)
-		tm.position = Vector2(16, 0)
-		row.add_child(tm)
-		ty += 46.0
-	var perf := UiKit.label("الأداء:  متوسط %.0f إطار/ث  •  أبطأ 5%%: %.0f مللي ث  •  الجودة: %s" % [r.avg_fps, r.p95_ms, r.quality], 19, Color("c9ffd6"), 4)
-	perf.size = Vector2(p.size.x - 40, 36)
-	perf.position = Vector2(20, p.size.y - 150)
-	p.add_child(perf)
-	var b1 := UiKit.button("إعادة", UiKit.C_GOLD_TOP, UiKit.C_GOLD_BOT, Vector2(300, 74), 32)
-	b1.size = Vector2(300, 74)
-	b1.position = Vector2(p.size.x * 0.5 + 20, p.size.y - 100)
-	b1.pressed.connect(func(): restart_pressed.emit())
-	p.add_child(b1)
-	var b2 := UiKit.button("الرئيسية", UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, Vector2(300, 74), 32)
-	b2.size = Vector2(300, 74)
-	b2.position = Vector2(p.size.x * 0.5 - 320, p.size.y - 100)
-	b2.pressed.connect(func(): home_pressed.emit())
-	p.add_child(b2)
+	_clear_overlay()
+	var scr := ResultsScreen.new()
+	scr.data = r
+	scr.process_mode = Node.PROCESS_MODE_ALWAYS
+	scr.restart_pressed.connect(func(): restart_pressed.emit())
+	scr.home_pressed.connect(func(): home_pressed.emit())
+	overlay = scr
+	root.add_child(scr)
 
 
 static func _fmt(t: float) -> String:

@@ -37,6 +37,17 @@ func _ready() -> void:
 			await _scene_trees()
 		"settings":
 			add_child(SettingsPanel.new())
+		"result":
+			var rr := Race.new()
+			add_child(rr)
+			while rr.phase == Race.Phase.LOADING:
+				await get_tree().process_frame
+			var nn := int(args.get("n", "4"))
+			var rows: Array = []
+			var nm := ["أنت", "ميمو", "توتو", "فيفي", "زوزو", "كيكو", "لولو", "بيبو"]
+			for i in range(nn):
+				rows.append({"name": nm[i], "player": i == int(args.get("rank", "1")) - 1, "time_text": "01:%02d.%02d" % [28 + i, 36 + i * 7]})
+			rr.hud.show_result({"rank": int(args.get("rank", "1")), "total": nn, "time": 88.4, "coins": 23, "coins_total": 60, "best": 79.9, "new_best": true, "standings": rows, "avg_fps": 28.0, "p95_ms": 41.0, "quality": "عالية"})
 		"pause":
 			var pr := Race.new()
 			add_child(pr)
