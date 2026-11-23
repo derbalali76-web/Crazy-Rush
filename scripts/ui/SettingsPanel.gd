@@ -168,15 +168,29 @@ func _build_controls() -> void:
 
 
 func _build_nav() -> void:
-	var ys := [355.0, 462.0, 570.0]
-	for y in ys:
-		_unavailable(_root, Rect2(20, y, 250, 88), 16, 30.0)
+	_hit_nav(Rect2(20, 355, 250, 88), func(): _push(AccountScreen.new()))
+	_hit_nav(Rect2(20, 462, 250, 88), func(): _push(HelpScreen.new()))
+	_unavailable(_root, Rect2(20, 570, 250, 88), 16, 30.0)
 	var adv := _btn(_root, "خيارات متقدمة", Rect2(18, 800, 255, 64), UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, 28)
 	adv.pressed.connect(func(): _adv.visible = true)
 	var reset := _btn(_root, "استعادة الافتراضي", Rect2(18, 874, 255, 56), UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, 24)
 	reset.pressed.connect(func():
 		Settings.reset_defaults()
 		_refresh())
+
+
+func _hit_nav(r: Rect2, cb: Callable) -> void:
+	var b := Button.new()
+	b.flat = true
+	b.position = r.position
+	b.size = r.size
+	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(cb)
+	_root.add_child(b)
+
+
+func _push(scr: Control) -> void:
+	add_child(scr)
 
 
 # ---------------------------------------------------------------- عناصر عامة
