@@ -120,7 +120,7 @@ func _build() -> void:
 	# الجواهر
 	_unavailable(Rect2(1312, 22, 240, 56), 18)
 	# الملف الشخصي
-	_unavailable(Rect2(30, 15, 440, 140), 24)
+	_hit(Rect2(30, 15, 440, 140), _open_account)                       # الملف الشخصي
 
 	# --- العمود الأيسر
 	for y in [245.0, 362.0, 480.0]:
@@ -143,6 +143,15 @@ func _build() -> void:
 		best.position = Vector2(40, 165)
 		best.size = Vector2(430, 40)
 		_root.add_child(best)
+
+
+func _open_account() -> void:
+	if _settings:
+		return
+	var ac := AccountScreen.new()
+	ac.closed.connect(func(): _settings = null)
+	_settings = ac
+	add_child(ac)
 
 
 func _open_tracks() -> void:

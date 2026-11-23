@@ -18,6 +18,9 @@ var premium_track: bool = false   # حلبة الغابة التجريبية (ب
 var selected_character: String = "fox"   # الشخصية المختارة (انظر Characters.gd)
 var best_time: float = 0.0
 var total_coins: int = 0
+var player_name: String = "ALI"
+var races_played: int = 0
+var wins: int = 0
 
 
 func _ready() -> void:
@@ -40,6 +43,9 @@ func load_settings() -> void:
 	selected_character = str(cf.get_value("progress", "character", "fox"))
 	best_time = float(cf.get_value("progress", "best_time", 0.0))
 	total_coins = int(cf.get_value("progress", "coins", 0))
+	player_name = str(cf.get_value("progress", "name", "ALI"))
+	races_played = int(cf.get_value("progress", "races", 0))
+	wins = int(cf.get_value("progress", "wins", 0))
 
 
 func save_settings() -> void:
@@ -55,6 +61,9 @@ func save_settings() -> void:
 	cf.set_value("progress", "character", selected_character)
 	cf.set_value("progress", "best_time", best_time)
 	cf.set_value("progress", "coins", total_coins)
+	cf.set_value("progress", "name", player_name)
+	cf.set_value("progress", "races", races_played)
+	cf.set_value("progress", "wins", wins)
 	cf.save(PATH)
 
 

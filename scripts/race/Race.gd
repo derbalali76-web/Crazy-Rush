@@ -427,6 +427,9 @@ func _on_finished(t: float) -> void:
 	hud.controls.enabled = false
 	runner.input.steer = 0.0
 	Settings.total_coins += runner.coins_got
+	Settings.races_played += 1
+	if _final_rank == 1:
+		Settings.wins += 1
 	var new_best := Settings.best_time <= 0.0 or t < Settings.best_time
 	if new_best:
 		Settings.best_time = t

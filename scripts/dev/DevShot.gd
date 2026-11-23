@@ -30,6 +30,8 @@ func _ready() -> void:
 			add_child(ts)
 			await get_tree().process_frame
 			ts._select(int(args.get("sel", "0")))
+		"account":
+			add_child(AccountScreen.new())
 		"select":
 			add_child(CharacterSelect.new())
 		"race":
