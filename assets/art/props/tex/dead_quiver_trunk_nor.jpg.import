@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cp8pui2xtvuba"
-path="res://.godot/imported/dead_quiver_trunk_nor.jpg-96597b4560a6d3263960bec269f8974f.ctex"
+path.s3tc="res://.godot/imported/dead_quiver_trunk_nor.jpg-96597b4560a6d3263960bec269f8974f.s3tc.ctex"
+path.etc2="res://.godot/imported/dead_quiver_trunk_nor.jpg-96597b4560a6d3263960bec269f8974f.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/art/props/tex/dead_quiver_trunk_nor.jpg"
-dest_files=["res://.godot/imported/dead_quiver_trunk_nor.jpg-96597b4560a6d3263960bec269f8974f.ctex"]
+dest_files=["res://.godot/imported/dead_quiver_trunk_nor.jpg-96597b4560a6d3263960bec269f8974f.s3tc.ctex", "res://.godot/imported/dead_quiver_trunk_nor.jpg-96597b4560a6d3263960bec269f8974f.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

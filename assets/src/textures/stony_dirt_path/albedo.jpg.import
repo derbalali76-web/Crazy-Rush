@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1nepi5jni4fu"
-path="res://.godot/imported/albedo.jpg-b9d3d04f21db9d81ace1c1442e448607.ctex"
+path.s3tc="res://.godot/imported/albedo.jpg-b9d3d04f21db9d81ace1c1442e448607.s3tc.ctex"
+path.etc2="res://.godot/imported/albedo.jpg-b9d3d04f21db9d81ace1c1442e448607.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/src/textures/stony_dirt_path/albedo.jpg"
-dest_files=["res://.godot/imported/albedo.jpg-b9d3d04f21db9d81ace1c1442e448607.ctex"]
+dest_files=["res://.godot/imported/albedo.jpg-b9d3d04f21db9d81ace1c1442e448607.s3tc.ctex", "res://.godot/imported/albedo.jpg-b9d3d04f21db9d81ace1c1442e448607.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

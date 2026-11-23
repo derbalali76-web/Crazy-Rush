@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://xbfwx5lv581j"
-path="res://.godot/imported/arm.jpg-e5e6b44274abbd3c475202cbb66d7c69.ctex"
+path.s3tc="res://.godot/imported/arm.jpg-e5e6b44274abbd3c475202cbb66d7c69.s3tc.ctex"
+path.etc2="res://.godot/imported/arm.jpg-e5e6b44274abbd3c475202cbb66d7c69.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/src/textures/mossy_cobblestone/arm.jpg"
-dest_files=["res://.godot/imported/arm.jpg-e5e6b44274abbd3c475202cbb66d7c69.ctex"]
+dest_files=["res://.godot/imported/arm.jpg-e5e6b44274abbd3c475202cbb66d7c69.s3tc.ctex", "res://.godot/imported/arm.jpg-e5e6b44274abbd3c475202cbb66d7c69.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqb4j7882j450"
-path="res://.godot/imported/normal.jpg-38ddba2cbc30f966523dbedaf2143101.ctex"
+path.s3tc="res://.godot/imported/normal.jpg-38ddba2cbc30f966523dbedaf2143101.s3tc.ctex"
+path.etc2="res://.godot/imported/normal.jpg-38ddba2cbc30f966523dbedaf2143101.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/src/textures/Moss001/normal.jpg"
-dest_files=["res://.godot/imported/normal.jpg-38ddba2cbc30f966523dbedaf2143101.ctex"]
+dest_files=["res://.godot/imported/normal.jpg-38ddba2cbc30f966523dbedaf2143101.s3tc.ctex", "res://.godot/imported/normal.jpg-38ddba2cbc30f966523dbedaf2143101.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -36,5 +38,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=512
 detect_3d/compress_to=1

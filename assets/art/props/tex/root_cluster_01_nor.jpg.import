@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bh54avmqoo3d7"
-path="res://.godot/imported/root_cluster_01_nor.jpg-d4adbfeb59f00efe9d698a902304f62e.ctex"
+path.s3tc="res://.godot/imported/root_cluster_01_nor.jpg-d4adbfeb59f00efe9d698a902304f62e.s3tc.ctex"
+path.etc2="res://.godot/imported/root_cluster_01_nor.jpg-d4adbfeb59f00efe9d698a902304f62e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/art/props/tex/root_cluster_01_nor.jpg"
-dest_files=["res://.godot/imported/root_cluster_01_nor.jpg-d4adbfeb59f00efe9d698a902304f62e.ctex"]
+dest_files=["res://.godot/imported/root_cluster_01_nor.jpg-d4adbfeb59f00efe9d698a902304f62e.s3tc.ctex", "res://.godot/imported/root_cluster_01_nor.jpg-d4adbfeb59f00efe9d698a902304f62e.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dutgmf2ip58pm"
-path="res://.godot/imported/dead_quiver_trunk_diff.jpg-4922deba37de1e2901d37207e3dbeac8.ctex"
+path.s3tc="res://.godot/imported/dead_quiver_trunk_diff.jpg-4922deba37de1e2901d37207e3dbeac8.s3tc.ctex"
+path.etc2="res://.godot/imported/dead_quiver_trunk_diff.jpg-4922deba37de1e2901d37207e3dbeac8.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/art/props/tex/dead_quiver_trunk_diff.jpg"
-dest_files=["res://.godot/imported/dead_quiver_trunk_diff.jpg-4922deba37de1e2901d37207e3dbeac8.ctex"]
+dest_files=["res://.godot/imported/dead_quiver_trunk_diff.jpg-4922deba37de1e2901d37207e3dbeac8.s3tc.ctex", "res://.godot/imported/dead_quiver_trunk_diff.jpg-4922deba37de1e2901d37207e3dbeac8.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

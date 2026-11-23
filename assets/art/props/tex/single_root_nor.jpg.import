@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ocif7jsnn67p"
-path="res://.godot/imported/single_root_nor.jpg-a7d5dd3644ccaf4a84ff8143c6b48620.ctex"
+path.s3tc="res://.godot/imported/single_root_nor.jpg-a7d5dd3644ccaf4a84ff8143c6b48620.s3tc.ctex"
+path.etc2="res://.godot/imported/single_root_nor.jpg-a7d5dd3644ccaf4a84ff8143c6b48620.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/art/props/tex/single_root_nor.jpg"
-dest_files=["res://.godot/imported/single_root_nor.jpg-a7d5dd3644ccaf4a84ff8143c6b48620.ctex"]
+dest_files=["res://.godot/imported/single_root_nor.jpg-a7d5dd3644ccaf4a84ff8143c6b48620.s3tc.ctex", "res://.godot/imported/single_root_nor.jpg-a7d5dd3644ccaf4a84ff8143c6b48620.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
