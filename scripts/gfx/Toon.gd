@@ -20,6 +20,7 @@ const PREMIUM := {
 	1: {"dir": "wooden_rough_planks", "scale": 0.7, "avg": 0.33, "vc": 0.55, "sat": 0.6},
 	2: {"dir": "Moss001", "scale": 0.5, "avg": 0.30, "vc": 0.72, "sat": 0.4},
 	3: {"dir": "Rock030", "scale": 0.45, "avg": 0.20, "vc": 0.62, "sat": 0.5},
+	4: {"dir": "forest_ground_04", "scale": 0.16, "avg": 0.36, "vc": 0.50, "sat": 0.8},   # أرض الغابة (يُستدعى صراحة)
 }
 static var use_normal_maps := true
 
@@ -47,7 +48,7 @@ static func premium(mode: int, wind := -1.0) -> ShaderMaterial:
 static func textured(mode: int, amount := 0.35, foliage_wind := -1.0) -> ShaderMaterial:
 	if not detail_enabled:
 		return foliage(foliage_wind) if foliage_wind >= 0.0 else solid(false)
-	if premium_enabled and PREMIUM.has(mode):
+	if premium_enabled and PREMIUM.has(mode) and mode < 4:
 		return premium(mode, foliage_wind)
 	var key := "tex_%d_%.2f_%.2f" % [mode, amount, foliage_wind]
 	if _cache.has(key):

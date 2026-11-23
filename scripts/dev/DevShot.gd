@@ -150,6 +150,13 @@ func _scene_race() -> void:
 		"slide": r.runner.input.slide = true
 		"punch": r.runner.input.punch = true
 	r.runner.input.steer = float(args.get("steer", "0"))
+	if args.get("nofar","0") == "1":
+		r.view.far_nodes.visible = false
+	if args.get("dbg","0") == "1":
+		for n in r.view.find_children("*", "MeshInstance3D", true, false):
+			var mi := n as MeshInstance3D
+			if mi.mesh != null and mi.get_aabb().size.x > 30.0 and mi.get_parent().name == "Far":
+				print("BIG ", mi.name, " parent=", mi.get_parent().name, " size=", mi.get_aabb().size, " pos=", mi.global_position, " mat=", mi.material_override)
 	print("race s=", r.runner.s, " state=", r.runner.state, " coins=", r.runner.coins_got)
 
 

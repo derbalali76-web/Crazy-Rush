@@ -165,7 +165,7 @@ func _apply_jungle_look(pm: ProceduralSkyMaterial) -> void:
 	env.ambient_light_color = Color("8fb08f")
 	env.ambient_light_energy = 0.40
 	env.fog_light_color = Color("a9c3b0")
-	env.fog_density = 0.0040
+	env.fog_density = 0.0026
 	env.fog_sky_affect = 0.40
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.85

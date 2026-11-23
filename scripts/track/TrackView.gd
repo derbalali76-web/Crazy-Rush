@@ -123,8 +123,9 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 	_mmi(TrackProtos.get_mesh("board"), boards, board_cols, Toon.textured(1, 0.34), node, false)
 	_mmi(TrackProtos.get_mesh("stringer"), stringers, [], Toon.textured(1, 0.34), node, false)
 	_mmi(TrackProtos.get_mesh("post"), posts, [], Toon.textured(1, 0.34), node, true)
-	_mmi(TrackProtos.get_mesh("pennant"), pennants, [], Toon.double_sided(false), node, false)
-	_mmi(TrackProtos.get_mesh("lantern"), lanterns, [], Toon.solid(false), node, false)
+	if not Toon.premium_enabled:
+		_mmi(TrackProtos.get_mesh("pennant"), pennants, [], Toon.double_sided(false), node, false)
+		_mmi(TrackProtos.get_mesh("lantern"), lanterns, [], Toon.solid(false), node, false)
 	_build_ropes(s0, s1, node)
 	_build_scenery(s0, s1, node, ci)
 	if Toon.premium_enabled:
@@ -217,7 +218,8 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 	_mmi(TrackProtos.get_mesh("palm_a"), palms_a, [], Toon.textured(2, 0.35, 0.05), node, true)
 	_mmi(TrackProtos.get_mesh("palm_b"), palms_b, [], Toon.textured(2, 0.35, 0.05), node, true)
 	_mmi(TrackProtos.get_mesh("bush"), bushes, [], Toon.textured(2, 0.42), node, false)
-	_mmi(TrackProtos.get_mesh("mushroom"), mush, [], Toon.solid(false), node, true)
+	if not Toon.premium_enabled:
+		_mmi(TrackProtos.get_mesh("mushroom"), mush, [], Toon.solid(false), node, true)
 	_mmi(TrackProtos.get_mesh("rock_a"), rocks_a, [], Toon.textured(3, 0.55), node, true)
 	_mmi(TrackProtos.get_mesh("rock_b"), rocks_b, [], Toon.textured(3, 0.55), node, true)
 	_mmi(TrackProtos.get_mesh("flower"), flowers, [], Toon.solid(false), node, false)
@@ -300,6 +302,9 @@ func _build_ground_strip(s0: float, s1: float, node: Node3D) -> void:
 	var xs := [7.4, 9.0, 18.0, 32.0, 52.0]
 	var ys := [-1.0, -1.0, -1.0, 0.4, 3.5]
 	var cols := [Color("c79ab0"), Color("5fd445"), Color("4ec23f"), Color("3fae3b"), Color("6ac4a8")]
+	if Toon.premium_enabled:
+		# ألوان غابة طبيعية: حافة ترابية، أرض عشبية داكنة، تلال خضراء عميقة
+		cols = [Color("6b5238"), Color("3f5a2a"), Color("38512a"), Color("2f4a28"), Color("2a4a30")]
 	for sd in [-1.0, 1.0]:
 		var rows := int((s1 - s0) / 4.0) + 1
 		var prev: Array = []
@@ -336,7 +341,7 @@ func _build_ground_strip(s0: float, s1: float, node: Node3D) -> void:
 				var b2: Vector3 = prev[1]
 				var c2: Vector3 = cur2[1]
 				var d2: Vector3 = cur2[0]
-				var cc := Color("9a7aa6")
+				var cc := Color("9a7aa6") if not Toon.premium_enabled else Color("5a4632")
 				if sd > 0:
 					mb.add_triangle(a2, b2, c2, cc)
 					mb.add_triangle(a2, c2, d2, cc)
@@ -350,7 +355,7 @@ func _build_ground_strip(s0: float, s1: float, node: Node3D) -> void:
 			prev = cur2
 	var mi := MeshInstance3D.new()
 	mi.mesh = mb.build()
-	mi.material_override = Toon.textured(2, 0.40, 0.0)
+	mi.material_override = Toon.premium(4) if Toon.premium_enabled else Toon.textured(2, 0.40, 0.0)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.add_child(mi)
 
@@ -522,7 +527,7 @@ func _far_mat() -> Material:
 	if not Toon.premium_enabled:
 		return Toon.solid(false)
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color("2f5a3a")
+	m.albedo_color = Color("1f4429")
 	m.roughness = 1.0
 	return m
 
@@ -549,7 +554,7 @@ func _build_far() -> void:
 		var m2: Variant = _far_place(s2 + 60.0, -sd2, rng.randf_range(230.0, 300.0), -45.0, rng.randf() * TAU, rng.randf_range(1.2, 1.8), 170.0)
 		if m2 != null:
 			_mesh_node("mountain", m2, far_nodes, _far_mat(), false)
-	for k in range(4 if Toon.premium_enabled else 16):
+	for k in range(3 if Toon.premium_enabled else 16):
 		var s3 := rng.randf_range(0.0, TrackData.LENGTH)
 		var sd3 := -1.0 if k % 2 == 0 else 1.0
 		_mesh_node("cloud", _place(s3, sd3 * rng.randf_range(30.0, 140.0), rng.randf_range(45.0, 90.0), rng.randf() * TAU, rng.randf_range(0.8, 1.8)), far_nodes, Toon.solid(false), false)
@@ -560,7 +565,7 @@ func _build_far() -> void:
 			for sd4 in [-1.0, 1.0]:
 				var x4: float = sd4 * rng.randf_range(58.0, 80.0)
 				var xf4 := _place(s4, x4, -2.0, rng.randf() * TAU, 1.5)
-				_mesh_node("cliff", xf4, far_nodes, Toon.solid(false), false)
+				_mesh_node("cliff", xf4, far_nodes, Toon.premium(3) if Toon.premium_enabled else Toon.solid(false), false)
 				var fall := _mesh_node("waterfall", Transform3D(Basis(Vector3.UP, atan2(-sd4, 0.0) + (PI * 0.5 if sd4 > 0 else -PI * 0.5)), xf4.origin + Vector3(-sd4 * 17.0, 13.0, 0)), far_nodes, Toon.waterfall(), false)
 				fall.look_at_from_position(xf4.origin + data.right(s4) * (-sd4 * 17.0) + Vector3(0, 12.0, 0), data.center(s4) + Vector3(0, 12.0, 0), Vector3.UP)
 			s4 += 70.0
