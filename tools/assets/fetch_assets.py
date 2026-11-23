@@ -75,7 +75,7 @@ for t in MAN["ambientcg_materials"]:
         print("FAIL acg", aid, e)
 
 # ---- مجسمات Poly Haven المرشحة (gltf 1k) ----
-for m in MAN["polyhaven_models_candidates_after_decimation"] + MAN.get("polyhaven_models_trees_props", []):
+for m in MAN["polyhaven_models_candidates_after_decimation"]:
     aid = m["id"]
     if (OUT / "models" / aid).exists():
         print("skip existing model", aid); continue
