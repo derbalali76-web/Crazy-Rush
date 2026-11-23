@@ -170,10 +170,17 @@ func _refresh_char() -> void:
 	for c in _dyn.get_children():
 		c.queue_free()
 	var id: String = ORDER[_focus]
-	if id == "fox":
-		return
 	var keep := _root
 	_root = _dyn
+	# نقاط المؤشر أسفل الشخصية: 4 نقاط، كل نقطة تمثّل 3 شخصيات
+	var page := _focus / 3
+	for i in range(4):
+		var on := i == page
+		var dot := _box(Rect2(685.0 + i * 48.0 - 19.0, 768.0 - 19.0, 38, 38), Color("ffd54a") if on else Color("0a2a8a"), Color.WHITE if on else Color("5aa0ff"), 19, 4)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if id == "fox":
+		_root = keep
+		return
 	_box(Rect2(634, 172, 446, 580), Color(0.05, 0.08, 0.26, 0.9), Color("f3b63a"), 30, 4)
 	var tr := TextureRect.new()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -196,7 +203,28 @@ func _refresh_char() -> void:
 		_dyn.add_child(ln)
 	var nme := Characters.character_name(id)
 	UiKit.name_tag(_dyn, _bg_img, Rect2(342, 302, 236, 48), 338, nme, 40 if nme.length() < 12 else 32, Color("5a1a00"))
-	_unavailable(Rect2(295, 395, 310, 170), 20)
+	# بطاقة القدرة الخاصة بالشخصية
+	var ab := Characters.ability(id)
+	_box(Rect2(295, 395, 310, 170), Color(0.04, 0.12, 0.42, 1), Color("4aa8ff"), 22, 4)
+	var ic := TextureRect.new()
+	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ic.texture = Characters.icon(id)
+	ic.position = Vector2(312, 440)
+	ic.size = Vector2(84, 84)
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dyn.add_child(ic)
+	var at := UiKit.label(ab[0], 28, Color("ffd54a"), 5)
+	at.position = Vector2(400, 405)
+	at.size = Vector2(195, 44)
+	_dyn.add_child(at)
+	var ad := UiKit.label(ab[1], 20, Color.WHITE, 3)
+	ad.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ad.custom_minimum_size = Vector2(190, 0)
+	ad.position = Vector2(402, 452)
+	ad.size = Vector2(190, 100)
+	ad.clip_text = true
+	_dyn.add_child(ad)
 	_unavailable(Rect2(1100, 775, 555, 145), 28)
 	_root = keep
 
