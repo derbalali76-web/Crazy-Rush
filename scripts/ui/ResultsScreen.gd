@@ -6,17 +6,24 @@ extends Control
 signal restart_pressed
 signal home_pressed
 
-const W := 1672.0
+const W := 1671.0
 const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
-const BG := preload("res://assets/ui/results_ref.png")
+const BG := preload("res://assets/ui/results_v2_plate.png")
 ## حدود صفوف الجدول المرسومة (y من، y إلى) بإحداثيات المرجع
-const ROWS := [Vector2(200, 273), Vector2(279, 341), Vector2(345, 402), Vector2(405, 463), Vector2(466, 522), Vector2(523, 578), Vector2(580, 637), Vector2(636, 692)]
-const ORD := ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن"]
+const CENTERS := [242.0, 316.0, 387.0, 457.0, 526.0, 595.0, 664.0, 733.0]
+const ROW_H := 64.0
+## منصّة التتويج: {x مركز الشخصية، y القدمين، الارتفاع الأقصى، العرض الأقصى}
+const PODIUM := [
+	{"x": 905.0, "y": 366.0, "h": 222.0, "w": 250.0},   # الأول
+	{"x": 672.0, "y": 388.0, "h": 178.0, "w": 200.0},   # الثاني
+	{"x": 1196.0, "y": 400.0, "h": 178.0, "w": 200.0},  # الثالث
+]
 
 var data: Dictionary = {}
 var _root: Control
 var _bg_img: Image
+var _bold: FontVariation
 
 
 func _ready() -> void:
@@ -73,6 +80,11 @@ func _box(r: Rect2, fill: Color, edge: Color, radius := 24, bw := 2, parent: Con
 
 func _lbl(text: String, r: Rect2, size := 36, color := Color.WHITE, align := HORIZONTAL_ALIGNMENT_CENTER, outline := 5, parent: Control = null) -> Label:
 	var l := UiKit.label(text, size, color, outline, align)
+	if _bold == null:
+		_bold = FontVariation.new()
+		_bold.base_font = UiKit.font()
+		_bold.variation_embolden = 0.8
+	l.add_theme_font_override("font", _bold)
 	l.position = r.position
 	l.size = r.size
 	l.clip_text = true
@@ -137,67 +149,78 @@ func _unavailable(r: Rect2, fsize := 20, alpha := 0.55) -> void:
 
 # ---------------------------------------------------------------- البناء
 func _build() -> void:
-	var rank: int = int(data.get("rank", 1))
 	var st: Array = data.get("standings", [])
 
-	# المكافآت: العملات الحقيقية فقط
-	_patch2(Rect2(158, 346, 152, 64), 154, 306)
-	_lbl(str(int(data.get("coins", 0))), Rect2(160, 348, 150, 60), 48, Color("ffe15a"), HORIZONTAL_ALIGNMENT_CENTER, 5)
-	_unavailable(Rect2(62, 432, 245, 72), 18, 0.72)    # الجواهر
-	_unavailable(Rect2(62, 518, 245, 84), 18, 0.72)    # الخبرة
+	# --- منصّة التتويج بشخصياتنا (أول ثلاثة في الترتيب)
+	for k in range(mini(3, st.size())):
+		var pd: Dictionary = PODIUM[k]
+		var cid := str(st[k].get("character", "fox"))
+		var tex := Characters.portrait(cid)
+		if tex == null:
+			continue
+		var ts := tex.get_size()
+		var sc := minf(float(pd.h) / ts.y, float(pd.w) / ts.x)
+		var tr := TextureRect.new()
+		tr.texture = tex
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_SCALE
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		tr.size = ts * sc
+		tr.position = Vector2(float(pd.x) - tr.size.x * 0.5, float(pd.y) - tr.size.y)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(tr)
+
+	# --- المكافآت: العملات حقيقية، والجواهر والإعلان غير متاحين
+	_patch2(Rect2(736, 553, 178, 66), 731, 920)
+	_lbl("%d" % int(data.get("coins", 0)), Rect2(732, 530, 186, 80), 58, Color("ffd21a"), HORIZONTAL_ALIGNMENT_CENTER, 8)
+	_unavailable(Rect2(990, 548, 347, 80), 22, 0.82)
+	_unavailable(Rect2(596, 650, 722, 100), 26, 0.78)
 	if data.get("new_best", false):
-		_lbl("رقم قياسي جديد!", Rect2(30, 648, 310, 44), 28, Color("fff3a0"), HORIZONTAL_ALIGNMENT_CENTER, 6)
+		_lbl("رقم قياسي جديد!", Rect2(1320, 168, 210, 40), 24, Color("fff3a0"), HORIZONTAL_ALIGNMENT_CENTER, 6)
 
-	# لافتة المركز (تتبع ترتيب اللاعب)
-	_patch(Rect2(436, 660, 240, 44), 425)
-	_lbl("المركز " + ORD[clampi(rank - 1, 0, ORD.size() - 1)], Rect2(430, 655, 250, 52), 38, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 6)
-
-	# جدول الترتيب: صفوف المرجع الفنية كما هي، ونستبدل النصوص والصور بقيم حقيقية
-	var n := mini(st.size(), ROWS.size())
+	# --- جدول الترتيب
+	var n := mini(st.size(), CENTERS.size())
 	for k in range(n):
 		_row(k, st[k])
-	for k in range(n, ROWS.size()):
-		var rr: Vector2 = ROWS[k]
-		_box(Rect2(814, rr.x - 3.0, 820, rr.y - rr.x + 6.0), Color("061c68"), Color(0, 0, 0, 0), 14, 0)
+	if n < CENTERS.size():
+		var y0: float = CENTERS[n] - 38.0
+		_box(Rect2(103, y0, 402, 733.0 + 38.0 - y0), Color("0a2078"), Color(0, 0, 0, 0), 16, 0)
 
-	# الأزرار
-	_hit(Rect2(60, 775, 430, 140), func(): home_pressed.emit())
-	_hit(Rect2(530, 775, 500, 140), func(): restart_pressed.emit())
-	_unavailable(Rect2(1065, 775, 550, 140), 26)    # السباق التالي (حلبة واحدة فقط حاليًا)
+	# --- الأزرار
+	_hit(Rect2(340, 805, 215, 110), func(): home_pressed.emit())
+	_hit(Rect2(620, 805, 265, 110), func(): restart_pressed.emit())
+	_unavailable(Rect2(950, 805, 382, 110), 26, 0.78)    # التالي (حلبة واحدة فقط حاليًا)
 
-	# معلومات الأداء (للاختبار)
+	# --- معلومات الأداء (للاختبار)
 	var perf := "FPS %.0f  •  p95 %.0f ms  •  %s" % [float(data.get("avg_fps", 0)), float(data.get("p95_ms", 0)), str(data.get("quality", ""))]
-	_lbl(perf, Rect2(20, 160, 560, 30), 17, Color("c9ffd6"), HORIZONTAL_ALIGNMENT_LEFT, 4)
+	_lbl(perf, Rect2(1290, 10, 370, 28), 16, Color("c9ffd6"), HORIZONTAL_ALIGNMENT_RIGHT, 4)
 
 
 func _row(k: int, e: Dictionary) -> void:
-	var rr: Vector2 = ROWS[k]
-	var top := rr.x
-	var h := rr.y - rr.x
+	var c: float = CENTERS[k]
+	var top := c - ROW_H * 0.5
 	var is_player: bool = bool(e.get("player", false))
-	var tc := Color("2a1450") if k < 2 else Color.WHITE
 	# الاسم
-	_patch2(Rect2(1034, top + 6, 152, h - 12), 1026, 1188)
-	_lbl(str(e.get("name", "")), Rect2(1034, top, 160, h), 34, tc, HORIZONTAL_ALIGNMENT_CENTER, 0 if k < 2 else 4)
-	# الزمن (داخل كبسولته المرسومة)
-	_patch2(Rect2(1270, top + 10, 135, h - 20), 1268, 1406)
-	_lbl(str(e.get("time_text", "")), Rect2(1268, top + 6, 140, h - 12), 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 3)
-	# الشخصية
+	_patch2(Rect2(240, top + 6, 112, ROW_H - 12), 236, 352)
+	_lbl(str(e.get("name", "")), Rect2(236, top, 120, ROW_H), 32, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 6)
+	# الزمن
+	_patch2(Rect2(354, top + 8, 136, ROW_H - 16), 350, 493)
+	_lbl(str(e.get("time_text", "")), Rect2(352, top + 4, 142, ROW_H - 8), 31, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 6)
+	# الشخصية: إطار مربع مدوّر يغطي وجه المرجع الأصلي + وجه شخصيتنا
+	var gold := k == 0
+	var frame := _box(Rect2(164, c - 35.0, 74, 70), Color("f6b81c") if gold else Color("1d3fa8"), Color.WHITE, 20, 3)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ic := Characters.icon(str(e.get("character", Settings.selected_character if is_player else "fox")))
 	if ic:
 		var tr := TextureRect.new()
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_SCALE
+		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tr.texture = ic
-		tr.size = Vector2(80, h - 6)
-		tr.position = Vector2(932, top + 3)
+		tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		tr.size = Vector2(66, 66)
+		tr.position = Vector2(168, c - 33.0)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(tr)
-	# كبسولة العملات: للاعب عملاته الحقيقية، ولغيره تُخفى (لا مكافآت وهمية)
 	if is_player:
-		_patch2(Rect2(1500, top + 10, 112, h - 20), 1497, 1614)
-		_lbl("+%d" % int(data.get("coins", 0)), Rect2(1496, top + 6, 120, h - 12), 30, Color("2a1450") if k == 0 else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 0 if k < 2 else 3)
-		var ring := _box(Rect2(820, top - 1, 812, h + 2), Color(0, 0, 0, 0), Color.WHITE, int(h * 0.45), 4)
+		var ring := _box(Rect2(103, c - 37.0, 398, 74), Color(0, 0, 0, 0), Color.WHITE, 30, 4)
 		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	else:
-		_patch2(Rect2(1436, top + 4, 186, h - 8), 1428, 1431)
