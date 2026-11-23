@@ -98,8 +98,8 @@ def build(name, seed, lod, trunk_h, spread, nbranch, leaf_per, leaf_scale):
     return len(me.loop_triangles), os.path.getsize(path)
 
 # المتغيّران a (طويل مستدير) وb (أعرض)
-CFG = {"tree_a": dict(seed=11, trunk_h=7.5, spread=2.4, nbranch=6, leaf_per=(3, 2, 1), leaf_scale=(2.3, 2.7, 3.3)),
-       "tree_b": dict(seed=29, trunk_h=6.0, spread=3.2, nbranch=7, leaf_per=(3, 2, 1), leaf_scale=(2.4, 2.8, 3.4))}
+CFG = {"tree_a": dict(seed=11, trunk_h=7.5, spread=2.4, nbranch=6, leaf_per=(5, 3, 2), leaf_scale=(2.1, 2.6, 3.2)),
+       "tree_b": dict(seed=29, trunk_h=6.0, spread=3.2, nbranch=7, leaf_per=(5, 3, 2), leaf_scale=(2.2, 2.7, 3.3))}
 for name, c in CFG.items():
     for lod in range(3):
         tris, size = build(name, c["seed"], lod, c["trunk_h"], c["spread"], c["nbranch"], c["leaf_per"][lod], c["leaf_scale"][lod])
