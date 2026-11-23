@@ -161,6 +161,16 @@ func _scene_race() -> void:
 			var mi := n as MeshInstance3D
 			if mi.mesh != null and mi.get_aabb().size.x > 30.0 and mi.get_parent().name == "Far":
 				print("BIG ", mi.name, " parent=", mi.get_parent().name, " size=", mi.get_aabb().size, " pos=", mi.global_position, " mat=", mi.material_override)
+	if args.has("cs"):
+		var cs := float(args.get("cs", "0"))
+		r.set_process(false)
+		var cc2: Vector3 = r.view.data.center(cs)
+		var fw: Vector3 = r.view.data.forward(cs)
+		var rt2: Vector3 = r.view.data.right(cs)
+		r.cam.global_position = cc2 + rt2 * float(args.get("cx", "0")) + Vector3(0, float(args.get("cy", "5")), 0) - fw * float(args.get("cz", "20"))
+		r.cam.look_at(cc2 + Vector3(0, float(args.get("cly", "4")), 0), Vector3.UP)
+		r.cam.fov = float(args.get("cfov", "60"))
+		await get_tree().process_frame
 	if args.has("wf"):
 		var best: MeshInstance3D = null
 		var bd := 1e9

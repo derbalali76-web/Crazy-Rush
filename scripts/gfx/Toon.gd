@@ -21,6 +21,7 @@ const PREMIUM := {
 	2: {"dir": "Moss001", "scale": 0.5, "avg": 0.30, "vc": 0.72, "sat": 0.4},
 	3: {"dir": "Rock030", "scale": 0.45, "avg": 0.20, "vc": 0.62, "sat": 0.5},
 	4: {"dir": "forest_ground_04", "scale": 0.16, "avg": 0.36, "vc": 0.50, "sat": 0.8},   # أرض الغابة (يُستدعى صراحة)
+	5: {"dir": "mossy_cobblestone", "scale": 0.30, "avg": 0.30, "vc": 0.35, "sat": 0.7},  # أطلال حجرية (يُستدعى صراحة)
 }
 static var use_normal_maps := true
 

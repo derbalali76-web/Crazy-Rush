@@ -20,3 +20,5 @@
 
 ## إضافة: مجسمات الأشجار والخشب (Poly Haven، CC0)
 tree_stump_01، tree_stump_02، dead_tree_trunk، dead_tree_trunk_02، root_cluster_01، single_root، dead_quiver_trunk: تُنزَّل في CI (tools/assets/fetch_tree_props.py)، وتُبسَّط وتُخبز في Blender، ويُودَع الناتج الخفيف فقط في assets/art/props. السجل: docs/art/tree_props_lock.json. الشجرتان tree_a وtree_b مولَّدتان إجرائيًا (tools/blender/build_trees.py) من لحاء Bark001 (ambientCG، CC0) وأوراق من مجسم calathea_orbifolia_01 (Poly Haven، CC0). تم استبعاد jacaranda_tree لأن التبسيط أتلف أوراقه.
+
+- `mossy_cobblestone` (ambientCG, CC0): الأطلال الحجرية (بوابتا البداية والمعبد) في الوضع المميز.

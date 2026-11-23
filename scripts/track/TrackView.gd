@@ -134,7 +134,77 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 	_build_scenery(s0, s1, node, ci)
 	if Toon.premium_enabled:
 		_build_premium_props(s0, s1, node)
+		_build_ruins(s0, s1, node)
 	_build_obstacles(s0, s1, node)
+
+
+# ------------------------------------------------------------------ أطلال حجرية (بريميوم فقط): بوابة عند البداية وبوابة المعبد قبل المنعطف الثالث
+const RUIN_GATES := [22.0, 262.0]
+static var _ruin_mesh: ArrayMesh
+static var _ruin_deco: ArrayMesh
+
+
+static func _stone(v: float, rng: RandomNumberGenerator) -> Color:
+	var w := v * rng.randf_range(0.9, 1.1)
+	return Color(w * 0.98, w * 0.97, w * 0.90)
+
+
+static func _ruin_meshes() -> void:
+	if _ruin_mesh != null:
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4417
+	var mb := MeshBuilder.new()
+	for sx in [-1.0, 1.0]:
+		var px: float = sx * 9.2
+		mb.add_rbox(Vector3(3.0, 1.2, 3.0), 0.12, _stone(0.55, rng), Transform3D(Basis.IDENTITY, Vector3(px, -1.4, 0)), 3)
+		mb.add_rbox(Vector3(2.0, 8.4, 2.0), 0.15, _stone(0.62, rng), Transform3D(Basis(Vector3.UP, sx * 0.05), Vector3(px, 3.4, 0)), 3)
+		mb.add_rbox(Vector3(2.6, 0.8, 2.6), 0.12, _stone(0.58, rng), Transform3D(Basis.IDENTITY, Vector3(px, 7.9, 0)), 3)
+		# حلقات حجرية تكسر الاستقامة
+		for k in range(3):
+			mb.add_rbox(Vector3(2.25, 0.35, 2.25), 0.08, _stone(0.5, rng), Transform3D(Basis(Vector3.UP, rng.randf_range(-0.1, 0.1)), Vector3(px, 0.6 + k * 2.4, 0)), 2)
+	# العتبة العلوية (مكسورة من جهة)
+	mb.add_rbox(Vector3(14.0, 1.5, 2.2), 0.18, _stone(0.6, rng), Transform3D(Basis(Vector3.FORWARD, 0.0), Vector3(-2.4, 9.0, 0)), 3)
+	mb.add_rbox(Vector3(6.0, 1.5, 2.2), 0.18, _stone(0.6, rng), Transform3D(Basis(Vector3.FORWARD, -0.06), Vector3(6.6, 8.95, 0)), 3)
+	# كتل ساقطة بجوار العمود الأيمن
+	mb.add_rbox(Vector3(2.6, 1.3, 1.8), 0.15, _stone(0.55, rng), Transform3D(Basis(Vector3.UP, 0.6), Vector3(13.2, -1.0, 1.6)), 3)
+	mb.add_rbox(Vector3(1.8, 1.0, 1.6), 0.12, _stone(0.5, rng), Transform3D(Basis(Vector3.UP, -0.4), Vector3(14.6, -1.2, -1.2)), 3)
+	_ruin_mesh = mb.build()
+	# قطع أطلال متفرقة (جدار منهار وأعمدة قصيرة)
+	var md := MeshBuilder.new()
+	for k in range(5):
+		var h := rng.randf_range(1.5, 4.5)
+		md.add_rbox(Vector3(1.8, h, 1.8), 0.14, _stone(0.58, rng), Transform3D(Basis(Vector3.UP, rng.randf() * 0.4), Vector3(k * 3.4, h * 0.5 - 1.4, rng.randf_range(-0.6, 0.6))), 3)
+		if rng.randf() < 0.6:
+			md.add_rbox(Vector3(2.2, 0.7, 1.6), 0.1, _stone(0.52, rng), Transform3D(Basis(Vector3.UP, rng.randf() * 1.2), Vector3(k * 3.4 + 0.4, h - 1.1, 0.8)), 2)
+	for k in range(4):
+		md.add_rbox(Vector3(1.6, 0.9, 1.3), 0.12, _stone(0.5, rng), Transform3D(Basis(Vector3.UP, rng.randf() * TAU), Vector3(rng.randf_range(-1.0, 15.0), -1.3, rng.randf_range(2.0, 4.0))), 2)
+	_ruin_deco = md.build()
+
+
+func _build_ruins(s0: float, s1: float, node: Node3D) -> void:
+	if _in_canyon(0.5 * (s0 + s1)):
+		return
+	_ruin_meshes()
+	var gate_xfs: Array = []
+	for g in RUIN_GATES:
+		if g >= s0 and g < s1:
+			gate_xfs.append(_place(g, 0.0, 0.0))
+	var deco_xfs: Array = []
+	# أطلال متفرقة على جانبي منطقة المعبد (إزاحة >= 11 م، المسار وما حوله خالٍ)
+	var s_d := 268.0
+	var k := 0
+	while s_d < 340.0:
+		if s_d >= s0 and s_d < s1:
+			var sd := -1.0 if k % 2 == 0 else 1.0
+			deco_xfs.append(_place(s_d, sd * (13.0 + float((k * 7) % 5)), 0.0, (0.0 if sd < 0 else PI) + 0.25 * float(k % 3)))
+		s_d += 14.0
+		k += 1
+	var mat := Toon.premium(5)
+	if gate_xfs.size() > 0:
+		_mmi(_ruin_mesh, gate_xfs, [], mat, node, true)
+	if deco_xfs.size() > 0:
+		_mmi(_ruin_deco, deco_xfs, [], mat, node, true)
 
 
 func _build_ropes(s0: float, s1: float, node: Node3D) -> void:
