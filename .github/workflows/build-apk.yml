@@ -94,8 +94,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete phase1-latest --yes --cleanup-tag || true
-          gh release create phase1-latest build/CrazyRush.apk --title "Crazy Rush — Phase 1 (latest build)" \
+          TAG=phase1-latest
+          TITLE="Crazy Rush — Phase 1 (latest build)"
+          if [ "${GITHUB_REF_NAME}" = "branching-graybox" ]; then
+            TAG=branching-graybox-latest
+            TITLE="Crazy Rush — branching graybox (experimental)"
+          fi
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          gh release create "$TAG" build/CrazyRush.apk --title "$TITLE" \
             --notes "Debug APK built automatically from commit ${GITHUB_SHA}." --prerelease
 
       - name: Push logs to ci-logs branch
