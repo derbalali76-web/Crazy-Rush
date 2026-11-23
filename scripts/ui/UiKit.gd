@@ -136,3 +136,14 @@ static func num_label(text: String, size := 36) -> Label:
 	l.add_theme_font_override("font", fv)
 	l.add_theme_color_override("font_outline_color", Color("0b1450"))
 	return l
+
+
+## نص ثقيل بنمط نصوص الواجهة المرسومة (خط Cairo مُسمَّك + حدّ داكن).
+static func bold_label(text: String, size: int, color: Color, outline_color: Color, outline := 7) -> Label:
+	var fv := FontVariation.new()
+	fv.base_font = font()
+	fv.variation_embolden = 1.0
+	var l := label(text, size, color, outline)
+	l.add_theme_font_override("font", fv)
+	l.add_theme_color_override("font_outline_color", outline_color)
+	return l

@@ -203,26 +203,30 @@ func _refresh_char() -> void:
 		_dyn.add_child(ln)
 	var nme := Characters.character_name(id)
 	UiKit.name_tag(_dyn, _bg_img, Rect2(342, 302, 236, 48), 338, nme, 40 if nme.length() < 12 else 32, Color("5a1a00"))
-	# بطاقة القدرة الخاصة بالشخصية
+	# بطاقة القدرة الخاصة بالشخصية (بنفس تنسيق بطاقة فوكسي)
 	var ab := Characters.ability(id)
-	_box(Rect2(295, 395, 310, 170), Color(0.04, 0.12, 0.42, 1), Color("4aa8ff"), 22, 4)
+	_box(Rect2(295, 395, 310, 172), Color(0.02, 0.16, 0.52, 1), Color("3aa8ff"), 24, 5)
 	var ic := TextureRect.new()
 	ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	ic.texture = Characters.icon(id)
-	ic.position = Vector2(312, 440)
-	ic.size = Vector2(84, 84)
+	var ptex := "res://assets/characters/%s_ability.png" % id
+	ic.texture = load(ptex) as Texture2D
+	ic.position = Vector2(311, 414)
+	ic.size = Vector2(108, 108)
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dyn.add_child(ic)
-	var at := UiKit.label(ab[0], 28, Color("ffd54a"), 5)
-	at.position = Vector2(400, 405)
-	at.size = Vector2(195, 44)
+	var at := UiKit.bold_label(ab[0], 27 if ab[0].length() < 14 else 22, Color("ffe400"), Color("3a2a00"), 7)
+	at.position = Vector2(428, 405)
+	at.size = Vector2(168, 44)
+	at.clip_text = true
 	_dyn.add_child(at)
-	var ad := UiKit.label(ab[1], 20, Color.WHITE, 3)
+	var ln := _box(Rect2(440, 452, 148, 2), Color("5ac8ff"), Color(0, 0, 0, 0), 1, 0)
+	var ad := UiKit.bold_label(ab[1], 20, Color.WHITE, Color("0a1a4a"), 6)
 	ad.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ad.custom_minimum_size = Vector2(190, 0)
-	ad.position = Vector2(402, 452)
-	ad.size = Vector2(190, 100)
+	ad.custom_minimum_size = Vector2(168, 0)
+	ad.position = Vector2(428, 458)
+	ad.size = Vector2(168, 104)
+	ad.add_theme_constant_override("line_spacing", -6)
 	ad.clip_text = true
 	_dyn.add_child(ad)
 	_unavailable(Rect2(1100, 775, 555, 145), 28)
