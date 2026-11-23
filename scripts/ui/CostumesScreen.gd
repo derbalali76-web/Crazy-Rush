@@ -121,6 +121,25 @@ func _build() -> void:
 func _build_bombo() -> void:
 	_patch_num(1100, 34, 112, 40, 1100, str(Settings.total_coins))
 	_patch_num(1362, 34, 98, 40, 1358, "0")
+	# تصحيح الاسم المرسوم («يومبو» ← «بومبو»)
+	var strip := Image.create(2, 40, false, Image.FORMAT_RGBA8)
+	for i in range(40):
+		strip.set_pixel(0, i, _bg_img.get_pixel(240, 794 + i))
+		strip.set_pixel(1, i, _bg_img.get_pixel(508, 794 + i))
+	var pt := TextureRect.new()
+	pt.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	pt.texture = ImageTexture.create_from_image(strip)
+	pt.position = Vector2(244, 794)
+	pt.size = Vector2(268, 40)
+	pt.stretch_mode = TextureRect.STRETCH_SCALE
+	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(pt)
+	var nm := UiKit.bold_label("بومبو الملاكم", 40, Color("ffd54a"), Color("3a1a00"), 8)
+	nm.position = Vector2(244, 788)
+	nm.size = Vector2(268, 52)
+	nm.clip_text = true
+	_root.add_child(nm)
 	# ست بطاقات: لا يملك المستخدم أيًا منها بعد
 	var xs := [1325.0, 1002.0, 680.0]
 	for i in range(6):
