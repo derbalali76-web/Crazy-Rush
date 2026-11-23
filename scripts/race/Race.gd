@@ -443,6 +443,8 @@ func _run_sim(delta: float) -> void:
 		n += 1
 	var cd_total := Runner.RIVAL_COOLDOWN if runner.t_punch_cd > Runner.PUNCH_COOLDOWN + 0.01 else Runner.PUNCH_COOLDOWN
 	hud.controls.punch_cd = clampf(runner.t_punch_cd / cd_total, 0.0, 1.0)
+	hud.controls.punch_total = cd_total
+	hud.controls.special_total = Runner.DASH_COOLDOWN
 	hud.controls.special_cd = runner.t_dash_cd / Runner.DASH_COOLDOWN
 
 
