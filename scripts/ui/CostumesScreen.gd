@@ -12,6 +12,15 @@ const IMAGES := {
 	"fox": "res://assets/ui/costumes_ref.png",
 	"bombo": "res://assets/ui/costumes_bombo_ref.png",
 	"ziko": "res://assets/ui/costumes_ziko_ref.png",
+	"robo": "res://assets/ui/costumes_robo_ref.png",
+	"lulu": "res://assets/ui/costumes_lulu_ref.png",
+	"dino": "res://assets/ui/costumes_dino_ref.png",
+	"bibo": "res://assets/ui/costumes_bibo_ref.png",
+	"batboot": "res://assets/ui/costumes_batboot_ref.png",
+	"kung": "res://assets/ui/costumes_kung_ref.png",
+	"sosu": "res://assets/ui/costumes_sosu_ref.png",
+	"zain": "res://assets/ui/costumes_zain_ref.png",
+	"arthur": "res://assets/ui/costumes_arthur_ref.png",
 }
 
 ## الشخصيات التي لها صورة متجر جاهزة
@@ -110,7 +119,7 @@ func _patch_num(x: float, y: float, w: float, h: float, sample_x: int, text: Str
 
 
 func _build() -> void:
-	if char_id == "bombo" or char_id == "ziko":
+	if char_id != "fox":
 		_build_bombo()
 	else:
 		_build_fox()
@@ -126,10 +135,23 @@ func _build_bombo() -> void:
 		_fix_text(Rect2(1345, 678, 272, 38), 1338, 1622, 683, "زي النينجا السيبراني", 28)
 	if char_id == "bombo":
 		_fix_bombo_name()
+	# تصحيح أخطاء إملائية مرسومة في صور المتجر
+	var gold := Color("ffd54a")
+	var gold_o := Color("3a1a00")
+	match char_id:
+		"batboot":
+			_fix_text(Rect2(252, 782, 250, 56), 246, 504, 782, "كابتن بطبوط", 40, gold, gold_o)
+		"robo":
+			_fix_text(Rect2(252, 772, 250, 62), 246, 504, 772, "روبو الروبوت", 40, gold, gold_o)
+		"bibo":
+			_fix_text(Rect2(252, 782, 238, 56), 246, 494, 782, "بيبو الأرنب", 40, gold, gold_o)
+			_fix_text(Rect2(732, 142, 148, 40), 728, 888, 142, "عناصر تجميلية", 25, Color.WHITE, Color("2a0a60"))
+		"lulu":
+			_fix_text(Rect2(1508, 142, 104, 40), 1503, 1622, 142, "الأزياء", 34, Color.WHITE, Color("6a3a00"))
 	_build_six()
 
 
-func _fix_text(r: Rect2, lx: int, rx: int, sy: int, text: String, size: int) -> void:
+func _fix_text(r: Rect2, lx: int, rx: int, sy: int, text: String, size: int, color := Color.WHITE, outline := Color("0a0a40")) -> void:
 	var strip := Image.create(2, int(r.size.y), false, Image.FORMAT_RGBA8)
 	for i in range(int(r.size.y)):
 		strip.set_pixel(0, i, _bg_img.get_pixel(lx, sy + i))
@@ -143,7 +165,7 @@ func _fix_text(r: Rect2, lx: int, rx: int, sy: int, text: String, size: int) -> 
 	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
-	var l := UiKit.bold_label(text, size, Color.WHITE, Color("0a0a40"), 7)
+	var l := UiKit.bold_label(text, size, color, outline, 7)
 	l.position = r.position - Vector2(0, 4)
 	l.size = r.size + Vector2(0, 8)
 	l.clip_text = true
