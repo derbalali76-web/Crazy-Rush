@@ -147,3 +147,48 @@ static func bold_label(text: String, size: int, color: Color, outline_color: Col
 	l.add_theme_font_override("font", fv)
 	l.add_theme_color_override("font_outline_color", outline_color)
 	return l
+
+
+## ملاءمة شاشة مرجعية W×H لأي نسبة عرض: تمدّد أفقي طفيف (حتى 12%) ثم هوامش تُملأ بامتداد حافة الصورة.
+## يعيد [مقياس Vector2, موضع Vector2].
+static func fit(vp: Vector2, w: float, h: float) -> Array:
+	var s := minf(vp.x / w, vp.y / h)
+	var sx := minf(vp.x / w, s * 1.12)
+	var sy := minf(vp.y / h, s * 1.12) if vp.y / h > s else s
+	var sc := Vector2(sx, sy)
+	return [sc, (vp - Vector2(w, h) * sc) * 0.5]
+
+
+## خلفية تملأ الشاشة كلها: تُستخرج من الصورة المرجعية بتثبيت الحواف (clamp) وتنعيمها فتتصل ألوانها بالمشهد.
+static func add_backdrop(parent: Control, ref: Image, vp: Vector2, w: float, h: float) -> void:
+	var f := fit(vp, w, h)
+	var sc: Vector2 = f[0]
+	var pos: Vector2 = f[1]
+	var small := ref.duplicate() as Image
+	small.resize(24, 14, Image.INTERPOLATE_BILINEAR)
+	small.resize(167, 94, Image.INTERPOLATE_BILINEAR)
+	var bw := 240
+	var bh := maxi(8, int(round(bw * vp.y / vp.x)))
+	var out := Image.create(bw, bh, false, Image.FORMAT_RGB8)
+	for j in range(bh):
+		var v := _fold(((j + 0.5) / bh * vp.y - pos.y) / (h * sc.y))
+		for i in range(bw):
+			var u := _fold(((i + 0.5) / bw * vp.x - pos.x) / (w * sc.x))
+			out.set_pixel(i, j, small.get_pixel(int(u * 167), int(v * 94)))
+	var tr := TextureRect.new()
+	tr.texture = ImageTexture.create_from_image(out)
+	tr.size = vp
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	tr.modulate = Color(0.85, 0.88, 0.95)
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(tr)
+
+
+## انعكاس مثلثي إلى [0، 0.999] لاستمرار المشهد خلف الحواف بدل تمديد عمود واحد.
+static func _fold(t: float) -> float:
+	var m := fposmod(t, 2.0)
+	if m > 1.0:
+		m = 2.0 - m
+	return clampf(m, 0.0, 0.999)

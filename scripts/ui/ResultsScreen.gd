@@ -33,22 +33,12 @@ func _ready() -> void:
 	var vp := get_viewport_rect().size
 	set_deferred("size", vp)
 	custom_minimum_size = vp
-	var small := _bg_img.duplicate() as Image
-	small.resize(40, 22, Image.INTERPOLATE_BILINEAR)
-	var blur := TextureRect.new()
-	blur.texture = ImageTexture.create_from_image(small)
-	blur.size = vp
-	blur.stretch_mode = TextureRect.STRETCH_SCALE
-	blur.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	blur.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	blur.modulate = Color(0.75, 0.8, 0.95)
-	blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(blur)
-	var s := minf(vp.x / W, vp.y / H)
+	UiKit.add_backdrop(self, _bg_img, vp, W, H)
+	var fit := UiKit.fit(vp, W, H)
 	_root = Control.new()
 	_root.size = Vector2(W, H)
-	_root.scale = Vector2(s, s)
-	_root.position = (vp - Vector2(W, H) * s) * 0.5
+	_root.scale = fit[0]
+	_root.position = fit[1]
 	add_child(_root)
 	var bg := TextureRect.new()
 	bg.texture = BG

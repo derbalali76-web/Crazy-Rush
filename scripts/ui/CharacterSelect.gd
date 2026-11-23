@@ -43,23 +43,13 @@ func _ready() -> void:
 	set_deferred("size", vp)
 	custom_minimum_size = vp
 
-	var small := _bg_img.duplicate() as Image
-	small.resize(40, 22, Image.INTERPOLATE_BILINEAR)
-	var blur := TextureRect.new()
-	blur.texture = ImageTexture.create_from_image(small)
-	blur.size = vp
-	blur.stretch_mode = TextureRect.STRETCH_SCALE
-	blur.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	blur.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	blur.modulate = Color(0.75, 0.8, 0.95)
-	blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(blur)
+	UiKit.add_backdrop(self, _bg_img, vp, W, H)
 
-	var s := minf(vp.x / W, vp.y / H)
+	var fit := UiKit.fit(vp, W, H)
 	_root = Control.new()
 	_root.size = Vector2(W, H)
-	_root.scale = Vector2(s, s)
-	_root.position = (vp - Vector2(W, H) * s) * 0.5
+	_root.scale = fit[0]
+	_root.position = fit[1]
 	add_child(_root)
 	var bg := TextureRect.new()
 	bg.texture = BG
@@ -204,6 +194,16 @@ func _refresh() -> void:
 	_unavailable(Rect2(34, 128, 372, 440), 22, -190.0, true, 0.2)
 	var nme := Characters.character_name(id)
 	UiKit.name_tag(_dyn, _bg_img, Rect2(160, 596, 204, 52), 156, nme, 34 if nme.length() < 12 else 28, Color("2a0a40"))
+	# أيقونة قدرة الشخصية بدل أيقونة فوكسي على الشريط
+	var disc := _box(Rect2(88, 585, 70, 70), Color("0b2a8a"), Color("ffd54a"), 35, 3)
+	var abic := TextureRect.new()
+	abic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	abic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	abic.texture = load("res://assets/characters/%s_ability.png" % id) as Texture2D
+	abic.position = Vector2(8, 8)
+	abic.size = Vector2(54, 54)
+	abic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.add_child(abic)
 	# أشرطة الإحصاءات (قيم مقترحة) فوق أشرطة فوكسي المرسومة
 	var cols: Array = [Color("5cf514"), Color("fae601"), Color("3cc8ff"), Color("fa4efd")]
 	var vals := Characters.stats(id)
