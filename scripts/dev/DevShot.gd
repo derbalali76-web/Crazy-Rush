@@ -30,6 +30,14 @@ func _ready() -> void:
 			add_child(ts)
 			await get_tree().process_frame
 			ts._select(int(args.get("sel", "0")))
+		"fx":
+			var fr := Race.new()
+			add_child(fr)
+			while fr.phase == Race.Phase.LOADING:
+				await get_tree().process_frame
+			fr.hud.show_countdown(args.get("txt", "3"))
+			if args.get("txt", "3") == "finish":
+				fr.hud.show_banner("خط النهاية!")
 		"about":
 			add_child(AboutScreen.new())
 		"help":

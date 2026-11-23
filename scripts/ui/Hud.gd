@@ -353,7 +353,43 @@ func set_coins(n: int) -> void:
 	coin_label.text = "%d" % n
 
 
+const FX := {
+	"3": "res://assets/ui/fx/cd_3.png", "2": "res://assets/ui/fx/cd_2.png", "1": "res://assets/ui/fx/cd_1.png",
+	"انطلق!": "res://assets/ui/fx/cd_go.png", "خط النهاية!": "res://assets/ui/fx/finish.png",
+}
+var _fx: TextureRect
+
+
+func _show_fx(key: String, height: float, hold: float) -> void:
+	if _fx and is_instance_valid(_fx):
+		_fx.queue_free()
+	var vp := get_viewport().get_visible_rect().size
+	var tex: Texture2D = load(FX[key])
+	var sc := height / tex.get_size().y
+	var t := TextureRect.new()
+	t.texture = tex
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	t.size = tex.get_size() * sc
+	t.position = (vp - t.size) * 0.5 + Vector2(0, -vp.y * 0.05)
+	t.pivot_offset = t.size * 0.5
+	t.scale = Vector2.ONE * 1.4
+	root.add_child(t)
+	_fx = t
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(t, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var fade := create_tween()
+	fade.tween_interval(hold)
+	fade.tween_property(t, "modulate:a", 0.0, 0.35)
+	fade.tween_callback(t.queue_free)
+
+
 func show_countdown(text: String, color := Color("ffd23a")) -> void:
+	if FX.has(text):
+		_show_fx(text, get_viewport().get_visible_rect().size.y * 0.6, 0.55)
+		return
 	countdown.text = text
 	countdown.add_theme_color_override("font_color", color)
 	countdown.scale = Vector2.ONE * 1.5
@@ -365,6 +401,9 @@ func show_countdown(text: String, color := Color("ffd23a")) -> void:
 
 
 func show_banner(text: String, color := Color("7dffb0")) -> void:
+	if text == "خط النهاية!":
+		_show_fx(text, get_viewport().get_visible_rect().size.y * 0.42, 1.6)
+		return
 	banner.text = text
 	banner.add_theme_color_override("font_color", color)
 	_banner_t = 0.9
