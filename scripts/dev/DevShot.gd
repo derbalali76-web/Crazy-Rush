@@ -25,6 +25,8 @@ func _ready() -> void:
 			add_child(Menu.new())
 		"store":
 			add_child(StoreScreen.new())
+		"select":
+			add_child(CharacterSelect.new())
 		"race":
 			await _scene_race()
 		"touch":

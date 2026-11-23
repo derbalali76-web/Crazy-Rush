@@ -127,8 +127,8 @@ func _build() -> void:
 		_unavailable(Rect2(12, y, 258, 96), 17, 32.0)
 	_hit(Rect2(12, 598, 258, 96), _open_store)                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
 	# اختيار الشخصية
-	_unavailable(Rect2(478, 570, 90, 100), 10, 0.0, false)
-	_unavailable(Rect2(980, 570, 90, 100), 10, 0.0, false)
+	_hit(Rect2(478, 570, 90, 100), _open_select)                      # سهم: اختيار المتسابق
+	_hit(Rect2(980, 570, 90, 100), _open_select)
 	# --- الأزرار اليمنى
 	_unavailable(Rect2(1148, 340, 510, 115), 26)
 	_unavailable(Rect2(1138, 468, 520, 120), 26)
@@ -143,6 +143,16 @@ func _build() -> void:
 		best.position = Vector2(40, 165)
 		best.size = Vector2(430, 40)
 		_root.add_child(best)
+
+
+func _open_select() -> void:
+	if _settings:
+		return
+	var cs := CharacterSelect.new()
+	cs.closed.connect(func(): _settings = null)
+	cs.start_pressed.connect(func(): play_pressed.emit())
+	_settings = cs
+	add_child(cs)
 
 
 func _open_store() -> void:
