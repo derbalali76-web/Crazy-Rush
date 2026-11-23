@@ -29,6 +29,8 @@ func _ready() -> void:
 			await _touch_test()
 		"measure":
 			await _measure()
+		"props":
+			await _scene_props()
 	for i in range(frames):
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -225,3 +227,41 @@ func _measure() -> void:
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)])
+
+
+## عرض مقرّب لمجسمات الديكور المبنية (للتحقق البصري): صخور بـ LOD0/1/2 وسراخس ونباتات.
+func _scene_props() -> void:
+	_env()
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.position = Vector3(0.0, 1.6, 5.2)
+	cam.look_at(Vector3(0.0, 0.6, 0.0))
+	cam.current = true
+	var floor_mesh := PlaneMesh.new()
+	floor_mesh.size = Vector2(30, 14)
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = Color("5a7a45")
+	var fl := MeshInstance3D.new()
+	fl.mesh = floor_mesh
+	fl.material_override = fm
+	add_child(fl)
+	var xs := -4.2
+	for lod in range(3):
+		var m := PropLib.mesh("rock%d" % (lod + 1), lod)
+		var mi := MeshInstance3D.new()
+		mi.mesh = m
+		mi.material_override = PropLib.material("rock", true)
+		mi.position = Vector3(xs + lod * 1.4, 0.0, 0.0)
+		mi.scale = Vector3.ONE * 0.8
+		add_child(mi)
+	var k := 0
+	for kind in ["fern", "anthurium", "calathea"]:
+		for lod in range(3):
+			var m2 := PropLib.mesh(kind, lod)
+			var mi2 := MeshInstance3D.new()
+			mi2.mesh = m2
+			mi2.material_override = PropLib.material(kind, true)
+			mi2.position = Vector3(-0.2 + lod * 1.0 + k * 3.2 - 1.0, 0.0, 1.6)
+			mi2.scale = Vector3.ONE * 1.4
+			add_child(mi2)
+		k += 1
