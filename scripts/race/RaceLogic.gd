@@ -4,7 +4,7 @@ extends RefCounted
 
 signal racer_hit(victim: int, attacker: int)
 
-const RACERS := 8
+const RACERS := 4  # مبدئيًا 4 (للأداء)؛ نرفعها لاحقًا
 const NAMES := ["ميمو", "زوزو", "كيكو", "لولو", "توتو", "بيبو", "فيفي"]
 const HUES := [2.1, -2.0, 1.0, -0.9, 3.1, 0.45, -1.45]   # دوران صبغة فراء كل منافس (راديان)
 

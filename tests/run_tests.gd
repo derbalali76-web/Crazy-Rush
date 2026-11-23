@@ -123,7 +123,7 @@ func test_track_consistency() -> void:
 func test_race8() -> void:
 	var pr := Runner.new(TrackData.new())
 	var logic := RaceLogic.new(pr, 3, 99)
-	check(logic.runners.size() == 8, "8 racers in the race")
+	check(logic.runners.size() == RaceLogic.RACERS, "all racers in the race")
 	var hit_box := [0]
 	logic.racer_hit.connect(func(_v, _a): hit_box[0] += 1)
 	logic.start()
@@ -139,11 +139,11 @@ func test_race8() -> void:
 		for r in logic.runners:
 			if r.state == Runner.State.FINISHED:
 				done += 1
-		if done == 8:
+		if done == RaceLogic.RACERS:
 			break
-	check(done >= 7, "at least 7/8 racers finish within 300s (finished=%d, t=%.0fs)" % [done, float(t) / 120.0])
+	check(done >= RaceLogic.RACERS - 1, "at least 7/8 racers finish within 300s (finished=%d, t=%.0fs)" % [done, float(t) / 120.0])
 	var order := logic.standings()
-	check(order.size() == 8 and order[0] != order[1], "standings produced; winner idx=%d" % order[0])
+	check(order.size() == RaceLogic.RACERS and order[0] != order[1], "standings produced; winner idx=%d" % order[0])
 	var hits: int = hit_box[0]
 	check(hits > 0, "rival punches land during the race (hits=%d)" % hits)
 	var total_hit := 0
@@ -169,7 +169,7 @@ func test_direct_strike() -> void:
 	logic.runners[0].x = 0.0
 	logic.runners[1].x = 0.3
 	logic.runners[1].s = 101.0
-	for i in range(2, 8):
+	for i in range(2, RaceLogic.RACERS):
 		logic.runners[i].x = 5.0
 		logic.runners[i].s = 300.0 + 10.0 * i
 	logic.runners[0].input.punch = true
@@ -331,10 +331,10 @@ func test_grid_and_punch_fixes() -> void:
 	# --- شبكة بصفّين: لا تداخل
 	var mind := 99.0
 	var rows := {}
-	for i in range(8):
+	for i in range(RaceLogic.RACERS):
 		var a: Runner = logic.runners[i]
 		rows[snappedf(a.s, 0.01)] = rows.get(snappedf(a.s, 0.01), 0) + 1
-		for j in range(i + 1, 8):
+		for j in range(i + 1, RaceLogic.RACERS):
 			var b: Runner = logic.runners[j]
 			mind = minf(mind, Vector2(a.x - b.x, a.s - b.s).length())
 	check(mind >= 2.19, "start grid: min distance between racers %.2f m (>= 2.2)" % mind)
@@ -346,8 +346,8 @@ func test_grid_and_punch_fixes() -> void:
 		mins = minf(mins, r.s)
 	check(absf((maxs - mins) - RaceLogic.ROW_GAP) < 0.001, "row stagger equals ROW_GAP (%.2f m) to the same finish line" % (maxs - mins))
 	var same_row_min := 99.0
-	for i in range(8):
-		for j in range(i + 1, 8):
+	for i in range(RaceLogic.RACERS):
+		for j in range(i + 1, RaceLogic.RACERS):
 			if absf(logic.runners[i].s - logic.runners[j].s) < 0.01:
 				same_row_min = minf(same_row_min, absf(logic.runners[i].x - logic.runners[j].x))
 	check(same_row_min >= 2.99, "same-row lateral spacing %.2f m (>= 3.0)" % same_row_min)
@@ -359,7 +359,7 @@ func test_grid_and_punch_fixes() -> void:
 	for r in lg.runners:
 		r.s = 100.0
 		r.x = -5.0
-	for i in range(2, 8):
+	for i in range(2, RaceLogic.RACERS):
 		lg.runners[i].x = 5.0
 		lg.runners[i].s = 300.0 + 10.0 * i
 	lg.runners[0].x = 0.0
@@ -514,6 +514,6 @@ func test_branch_track() -> void:
 				if a._routes.get(k, false):
 					used_high[k] += 1
 	TrackData.layout = 0
-	check(fin >= 7, "branch: >= 7/8 racers finish (finished=%d, falls=%d, t=%.0fs)" % [fin, falls, float(t) / 120.0])
+	check(fin >= RaceLogic.RACERS - 1, "branch: >= 7/8 racers finish (finished=%d, falls=%d, t=%.0fs)" % [fin, falls, float(t) / 120.0])
 	check(bad_rank == 0, "branch: rank order consistent with distance (violations=%d)" % bad_rank)
 	check(used_high.A > 0 and used_high.A < 7, "AI splits between routes at fork A (high=%d/7)" % used_high.A)
