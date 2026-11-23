@@ -70,6 +70,10 @@ const T_TIMER := preload("res://assets/ui/hud/timer.png")
 const T_LAP := preload("res://assets/ui/hud/lap.png")
 const T_PAUSE := preload("res://assets/ui/hud/pause.png")
 const T_MEDAL := [preload("res://assets/ui/hud/medal1.png"), preload("res://assets/ui/hud/medal2.png"), preload("res://assets/ui/hud/medal3.png")]
+const FACES := {
+	"ليو": "leo", "ريكو": "riko", "زوي": "zoi", "فوكسي": "fox",
+	"باندا": "panda", "ماكس": "max", "توتو": "toto", "لولا": "lola",
+}
 const ROW0 := 162.0
 const ROW_DY := 53.0
 
@@ -82,6 +86,7 @@ var lap_label: Label
 var _rows: Array = []          # لكل مركز: {bg, hi, medal, num, face, name}
 var _order_key := ""
 var _bold: FontVariation
+var _ital: FontVariation
 
 
 func _b(l: Label) -> Label:
@@ -91,6 +96,17 @@ func _b(l: Label) -> Label:
 		_bold.base_font = UiKit.font()
 		_bold.variation_embolden = 0.85
 	l.add_theme_font_override("font", _bold)
+	return l
+
+
+func _num(l: Label) -> Label:
+	## أرقام مائلة وثقيلة كما في المرجع
+	if _ital == null:
+		_ital = FontVariation.new()
+		_ital.base_font = UiKit.font()
+		_ital.variation_embolden = 1.1
+		_ital.variation_transform = Transform2D(Vector2(1, 0), Vector2(-0.2, 1), Vector2.ZERO)
+	l.add_theme_font_override("font", _ital)
 	return l
 
 
@@ -140,12 +156,12 @@ func _build() -> void:
 
 	# --- يسار: الشعار + المركز + لوحة الترتيب
 	_spr(left_root, T_LOGO, Vector2(236, 0))
-	rank_num = _b(UiKit.label("1", 112, Color("ffc928"), 16, HORIZONTAL_ALIGNMENT_RIGHT))
+	rank_num = _num(UiKit.label("1", 112, Color("ffc928"), 16, HORIZONTAL_ALIGNMENT_RIGHT))
 	rank_num.add_theme_color_override("font_outline_color", Color("5a2400"))
 	rank_num.position = Vector2(14, 0)
 	rank_num.size = Vector2(100, 120)
 	left_root.add_child(rank_num)
-	rank_tot = _b(UiKit.label("/4", 62, Color.WHITE, 10, HORIZONTAL_ALIGNMENT_LEFT))
+	rank_tot = _num(UiKit.label("/4", 62, Color.WHITE, 10, HORIZONTAL_ALIGNMENT_LEFT))
 	rank_tot.add_theme_color_override("font_outline_color", Color("3a2a10"))
 	rank_tot.position = Vector2(112, 22)
 	rank_tot.size = Vector2(100, 80)
@@ -161,12 +177,12 @@ func _build() -> void:
 
 	# --- يمين: المؤقت + اللفة + الإيقاف (+ عدّاد العملات)
 	_spr(right_root, T_TIMER, Vector2(1236, 6))
-	time_label = _b(UiKit.label("00:00.00", 44, Color.WHITE, 9))
+	time_label = _num(UiKit.label("00:00.00", 44, Color.WHITE, 9))
 	time_label.position = Vector2(1308, 20)
 	time_label.size = Vector2(206, 56)
 	right_root.add_child(time_label)
 	_spr(right_root, T_LAP, Vector2(1280, 80))
-	lap_label = _b(UiKit.label("1/1", 40, Color.WHITE, 8))
+	lap_label = _num(UiKit.label("1/1", 40, Color.WHITE, 8))
 	lap_label.position = Vector2(1392, 93)
 	lap_label.size = Vector2(90, 50)
 	right_root.add_child(lap_label)
@@ -199,7 +215,7 @@ func _build() -> void:
 			star.append(Vector2(22 + cos(a) * rr, 22 + sin(a) * rr))
 		coin_icon.draw_colored_polygon(star, Color("fff3a0")))
 	right_root.add_child(coin_icon)
-	coin_label = _b(UiKit.label("0", 32, Color("ffd23a"), 7))
+	coin_label = _num(UiKit.label("0", 32, Color("ffd23a"), 7))
 	coin_label.position = Vector2(1336, 154)
 	coin_label.size = Vector2(124, 50)
 	right_root.add_child(coin_label)
@@ -254,7 +270,7 @@ func _make_row(p: int) -> void:
 	row.num.visible = p >= 3
 	left_root.add_child(row.num)
 	var face := TextureRect.new()
-	face.texture = Characters.icon("fox")
+	face.texture = load("res://assets/ui/hud/face_fox.png")
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	face.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -292,6 +308,10 @@ func set_standings(order: Array) -> void:
 		var o: Dictionary = order[p]
 		var me: bool = o.player
 		row.name.text = o.name
+		var fid: String = FACES.get(o.name, "fox")
+		row.face.texture = load("res://assets/ui/hud/face_%s.png" % fid)
+		row.face.size = Vector2(66, 66) if me else Vector2(58, 58)
+		row.face.position = Vector2(62 if me else 66, ROW0 + ROW_DY * float(p) - (36 if me else 29))
 		row.hi.visible = me
 		row.bg.visible = not me
 		row.face.modulate = Color.WHITE if me else Color(1, 1, 1, 0.95)

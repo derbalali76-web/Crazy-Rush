@@ -146,3 +146,13 @@ def logo_mask(s, h):
     flag = np.zeros_like(outline); flag[0:75, 170:240] = True
     return outline | ((white | (h[..., 2] < 70)) & flag)
 keyed('logo', (236, 0, 478, 134), logo_mask, close=17)
+
+
+# ================= وجوه المتسابقين (دوائر) =================
+faces = [('leo', 162), ('riko', 214), ('zoi', 266), ('fox', 319), ('panda', 377), ('max', 429), ('toto', 482), ('lola', 534)]
+for fid, cy in faces:
+    r = 29 if fid != 'fox' else 31
+    cx = 91
+    def fc(d, cx=cx, cy=cy, r=r):
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=255)
+    cut(f'face_{fid}', (cx - 33, cy - 33, cx + 33, cy + 33), fc, grab=False, feather=0.7)
