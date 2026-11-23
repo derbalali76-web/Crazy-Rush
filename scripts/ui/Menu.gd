@@ -123,8 +123,9 @@ func _build() -> void:
 	_unavailable(Rect2(30, 15, 440, 140), 24)
 
 	# --- العمود الأيسر
-	for y in [245.0, 362.0, 480.0, 598.0]:
+	for y in [245.0, 362.0, 480.0]:
 		_unavailable(Rect2(12, y, 258, 96), 17, 32.0)
+	_hit(Rect2(12, 598, 258, 96), _open_store)                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
 	# اختيار الشخصية
 	_unavailable(Rect2(478, 570, 90, 100), 10, 0.0, false)
 	_unavailable(Rect2(980, 570, 90, 100), 10, 0.0, false)
@@ -142,6 +143,15 @@ func _build() -> void:
 		best.position = Vector2(40, 165)
 		best.size = Vector2(430, 40)
 		_root.add_child(best)
+
+
+func _open_store() -> void:
+	if _settings:
+		return
+	var st := StoreScreen.new()
+	st.closed.connect(func(): _settings = null)
+	_settings = st
+	add_child(st)
 
 
 func _open_settings() -> void:

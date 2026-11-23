@@ -23,6 +23,8 @@ func _ready() -> void:
 			await _scene_fox()
 		"menu":
 			add_child(Menu.new())
+		"store":
+			add_child(StoreScreen.new())
 		"race":
 			await _scene_race()
 		"touch":
