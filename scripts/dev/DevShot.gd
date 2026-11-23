@@ -51,6 +51,12 @@ func _ready() -> void:
 			add_child(HelpScreen.new())
 		"account":
 			add_child(AccountScreen.new())
+		"costumes":
+			var cz := CostumesScreen.new()
+			add_child(cz)
+			if args.get("sel", "") != "":
+				await get_tree().process_frame
+				cz._set_focus(int(args.get("sel", "0")))
 		"select":
 			var cs := CharacterSelect.new()
 			add_child(cs)
