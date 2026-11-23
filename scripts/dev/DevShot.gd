@@ -26,7 +26,10 @@ func _ready() -> void:
 		"store":
 			add_child(StoreScreen.new())
 		"track":
-			add_child(TrackSelect.new())
+			var ts := TrackSelect.new()
+			add_child(ts)
+			await get_tree().process_frame
+			ts._select(int(args.get("sel", "0")))
 		"select":
 			add_child(CharacterSelect.new())
 		"race":
