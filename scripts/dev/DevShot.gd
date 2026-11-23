@@ -24,7 +24,10 @@ func _ready() -> void:
 		"menu":
 			add_child(Menu.new())
 		"store":
-			add_child(StoreScreen.new())
+			var sts := StoreScreen.new()
+			add_child(sts)
+			await get_tree().process_frame
+			sts._select(int(args.get("sel", "0")))
 		"track":
 			var ts := TrackSelect.new()
 			add_child(ts)
