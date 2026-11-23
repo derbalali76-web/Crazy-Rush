@@ -394,3 +394,24 @@ func test_grid_and_punch_fixes() -> void:
 	var zmin: float = zs.min()
 	check(zmin >= 0.35, "run arms stay abducted away from torso (min z %.2f rad)" % zmin)
 	f.free()
+
+	# --- تخطيط الحلبة المتعرجة (تجريبي): انحناء آمن، لا يقترب المسار من نفسه، والطول/خط النهاية ثابتان
+	var base := TrackData.new()
+	TrackData.layout = 1
+	var wd := TrackData.new()
+	TrackData.layout = 0
+	check(wd.pos.size() == base.pos.size(), "winding layout keeps same length")
+	check(wd.max_curvature() <= 1.0 / 55.0, "winding layout radius >= 55 m (k=%.4f)" % wd.max_curvature())
+	check(wd.min_self_distance() >= 80.0, "winding layout never nears itself (%.1f m)" % wd.min_self_distance())
+	check(absf(wd.total_turn_deg()) > 45.0, "winding layout really turns (%.0f deg)" % wd.total_turn_deg())
+	check(base.max_curvature() <= 0.0041, "default layout unchanged (k=%.4f)" % base.max_curvature())
+
+	# --- ترتيب عقبات حلبة الغابة: إيقاع قابل للتجاوز والخط الأخير نظيف
+	TrackData.layout = 1
+	var jd := TrackData.new()
+	TrackData.layout = 0
+	var hs := jd.hazard_stats()
+	check(hs.min_gap >= 9.0, "jungle hazards spaced >= 9 m (min %.1f)" % hs.min_gap)
+	check(hs.last <= 910.0, "jungle final straight is hazard-free (last %.0f)" % hs.last)
+	check(hs.max_pit <= 8.0, "jungle pits jumpable (max %.0f m)" % hs.max_pit)
+	check(jd.coins.size() >= 100, "jungle has coins (%d)" % jd.coins.size())

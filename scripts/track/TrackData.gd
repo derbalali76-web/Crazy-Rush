@@ -10,6 +10,9 @@ const LENGTH := 1060.0
 const FINISH_S := 1000.0
 const START_S := 8.0
 
+## تخطيط الخط المركزي: 0 الحالي (شبه مستقيم، مستقر)، 1 «غابة متعرجة» تجريبي (فرع art-premium) بمنعطفات واضحة وتلال.
+static var layout := 0
+
 var count := 0
 var pos := PackedVector3Array()
 var fwd := PackedVector3Array()
@@ -41,11 +44,31 @@ static func _keys_value(keys: Array, s: float) -> float:
 	return keys[keys.size() - 1][1]
 
 
+## يبني مفاتيح الانحناء من قائمة منعطفات [بداية s، طول، زاوية بالدرجات (+ يمين)] بدخول/خروج ناعمين.
+static func _bends_to_keys(bends: Array) -> Array:
+	var keys := [[0.0, 0.0]]
+	for b in bends:
+		var s0: float = b[0]
+		var l: float = b[1]
+		var k := deg_to_rad(float(b[2])) / maxf(l - 25.0, 1.0)
+		keys.append([s0, 0.0])
+		keys.append([s0 + 25.0, k])
+		keys.append([s0 + l - 25.0, k])
+		keys.append([s0 + l, 0.0])
+	keys.append([LENGTH + 20.0, 0.0])
+	return keys
+
+
 func _build_centerline() -> void:
 	var curv := [[0, 0.0], [130, 0.0], [175, 0.0030], [240, 0.0030], [285, -0.0040], [370, -0.0040], [415, 0.0], [530, 0.0],
 		[575, 0.0030], [640, 0.0030], [685, -0.0028], [760, -0.0028], [800, 0.0], [LENGTH + 20, 0.0]]
 	var slope := [[0, 0.0], [210, 0.0], [250, 0.05], [290, 0.05], [330, -0.03], [370, 0.0], [560, 0.0], [600, 0.045],
 		[650, 0.045], [700, -0.04], [740, 0.0], [LENGTH + 20, 0.0]]
+	if layout == 1:
+		# أنصاف أقطار ≈ 60 إلى 70 م (الحافة الداخلية ≥ 54 م): آمنة لعرض 12 م وللكاميرا. مستقيم أخير ≥ 90 م قبل خط النهاية.
+		curv = _bends_to_keys([[130.0, 110.0, 75.0], [270.0, 140.0, -100.0], [450.0, 170.0, 120.0], [680.0, 100.0, -70.0], [800.0, 90.0, 55.0]])
+		slope = [[0, 0.0], [150, 0.0], [190, 0.05], [250, 0.05], [300, -0.045], [345, 0.0], [470, 0.0], [510, 0.04],
+			[570, 0.04], [620, -0.05], [665, 0.0], [820, 0.0], [850, 0.03], [890, 0.03], [930, -0.035], [960, 0.0], [LENGTH + 20, 0.0]]
 	count = int((LENGTH + 40.0) / STEP) + 1
 	pos.resize(count)
 	fwd.resize(count)
@@ -166,6 +189,9 @@ func _pad(s: float, x: float) -> void:
 
 
 func _layout() -> void:
+	if layout == 1:
+		_layout_jungle()
+		return
 	var L := COLX[0]
 	var M := COLX[1]
 	var R := COLX[2]
@@ -241,3 +267,134 @@ func _layout() -> void:
 	_crate(930, R)
 	_pad(950, M)
 	_coin_line(955, 990, M, 0.9, 3.0)
+
+
+## أصغر مسافة أفقية بين نقطتين من المسار تفصل بينهما مسافة قوسية ≥ arc_gap (للتحقق من عدم اقتراب المسار من نفسه).
+func min_self_distance(arc_gap := 120.0) -> float:
+	var best := 1e9
+	var i := 0
+	while i < count:
+		var j := i + int(arc_gap / STEP)
+		while j < count:
+			var d := Vector2(pos[i].x - pos[j].x, pos[i].z - pos[j].z).length()
+			best = minf(best, d)
+			j += 3
+		i += 3
+	return best
+
+
+## أقصى انحناء مطلق (1/م) على الخط المركزي.
+func max_curvature() -> float:
+	var m := 0.0
+	for i in range(1, count - 1):
+		var a := Vector2(fwd[i - 1].x, fwd[i - 1].z).normalized()
+		var b := Vector2(fwd[i + 1].x, fwd[i + 1].z).normalized()
+		m = maxf(m, absf(a.angle_to(b)) / (2.0 * STEP))
+	return m
+
+
+## مجموع تغيّر الاتجاه (درجات، موجب = يمين) بين بداية المسار ونهايته.
+func total_turn_deg() -> float:
+	var a := Vector2(fwd[0].x, fwd[0].z).normalized()
+	var b := Vector2(fwd[count - 2].x, fwd[count - 2].z).normalized()
+	return rad_to_deg(a.angle_to(b))
+
+
+## ترتيب العقبات للحلبة المتعرجة «غابة» (تجريبي): 8 مقاطع بإيقاع مقصود، انظر docs/art/JUNGLE_TRACK_DESIGN.md.
+## القواعد: أقصر فجوة 6–8 م، ≥ 9 م بين أي خطرين متتاليين، ولا خطر بعد s=910 (الخط الأخير نظيف).
+func _layout_jungle() -> void:
+	var L := COLX[0]
+	var M := COLX[1]
+	var R := COLX[2]
+	# 1) بوابة الغابة: سهل
+	_coin_line(40, 70, M)
+	_crate(84, M)
+	_coin_arc(84, M, 7.0, 2.4, 5)
+	_coin_line(98, 116, R)
+	_pad(122, R)
+	# 2) ممر الجذور (منعطف يمين): جذوع تعلّم القفز ثم الانحناء
+	_log(150, -6.0, 2.0)
+	_coin_line(140, 158, R)
+	_log(168, -2.0, 6.0)
+	_coin_arc(168, M, 9.0, 2.5)
+	_vine(190, -6.0, 6.0)
+	_coin_line(182, 198, M, 0.5, 2.0)
+	_crate(212, L)
+	_crate(212, M)
+	_coin_line(206, 224, R)
+	_log(236, -6.0, 6.0)
+	_pad(250, M)
+	# 3) معبد الأطلال (منعطف يسار): مطارق وصناديق بين الأعمدة
+	_hammers(284, 0.0)
+	_coin_line(272, 298, M, 0.9, 3.5)
+	_crate(310, R, 2)
+	_coin_line(302, 322, L)
+	_vine(330, -6.0, 2.0)
+	_coin_line(326, 336, R)
+	# 4) الوادي والشلال: جسر فيه فجوات
+	canyon.append([345.0, 560.0])
+	_pit(360, 366, 7)
+	_coin_arc(363, M, 11.0, 2.6, 7)
+	_hammers(392, 1.2)
+	_coin_line(380, 404, R, 0.9, 3.5)
+	_pit(420, 426, 5)
+	_coin_line(412, 434, M)
+	_crate(446, L)
+	_crate(446, M)
+	_crate(446, R)
+	_pit(468, 474, 3)
+	_coin_line(458, 480, R)
+	_hammers(498, 2.4, 2.4)
+	_vine(522, -6.0, 6.0)
+	_coin_line(516, 528, M, 0.5, 2.0)
+	_pad(540, M)
+	# 5) منعطف الصخور (يمين 120°): سرعة ثم صناديق متناثرة
+	_crate(574, L)
+	_crate(574, R)
+	_crate(590, M)
+	_coin_line(566, 604, M, 0.9, 5.0)
+	_log(612, -6.0, 2.0)
+	_pit(626, 632, 2)
+	_coin_line(618, 640, R)
+	# 6) جسر الحبال (يسار 70°): عقبات يسار/يمين متبادلة
+	_log(656, 1.0, 6.0)
+	_log(672, -6.0, -1.0)
+	_pad(688, M)
+	_pit(700, 708, 7)
+	_coin_arc(704, M, 13.0, 2.8, 8)
+	_vine(722, -2.0, 6.0)
+	_crate(738, M, 2)
+	_coin_line(728, 760, L)
+	# 7) الدرب المضيء (يمين 55°): مطارق وصناديق متراصّة
+	_pad(774, M)
+	_coin_line(780, 812, M, 0.9, 3.0)
+	_log(800, -6.0, -1.0)
+	_log(800, 1.0, 6.0)
+	_hammers(832, 0.6, 2.2)
+	_pad(850, R)
+	_pit(866, 872, 5)
+	_coin_arc(869, M, 9.0, 2.4, 6)
+	_crate(892, L)
+	_crate(892, R)
+	# 8) الخط الأخير: نظيف
+	_pad(930, M)
+	_coin_line(936, 990, M, 0.9, 3.0)
+
+
+## أصغر فجوة بين خطرين متتاليين (حفر/عقبات) بعد ترتيبهما على المحور s، وآخر خطر.
+func hazard_stats() -> Dictionary:
+	var ss: Array = []
+	for p in pits:
+		ss.append(float(p.s0))
+	for o in obstacles:
+		if o.type == "hammer" or o.type == "log" or o.type == "vine" or o.type == "crate":
+			ss.append(float(o.s))
+	ss.sort()
+	var mn := 1e9
+	for i in range(1, ss.size()):
+		if ss[i] - ss[i - 1] > 0.5:
+			mn = minf(mn, ss[i] - ss[i - 1])
+	var maxpit := 0.0
+	for p in pits:
+		maxpit = maxf(maxpit, float(p.s1) - float(p.s0))
+	return {"min_gap": mn, "last": ss[ss.size() - 1], "max_pit": maxpit}

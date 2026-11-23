@@ -14,12 +14,41 @@ static func solid(outline := false, thickness := 0.018) -> ShaderMaterial:
 
 
 static var detail_enabled := true
+## تجريبي (فرع art-premium): خامات PBR Triplanar بدل التفاصيل الإجرائية. الافتراضي معطّل، فلا يتغير شيء.
+static var premium_enabled := false
+const PREMIUM := {
+	1: {"dir": "wooden_rough_planks", "scale": 0.7, "avg": 0.33, "vc": 0.55, "sat": 0.6},
+	2: {"dir": "Moss001", "scale": 0.5, "avg": 0.30, "vc": 0.72, "sat": 0.4},
+	3: {"dir": "Rock030", "scale": 0.45, "avg": 0.20, "vc": 0.62, "sat": 0.5},
+}
+static var use_normal_maps := true
+
+
+static func premium(mode: int, wind := -1.0) -> ShaderMaterial:
+	var key := "prem_%d_%.2f_%s" % [mode, wind, use_normal_maps]
+	if _cache.has(key):
+		return _cache[key]
+	var d: Dictionary = PREMIUM[mode]
+	var m := _make("res://shaders/pbr_stylized_double.gdshader" if wind >= 0.0 else "res://shaders/pbr_stylized.gdshader")
+	m.set_shader_parameter("albedo_tex", load("res://assets/src/textures/%s/albedo.jpg" % d.dir))
+	m.set_shader_parameter("normal_tex", load("res://assets/src/textures/%s/normal.jpg" % d.dir))
+	m.set_shader_parameter("tex_scale", d.scale)
+	m.set_shader_parameter("tex_avg_lum", d.avg)
+	m.set_shader_parameter("vc_mix", d.vc)
+	m.set_shader_parameter("tex_sat", d.sat)
+	m.set_shader_parameter("use_normal", use_normal_maps)
+	if wind >= 0.0:
+		m.set_shader_parameter("wind_amount", wind)
+	_cache[key] = m
+	return m
 
 
 ## خامة مع تفاصيل إجرائية: 1 خشب، 2 عشب/أوراق، 3 صخر. تعود لـ solid عند تعطيل التفاصيل (جودة منخفضة).
 static func textured(mode: int, amount := 0.35, foliage_wind := -1.0) -> ShaderMaterial:
 	if not detail_enabled:
 		return foliage(foliage_wind) if foliage_wind >= 0.0 else solid(false)
+	if premium_enabled and PREMIUM.has(mode):
+		return premium(mode, foliage_wind)
 	var key := "tex_%d_%.2f_%.2f" % [mode, amount, foliage_wind]
 	if _cache.has(key):
 		return _cache[key]

@@ -1,0 +1,32 @@
+{
+  "_note": "قائمة مقترحة، لم يُنزَّل منها شيء بعد. الاختيار من البيانات الوصفية فقط؛ تُراجَع بصريًا بعد التنزيل وقبل الاعتماد. الرخصة CC0 حسب صفحات المصدرين (انظر docs/art/ASSETS_LICENSES.md).",
+  "polyhaven_textures": [
+    {"id": "forest_ground_04", "use": "أرض الغابة الجانبية", "res": "1k"},
+    {"id": "forest_floor", "use": "أرض بديلة", "res": "1k"},
+    {"id": "dirt_floor", "use": "ترابية للمسار/الممرات", "res": "1k"},
+    {"id": "stony_dirt_path", "use": "أطراف المسار والمنصات", "res": "1k"},
+    {"id": "rock_pitted_mossy", "use": "صخور الجروف", "res": "1k"},
+    {"id": "lichen_rock", "use": "صخور بطحالب", "res": "1k"},
+    {"id": "mossy_cobblestone", "use": "أطلال وجسور حجرية", "res": "1k"},
+    {"id": "stone_floor", "use": "بلاط الأطلال", "res": "1k"},
+    {"id": "wooden_rough_planks", "use": "ألواح الجسور الخشبية", "res": "1k"}
+  ],
+  "ambientcg_materials": [
+    {"id": "Bark001", "use": "جذوع الأشجار (أخف ملف)", "res": "1K-JPG"},
+    {"id": "Bark008", "use": "جذوع بديلة", "res": "1K-JPG"},
+    {"id": "Moss001", "use": "طحالب على الحجر/الخشب", "res": "1K-JPG"},
+    {"id": "Rock030", "use": "صخور", "res": "1K-JPG"},
+    {"id": "Rock035", "use": "صخور", "res": "1K-JPG"},
+    {"id": "Ground037", "use": "أرض بطحالب", "res": "1K-JPG"},
+    {"id": "Grass004", "use": "عشب", "res": "1K-JPG"},
+    {"id": "ScatteredLeaves009", "use": "أوراق متساقطة", "res": "1K-JPG"},
+    {"id": "Bricks105", "use": "أطلال حجرية (أخف ملف)", "res": "1K-JPG"},
+    {"id": "WoodSiding005", "use": "خشب الأكواخ/الأعمدة", "res": "1K-JPG"}
+  ],
+  "polyhaven_models_candidates_after_decimation": [
+    {"id": "fern_02", "tris": 6232, "use": "مرجع/مصدر لأوراق السرخس"},
+    {"id": "anthurium_botany_01", "tris": 4134, "use": "نبات أوراق عريضة"},
+    {"id": "calathea_orbifolia_01", "tris": 16688, "use": "نبات أوراق عريضة"},
+    {"id": "rock_moss_set_01", "tris": 63127, "use": "مصدر خبز (bake) لصخور مغطاة بطحالب"}
+  ]
+}

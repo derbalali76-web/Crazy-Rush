@@ -1,0 +1,29 @@
+name: Asset catalog (metadata only)
+
+# يجلب بيانات وصفية فقط من واجهات Poly Haven وambientCG العامة لاختيار الأصول.
+# لا ينزّل أي أصل، ولا يستخدم أي سر أو خدمة مدفوعة. يكتب النتيجة في الفرع art-premium.
+on:
+  workflow_dispatch:
+  push:
+    branches: [art-premium]
+    paths: [tools/assets/catalog.py, .github/workflows/asset-catalog.yml]
+
+permissions:
+  contents: write   # لكتابة ملف الفهرس في هذا الفرع فقط عبر GITHUB_TOKEN الافتراضي
+
+jobs:
+  catalog:
+    if: github.ref == 'refs/heads/art-premium'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build catalog
+        run: python3 tools/assets/catalog.py docs/art/catalog
+      - name: Commit catalog
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/art/catalog
+          git diff --cached --quiet || git commit -m "chore: asset catalog (metadata only)"
+          git push

@@ -77,10 +77,12 @@ func _ready() -> void:
 
 	# --- مفاتيح
 	_add_toggle(p, "اهتزاز اللمس", "vibration", y, pw)
-	y += 62
+	y += 56
 	_add_toggle(p, "عرض عدّاد الأداء (FPS)", "show_fps", y, pw)
-	y += 62
+	y += 56
 	_add_toggle(p, "تخفيف الرسومات تلقائيًا عند الثقل", "auto_quality", y, pw)
+	y += 56
+	_add_toggle(p, "حلبة الغابة التجريبية (بريميوم)", "premium_track", y, pw)
 
 	var reset := UiKit.button("استعادة الافتراضي", UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, Vector2(300, 62), 26)
 	reset.position = Vector2(40, ph - 88)

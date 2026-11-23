@@ -126,6 +126,8 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 	_mmi(TrackProtos.get_mesh("lantern"), lanterns, [], Toon.solid(false), node, false)
 	_build_ropes(s0, s1, node)
 	_build_scenery(s0, s1, node, ci)
+	if Toon.premium_enabled:
+		_build_premium_props(s0, s1, node)
 	_build_obstacles(s0, s1, node)
 
 
@@ -190,22 +192,22 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 			if _rng.randf() < 0.30 * d:
 				var xp: float = sd * _rng.randf_range(10.5, 26.0)
 				(palms_a if _rng.randf() < 0.5 else palms_b).append(_place(s + _rng.randf_range(0, 5), xp, -1.0, _rng.randf() * TAU, _rng.randf_range(0.85, 1.35)))
-			if _rng.randf() < 0.55 * d:
+			if _rng.randf() < 0.55 * d and not Toon.premium_enabled:
 				bushes.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(7.8, 16.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.7, 1.4)))
 			if _rng.randf() < 0.14 * d:
 				mush.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(8.0, 13.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.6)))
-			if _rng.randf() < 0.14 * d:
+			if _rng.randf() < 0.14 * d and not Toon.premium_enabled:
 				(rocks_a if _rng.randf() < 0.5 else rocks_b).append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(8.0, 20.0), -1.1, _rng.randf() * TAU, _rng.randf_range(0.8, 1.8)))
 			if d >= 0.5:
 				if _rng.randf() < 0.20 * d:
 					trees_r.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(11.0, 30.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.5)))
 				if _rng.randf() < 0.16 * d:
 					trees_c.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(13.0, 34.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.6)))
-				if _rng.randf() < 0.05 * d:
+				if _rng.randf() < 0.05 * d and not Toon.premium_enabled:
 					boulders.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(15.0, 30.0), -1.2, _rng.randf() * TAU, _rng.randf_range(0.7, 1.4)))
 				for k in range(2):
 					flowers_b.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(7.8, 13.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.3)))
-			for k in range(int(5.0 * d) + 1):
+			for k in range(0 if Toon.premium_enabled else int(5.0 * d) + 1):
 				tufts.append(_place(s + _rng.randf_range(0, 6), sd * _rng.randf_range(7.6, 20.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.6)))
 			if _rng.randf() < 0.9 * d:
 				for k in range(3):
@@ -224,6 +226,58 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 	_mmi(TrackProtos.get_mesh("tuft"), tufts, [], Toon.textured(2, 0.42), node, false)
 	_mmi(TrackProtos.get_mesh("flower_b"), flowers_b, [], Toon.solid(false), node, false)
 	_mmi(TrackProtos.get_mesh("boulder"), boulders, [], Toon.textured(3, 0.55), node, true)
+
+
+## ديكور «بريميوم»: صخور ونباتات حقيقية (PropLib) بمجموعات، مع LOD بالمسافة عبر visibility_range لكل شريحة 30 م.
+## المسار وما حوله (إزاحة < 7.8 م) خالٍ دائمًا.
+const LOD_RANGES := [[0.0, 45.0], [45.0, 95.0], [95.0, 400.0]]
+
+
+func _build_premium_props(s0: float, s1: float, node: Node3D) -> void:
+	if _in_canyon(0.5 * (s0 + s1)):
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9100 + int(s0)
+	var slice_len := 30.0
+	var kinds := ["rock1", "rock2", "rock3", "fern", "anthurium", "calathea"]
+	var s_a := s0
+	while s_a < s1:
+		var buckets := {}
+		for k in kinds:
+			buckets[k] = []
+		var n_rock := int(round(5.0 * density))
+		for i in range(n_rock):
+			var sd := -1.0 if rng.randf() < 0.5 else 1.0
+			var k: String = "rock%d" % (1 + rng.randi() % 3)
+			buckets[k].append(_place(s_a + rng.randf() * slice_len, sd * rng.randf_range(8.2, 22.0), -1.2, rng.randf() * TAU, rng.randf_range(0.9, 2.1)))
+		var n_cl := int(round(7.0 * density))
+		for c in range(n_cl):
+			var sd2 := -1.0 if rng.randf() < 0.5 else 1.0
+			var cs := s_a + rng.randf() * slice_len
+			var cx := sd2 * rng.randf_range(8.2, 17.0)
+			var kind: String = ["fern", "anthurium", "calathea"][rng.randi() % 3]
+			for j in range(3 + rng.randi() % 3):
+				var xx := cx + rng.randf_range(-1.6, 1.6)
+				if absf(xx) < 7.6:
+					continue
+				buckets[kind].append(_place(cs + rng.randf_range(-1.8, 1.8), xx, -1.0, rng.randf() * TAU, rng.randf_range(1.6, 2.8)))
+		for k in kinds:
+			var xfs: Array = buckets[k]
+			if xfs.is_empty():
+				continue
+			var mat_kind: String = "rock" if k.begins_with("rock") else k
+			var mat := PropLib.material(mat_kind, Toon.use_normal_maps)
+			for lod in range(3):
+				var m := PropLib.mesh(k, lod)
+				if m == null:
+					continue
+				var before := node.get_child_count()
+				_mmi(m, xfs, [], mat, node, lod == 0 and mat_kind == "rock")
+				var inst := node.get_child(node.get_child_count() - 1)
+				if node.get_child_count() > before and inst is MultiMeshInstance3D:
+					inst.visibility_range_begin = LOD_RANGES[lod][0]
+					inst.visibility_range_end = LOD_RANGES[lod][1]
+		s_a += slice_len
 
 
 func _build_ground_strip(s0: float, s1: float, node: Node3D) -> void:
@@ -427,6 +481,38 @@ func break_crate(o: Dictionary) -> Array:
 
 
 # ------------------------------------------------------------------ عناصر بعيدة
+
+## أقصر مسافة أفقية بين نقطة في العالم ومحور المسار (للتأكد أن العناصر البعيدة لا تقع فوق منعطفات الحلبة المتعرجة).
+func _dist_to_track(w: Vector3) -> float:
+	var best := 1e9
+	for i in range(0, data.pos.size(), 4):
+		var d := Vector2(data.pos[i].x - w.x, data.pos[i].z - w.z).length()
+		if d < best:
+			best = d
+	return best
+
+
+## يجرّب جانبي المسار ومسافتين إضافيتين حتى يجد موضعًا بعيدًا بما يكفي؛ يعيد null إن لم يجد. في التخطيط 0 يعيد الموضع الأصلي كما هو.
+func _far_place(s: float, sd: float, lat: float, y: float, yaw: float, scl: float, clearance: float) -> Variant:
+	var xf := _place(s, sd * lat, y, yaw, scl)
+	if TrackData.layout == 0:
+		return xf
+	for mult in [1.0, -1.0, 1.5, -1.5, 2.0, -2.0]:
+		xf = _place(s, sd * lat * mult, y, yaw, scl)
+		if _dist_to_track(xf.origin) >= clearance:
+			return xf
+	return null
+
+## مادة التلال البعيدة: في بريميوم تلال غابة خضراء داكنة يخففها الضباب بدل الجبال البيضاء الناعمة.
+func _far_mat() -> Material:
+	if not Toon.premium_enabled:
+		return Toon.solid(false)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("2f5a3a")
+	m.roughness = 1.0
+	return m
+
+
 func _build_far() -> void:
 	far_nodes = Node3D.new()
 	far_nodes.name = "Far"
@@ -434,17 +520,22 @@ func _build_far() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
 	var castle_s := [120.0, 330.0, 600.0, 860.0]
-	for k in range(castle_s.size()):
+	for k in range(0 if Toon.premium_enabled else castle_s.size()):
 		var sd := -1.0 if k % 2 == 0 else 1.0
 		var s: float = castle_s[k]
-		var xf := _place(s, sd * rng.randf_range(95.0, 125.0), rng.randf_range(34.0, 48.0), 0.0, 1.35)
-		_mesh_node("castle", xf, far_nodes, Toon.solid(false), false)
+		var xf: Variant = _far_place(s, sd, rng.randf_range(95.0, 125.0), rng.randf_range(34.0, 48.0), 0.0, 1.35, 70.0)
+		if xf != null:
+			_mesh_node("castle", xf, far_nodes, Toon.solid(false), false)
 	for k in range(9):
 		var s2 := float(k) * 125.0 + 30.0
 		var sd2 := -1.0 if k % 2 == 0 else 1.0
-		_mesh_node("mountain", _place(s2, sd2 * rng.randf_range(210.0, 280.0), -40.0, rng.randf() * TAU, rng.randf_range(1.2, 1.9)), far_nodes, Toon.solid(false), false)
-		_mesh_node("mountain", _place(s2 + 60.0, -sd2 * rng.randf_range(230.0, 300.0), -45.0, rng.randf() * TAU, rng.randf_range(1.2, 1.8)), far_nodes, Toon.solid(false), false)
-	for k in range(16):
+		var m1: Variant = _far_place(s2, sd2, rng.randf_range(210.0, 280.0), -40.0, rng.randf() * TAU, rng.randf_range(1.2, 1.9), 170.0)
+		if m1 != null:
+			_mesh_node("mountain", m1, far_nodes, _far_mat(), false)
+		var m2: Variant = _far_place(s2 + 60.0, -sd2, rng.randf_range(230.0, 300.0), -45.0, rng.randf() * TAU, rng.randf_range(1.2, 1.8), 170.0)
+		if m2 != null:
+			_mesh_node("mountain", m2, far_nodes, _far_mat(), false)
+	for k in range(4 if Toon.premium_enabled else 16):
 		var s3 := rng.randf_range(0.0, TrackData.LENGTH)
 		var sd3 := -1.0 if k % 2 == 0 else 1.0
 		_mesh_node("cloud", _place(s3, sd3 * rng.randf_range(30.0, 140.0), rng.randf_range(45.0, 90.0), rng.randf() * TAU, rng.randf_range(0.8, 1.8)), far_nodes, Toon.solid(false), false)
