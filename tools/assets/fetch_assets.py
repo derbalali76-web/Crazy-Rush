@@ -75,8 +75,10 @@ for t in MAN["ambientcg_materials"]:
         print("FAIL acg", aid, e)
 
 # ---- مجسمات Poly Haven المرشحة (gltf 1k) ----
-for m in MAN["polyhaven_models_candidates_after_decimation"]:
+for m in MAN["polyhaven_models_candidates_after_decimation"] + MAN.get("polyhaven_models_trees_props", []):
     aid = m["id"]
+    if (OUT / "models" / aid).exists():
+        print("skip existing model", aid); continue
     try:
         f = json.loads(get(f"https://api.polyhaven.com/files/{aid}", False))
         g = f["gltf"]["1k"]["gltf"]; d = OUT / "models" / aid; d.mkdir(parents=True, exist_ok=True)
@@ -87,5 +89,8 @@ for m in MAN["polyhaven_models_candidates_after_decimation"]:
     except Exception as e:
         print("FAIL ph model", aid, e)
 
+_old = json.load(open("docs/art/assets_lock.json"))["files"] if pathlib.Path("docs/art/assets_lock.json").exists() else []
+_seen = {(x.get("url"), x.get("sha256")) for x in log}
+log = log + [x for x in _old if (x.get("url"), x.get("sha256")) not in _seen and x.get("url") not in {y.get("url") for y in log}]
 json.dump({"fetched_utc": datetime.datetime.utcnow().isoformat(), "files": log}, open("docs/art/assets_lock.json", "w"), indent=1)
 print("files logged:", len(log))
