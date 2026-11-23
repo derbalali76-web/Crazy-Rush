@@ -31,6 +31,8 @@ func _ready() -> void:
 			await _measure()
 		"props":
 			await _scene_props()
+		"settings":
+			add_child(SettingsPanel.new())
 	for i in range(frames):
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw

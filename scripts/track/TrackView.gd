@@ -503,6 +503,16 @@ func _far_place(s: float, sd: float, lat: float, y: float, yaw: float, scl: floa
 			return xf
 	return null
 
+## مادة التلال البعيدة: في بريميوم تلال غابة خضراء داكنة يخففها الضباب بدل الجبال البيضاء الناعمة.
+func _far_mat() -> Material:
+	if not Toon.premium_enabled:
+		return Toon.solid(false)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("2f5a3a")
+	m.roughness = 1.0
+	return m
+
+
 func _build_far() -> void:
 	far_nodes = Node3D.new()
 	far_nodes.name = "Far"
@@ -510,7 +520,7 @@ func _build_far() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
 	var castle_s := [120.0, 330.0, 600.0, 860.0]
-	for k in range(castle_s.size()):
+	for k in range(0 if Toon.premium_enabled else castle_s.size()):
 		var sd := -1.0 if k % 2 == 0 else 1.0
 		var s: float = castle_s[k]
 		var xf: Variant = _far_place(s, sd, rng.randf_range(95.0, 125.0), rng.randf_range(34.0, 48.0), 0.0, 1.35, 70.0)
@@ -521,11 +531,11 @@ func _build_far() -> void:
 		var sd2 := -1.0 if k % 2 == 0 else 1.0
 		var m1: Variant = _far_place(s2, sd2, rng.randf_range(210.0, 280.0), -40.0, rng.randf() * TAU, rng.randf_range(1.2, 1.9), 170.0)
 		if m1 != null:
-			_mesh_node("mountain", m1, far_nodes, Toon.solid(false), false)
+			_mesh_node("mountain", m1, far_nodes, _far_mat(), false)
 		var m2: Variant = _far_place(s2 + 60.0, -sd2, rng.randf_range(230.0, 300.0), -45.0, rng.randf() * TAU, rng.randf_range(1.2, 1.8), 170.0)
 		if m2 != null:
-			_mesh_node("mountain", m2, far_nodes, Toon.solid(false), false)
-	for k in range(16):
+			_mesh_node("mountain", m2, far_nodes, _far_mat(), false)
+	for k in range(4 if Toon.premium_enabled else 16):
 		var s3 := rng.randf_range(0.0, TrackData.LENGTH)
 		var sd3 := -1.0 if k % 2 == 0 else 1.0
 		_mesh_node("cloud", _place(s3, sd3 * rng.randf_range(30.0, 140.0), rng.randf_range(45.0, 90.0), rng.randf() * TAU, rng.randf_range(0.8, 1.8)), far_nodes, Toon.solid(false), false)

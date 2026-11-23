@@ -125,6 +125,8 @@ func _setup_environment() -> void:
 	env.fog_light_color = Color("c4e0ff")
 	env.fog_density = 0.0042
 	env.fog_sky_affect = 0.35
+	if Toon.premium_enabled:
+		_apply_jungle_look(pm)
 	_sky_node = WorldEnvironment.new()
 	_sky_node.environment = env
 	add_child(_sky_node)
@@ -139,6 +141,10 @@ func _setup_environment() -> void:
 	sun.directional_shadow_blend_splits = true
 	sun.shadow_blur = 1.6
 	sun.shadow_normal_bias = 1.2
+	if Toon.premium_enabled:
+		sun.rotation_degrees = Vector3(-38, 28, 0)
+		sun.light_color = Color("ffe6c4")
+		sun.light_energy = 0.70
 	add_child(sun)
 	cam = Camera3D.new()
 	cam.fov = 56.0
@@ -147,6 +153,25 @@ func _setup_environment() -> void:
 	add_child(cam)
 	cam.make_current()
 	Settings.apply_to_viewport(get_viewport(), sun)
+
+
+## مظهر الغابة الواقعي (وضع premium): سماء أقل تشبعًا، ضباب أخضر مزرق للعمق، إضاءة دافئة، تحويل ألوان سينمائي.
+func _apply_jungle_look(pm: ProceduralSkyMaterial) -> void:
+	pm.sky_top_color = Color("3d6fb0")
+	pm.sky_horizon_color = Color("b9cfc2")
+	pm.ground_horizon_color = Color("9db8a6")
+	pm.ground_bottom_color = Color("52705c")
+	pm.sky_energy_multiplier = 0.95
+	env.ambient_light_color = Color("8fb08f")
+	env.ambient_light_energy = 0.40
+	env.fog_light_color = Color("a9c3b0")
+	env.fog_density = 0.0040
+	env.fog_sky_affect = 0.40
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 0.85
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.12
+	env.adjustment_saturation = 1.08
 
 
 func _build_player() -> void:
