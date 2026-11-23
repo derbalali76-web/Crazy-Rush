@@ -125,3 +125,14 @@ static func name_tag(parent: Control, bg_img: Image, r: Rect2, sample_x: int, te
 	l.clip_text = true
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(l)
+
+
+## رقم عدّاد العملات: خط ثقيل أبيض بحدّ داكن ليناسب أرقام الواجهة المرسومة.
+static func num_label(text: String, size := 36) -> Label:
+	var fv := FontVariation.new()
+	fv.base_font = font()
+	fv.variation_embolden = 1.3
+	var l := label(text, size, Color.WHITE, 8)
+	l.add_theme_font_override("font", fv)
+	l.add_theme_color_override("font_outline_color", Color("0b1450"))
+	return l

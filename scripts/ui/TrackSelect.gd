@@ -186,7 +186,7 @@ func _build() -> void:
 	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_add(pt)
-	var coins := UiKit.label(str(Settings.total_coins), 32, Color.WHITE, 4)
+	var coins := UiKit.num_label(str(Settings.total_coins), 32)
 	coins.position = Vector2(1194, 26)
 	coins.size = Vector2(100, 42)
 	coins.clip_text = true

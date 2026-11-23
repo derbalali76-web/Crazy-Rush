@@ -150,7 +150,7 @@ func _build() -> void:
 	_hit(Rect2(845, 118, 440, 110), func(): _select(1))
 	# --- عدّاد العملات الحقيقي
 	_patch2(886, 1040, 34, 72, 882, 1044)
-	var cl := UiKit.label(str(Settings.total_coins), 36, Color.WHITE, 6)
+	var cl := UiKit.num_label(str(Settings.total_coins), 36)
 	var fv := FontVariation.new()
 	fv.base_font = UiKit.font()
 	fv.variation_embolden = 1.0
