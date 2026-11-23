@@ -201,11 +201,9 @@ func _refresh() -> void:
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dyn.add_child(tr)
-	_unavailable(Rect2(34, 128, 372, 440), 22, 150.0, true, 0.35)
-	var rib := _box(Rect2(90, 582, 310, 78), Color(0.35, 0.1, 0.55, 1), Color("f3b63a"), 30, 4)
-	var nm := UiKit.label(Characters.character_name(id), 30, Color.WHITE, 4)
-	nm.size = rib.size
-	rib.add_child(nm)
+	_unavailable(Rect2(34, 128, 372, 440), 22, -190.0, true, 0.2)
+	var nme := Characters.character_name(id)
+	UiKit.name_tag(_dyn, _bg_img, Rect2(160, 596, 204, 52), 156, nme, 34 if nme.length() < 12 else 28, Color("2a0a40"))
 	_unavailable(Rect2(26, 664, 392, 240), 22, 0.0, true, 0.82)
 	# إطار تمييز على البطاقة المحدَّدة
 	_box(CARDS[_focus].r, Color(0, 0, 0, 0), Color("ffd54a"), 26, 5)

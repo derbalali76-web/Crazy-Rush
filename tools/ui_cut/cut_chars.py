@@ -102,7 +102,7 @@ if __name__ == '__main__':
         if only and cid not in only:
             continue
         im = cv2.imread(U + fn)
-        a = cut_old(im) if cid == 'bombo' else cut(im)
+        a = cut(im)
         rgba = np.dstack([cv2.cvtColor(im, cv2.COLOR_BGR2RGB), a])
         pil = Image.fromarray(rgba)
         bbox = pil.getchannel('A').point(lambda v: 255 if v > 20 else 0).getbbox()

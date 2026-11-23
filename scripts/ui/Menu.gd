@@ -173,7 +173,7 @@ func _refresh_char() -> void:
 		return
 	var keep := _root
 	_root = _dyn
-	_box(Rect2(590, 172, 490, 580), Color(0.05, 0.08, 0.26, 0.9), Color("f3b63a"), 30, 4)
+	_box(Rect2(634, 172, 446, 580), Color(0.05, 0.08, 0.26, 0.9), Color("f3b63a"), 30, 4)
 	var tr := TextureRect.new()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -183,15 +183,18 @@ func _refresh_char() -> void:
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dyn.add_child(tr)
-	_unavailable(Rect2(640, 175, 400, 520), 24, 190.0)
-	var rb := _box(Rect2(980, 575, 90, 90), Color(0.15, 0.12, 0.05, 0.85), Color("f3b63a"), 24, 3)
-	var gl := UiKit.label("›", 70, Color("ffd54a"), 4)
-	gl.size = rb.size
-	rb.add_child(gl)
-	var rib := _box(Rect2(290, 288, 340, 90), Color(0.35, 0.1, 0.55, 1), Color("f3b63a"), 32, 4)
-	var nm := UiKit.label(Characters.character_name(id), 34, Color.WHITE, 4)
-	nm.size = rib.size
-	rib.add_child(nm)
+	_unavailable(Rect2(640, 175, 400, 520), 24, -200.0)
+	for w in [[40.0, Color("7a3a00")], [24.0, Color("ffb300")]]:
+		var ln := Line2D.new()
+		ln.points = PackedVector2Array([Vector2(1000, 588), Vector2(1042, 628), Vector2(1000, 668)])
+		ln.width = w[0]
+		ln.default_color = w[1]
+		ln.joint_mode = Line2D.LINE_JOINT_ROUND
+		ln.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		ln.end_cap_mode = Line2D.LINE_CAP_ROUND
+		_dyn.add_child(ln)
+	var nme := Characters.character_name(id)
+	UiKit.name_tag(_dyn, _bg_img, Rect2(342, 302, 236, 48), 338, nme, 40 if nme.length() < 12 else 32, Color("5a1a00"))
 	_unavailable(Rect2(295, 395, 310, 170), 20)
 	_unavailable(Rect2(1100, 775, 555, 145), 28)
 	_root = keep

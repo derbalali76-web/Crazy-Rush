@@ -93,3 +93,35 @@ static func center_in(parent: Control, child: Control) -> void:
 	parent.add_child(child)
 	child.set_anchors_preset(Control.PRESET_CENTER)
 	child.position = (parent.size - child.size) * 0.5
+
+
+## اسم شخصية بنمط اسم «فوكسي»: يُغطّى النص المرسوم بشريط من لون الشريط نفسه ثم يُكتب الاسم بخط أبيض ثقيل بحدّ داكن.
+static func name_tag(parent: Control, bg_img: Image, r: Rect2, sample_x: int, text: String, size: int, outline: Color) -> void:
+	var strip := Image.create(1, int(r.size.y), false, Image.FORMAT_RGBA8)
+	for i in range(int(r.size.y)):
+		strip.set_pixel(0, i, bg_img.get_pixel(sample_x, int(r.position.y) + i))
+	var pt := TextureRect.new()
+	pt.texture = ImageTexture.create_from_image(strip)
+	pt.position = r.position
+	pt.size = r.size
+	pt.stretch_mode = TextureRect.STRETCH_SCALE
+	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(pt)
+	var fv := FontVariation.new()
+	fv.base_font = font()
+	fv.variation_embolden = 1.1
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_override("font", fv)
+	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_color_override("font_color", Color.WHITE)
+	l.add_theme_color_override("font_outline_color", outline)
+	l.add_theme_constant_override("outline_size", 9)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.position = r.position
+	l.size = r.size
+	l.clip_text = true
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(l)
