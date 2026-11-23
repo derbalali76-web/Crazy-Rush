@@ -33,6 +33,21 @@ const ABILITY := {
 	"zain": ["التحول البرقي", "تحول برقي قصير يتجاوز عوائق محددة"],
 	"arthur": ["العاصفة الجليدية", "عاصفة جليدية تُبطئ المنافسين القريبين"],
 }
+## إحصاءات مقترحة [السرعة، التسارع، التحكم، القوة] من 6 (فوكسي كما في المرجع)
+const STATS := {
+	"fox": [5, 5, 5, 5],
+	"bombo": [5, 3, 4, 6],
+	"ziko": [5, 6, 5, 3],
+	"robo": [5, 4, 4, 5],
+	"lulu": [4, 4, 6, 5],
+	"dino": [4, 3, 5, 6],
+	"bibo": [5, 5, 5, 4],
+	"batboot": [6, 4, 5, 4],
+	"kung": [4, 3, 6, 6],
+	"sosu": [5, 6, 4, 6],
+	"zain": [6, 6, 4, 5],
+	"arthur": [5, 3, 5, 6],
+}
 const DEFAULT := "fox"
 ## ترتيب المنافسين الآليين (يطابق RaceLogic.NAMES)
 const ROSTER := ["bombo", "ziko", "robo", "lulu", "dino", "bibo", "batboot"]
@@ -72,3 +87,7 @@ static func id_from_short(short_name_: String) -> String:
 
 static func ability(id: String) -> Array:
 	return ABILITY.get(id, ABILITY[DEFAULT])
+
+
+static func stats(id: String) -> Array:
+	return STATS.get(id, STATS[DEFAULT])

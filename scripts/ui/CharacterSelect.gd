@@ -204,7 +204,19 @@ func _refresh() -> void:
 	_unavailable(Rect2(34, 128, 372, 440), 22, -190.0, true, 0.2)
 	var nme := Characters.character_name(id)
 	UiKit.name_tag(_dyn, _bg_img, Rect2(160, 596, 204, 52), 156, nme, 34 if nme.length() < 12 else 28, Color("2a0a40"))
-	_unavailable(Rect2(26, 664, 392, 240), 22, 0.0, true, 0.82)
+	# أشرطة الإحصاءات (قيم مقترحة) فوق أشرطة فوكسي المرسومة
+	var cols: Array = [Color("5cf514"), Color("fae601"), Color("3cc8ff"), Color("fa4efd")]
+	var vals := Characters.stats(id)
+	for row in range(4):
+		var cy: float = [700.0, 748.0, 798.0, 851.0][row]
+		_box(Rect2(52, cy - 22, 168, 44), Color(0.02, 0.05, 0.3, 1), Color(0, 0, 0, 0), 14, 0)
+		for k in range(6):
+			var x0 := 56.0 + k * 26.5
+			var on: bool = k < int(vals[row])
+			var poly := Polygon2D.new()
+			poly.polygon = PackedVector2Array([Vector2(x0 + 7, cy - 13), Vector2(x0 + 27, cy - 13), Vector2(x0 + 20, cy + 13), Vector2(x0, cy + 13)])
+			poly.color = cols[row] if on else Color(0.25, 0.28, 0.4, 0.9)
+			_dyn.add_child(poly)
 	# إطار تمييز على البطاقة المحدَّدة
 	_box(CARDS[_focus].r, Color(0, 0, 0, 0), Color("ffd54a"), 26, 5)
 	if not playable:
