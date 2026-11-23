@@ -1,6 +1,6 @@
 """أيقونة اللعبة من الملصق الأصلي icon_original_1254.png بأعلى جودة:
 - icon_512 / main_192: الملصق كما هو (Lanczos + حدّة خفيفة)
-- adaptive_fg_432: الملصق بنسبة 64% في الوسط (يبقى كاملًا داخل القناع الدائري/المدوّر للهاتف)
+- adaptive_fg_432: الملصق بنسبة 68% في الوسط (يبقى كاملًا داخل القناع الدائري/المدوّر للهاتف)
 - adaptive_bg_432: نفس الملصق مكبّرًا ومموّهًا ليملأ ما حول المركز."""
 from PIL import Image, ImageFilter, ImageEnhance
 
@@ -21,7 +21,7 @@ bg = ImageEnhance.Brightness(bg).enhance(0.85)
 bg.save('assets/icon/adaptive_bg_432.png', optimize=True)
 
 fg = Image.new('RGBA', (n, n), (0, 0, 0, 0))
-k = int(n * 0.64)
+k = int(n * 0.68)
 art = sharp(src.resize((k, k), Image.LANCZOS)).convert('RGBA')
 fg.alpha_composite(art, ((n - k) // 2, (n - k) // 2))
 fg.save('assets/icon/adaptive_fg_432.png', optimize=True)
