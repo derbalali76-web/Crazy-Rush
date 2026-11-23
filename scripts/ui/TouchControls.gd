@@ -172,21 +172,20 @@ func _draw() -> void:
 
 
 func _draw_button(name: String, d: Dictionary) -> void:
+	## نمط «زجاج شفاف»: خلفية داكنة نصف شفافة، حلقة رفيعة بلون التمييز، أيقونة بيضاء نظيفة، والانتظار حلقة تقدّم لا طبقة معتمة.
 	var c: Vector2 = d.c
 	var r: float = d.r
 	var down := int(_pressed.get(name, 0)) > 0
 	if down:
-		r *= 0.93
-	var top := Color("4aa3ff")
-	var bot := Color("1f4fd0")
-	var glow := Color("7ab8ff")
+		r *= 0.94
+	var accent := Color("5ab0ff")
 	match name:
 		"slide":
-			top = Color("5a6aa8"); bot = Color("2a3470")
+			accent = Color("8a9ad8")
 		"punch":
-			top = Color("ff7a5c"); bot = Color("a3101c"); glow = Color("ffb08a")
+			accent = Color("ff6b5e")
 		"special":
-			top = Color("c58bff"); bot = Color("4a1fb8"); glow = Color("e2c4ff")
+			accent = Color("b98cff")
 	var cd := 0.0
 	var usable := true
 	if name == "punch":
@@ -194,51 +193,38 @@ func _draw_button(name: String, d: Dictionary) -> void:
 	elif name == "special":
 		cd = special_cd
 		usable = special_enabled
-	var alpha := 1.0 if usable else 0.45
+	var alpha := 1.0 if usable else 0.5
 	var ready := usable and cd <= 0.0
 	var tm := float(Time.get_ticks_msec()) / 1000.0
-	# ظل سفلي ناعم
-	draw_circle(c + Vector2(0, 9), r + 5.0, Color(0, 0, 0, 0.16))
-	draw_circle(c + Vector2(0, 6), r + 3.0, Color(0, 0, 0, 0.30))
-	# هالة نبض عندما يكون الزر جاهزًا
-	if ready and not down:
-		var pulse := 0.5 + 0.5 * sin(tm * 3.2)
-		draw_arc(c, r + 7.0 + pulse * 3.0, 0.0, TAU, 48, Color(glow.r, glow.g, glow.b, 0.22 + 0.18 * pulse), 4.0, true)
-	# حلقة معدنية خارجية: ذهبي/فضي متدرج
-	draw_circle(c, r + 3.0, Color("2a1a3a", alpha))
-	draw_circle(c, r + 1.0, Color("f4e7c0", alpha))
-	draw_circle(c + Vector2(0, 2), r - 1.0, Color("a8803a", alpha))
-	draw_circle(c, r - 3.5, Color("2b1650", alpha))
-	# جسم الزر: تدرج لوني شعاعي بتراكب دوائر
-	var steps := 12
-	for i in range(steps):
-		var k := float(i) / float(steps - 1)
-		var col := bot.lerp(top, pow(k, 0.8))
-		var rr := (r - 6.0) * (1.0 - 0.62 * k)
-		draw_circle(c + Vector2(0, -r * 0.22 * k), rr, Color(col.r, col.g, col.b, alpha))
-	# لمعة زجاجية علوية
+	# جسم زجاجي: داكن شفاف مع تدرج لوني خفيف نحو الأسفل
+	draw_circle(c, r, Color(0.03, 0.05, 0.10, 0.42 * alpha + (0.10 if down else 0.0)))
+	for i in range(8):
+		var k := float(i) / 7.0
+		draw_circle(c + Vector2(0, r * 0.10 * (1.0 - k)), r * (0.96 - 0.55 * k), Color(accent.r, accent.g, accent.b, 0.040 * alpha))
+	# انعكاس علوي خافت
 	var hl := PackedVector2Array()
 	for i in range(0, 25):
 		var ang := PI + PI * float(i) / 24.0
-		hl.append(c + Vector2(cos(ang) * (r - 14.0), sin(ang) * (r - 14.0) * 0.50 - r * 0.28))
-	draw_colored_polygon(hl, Color(1, 1, 1, 0.30 * alpha))
-	draw_arc(c, r - 8.0, PI * 1.12, PI * 1.88, 24, Color(1, 1, 1, 0.55 * alpha), 3.0, true)
-	# ظل داخلي سفلي
-	draw_arc(c, r - 8.0, PI * 0.15, PI * 0.85, 24, Color(0, 0, 0, 0.25 * alpha), 4.0, true)
-	_draw_icon(name, c, r, alpha)
+		hl.append(c + Vector2(cos(ang) * (r - 6.0), sin(ang) * (r - 6.0) * 0.46 - r * 0.30))
+	draw_colored_polygon(hl, Color(1, 1, 1, 0.07 * alpha))
+	# الحلقة الخارجية: رفيعة وواضحة
+	draw_arc(c, r - 1.5, 0.0, TAU, 64, Color(1, 1, 1, 0.38 * alpha), 2.0, true)
+	if ready:
+		var pulse := 0.5 + 0.5 * sin(tm * 3.0)
+		draw_arc(c, r - 1.5, 0.0, TAU, 64, Color(accent.r, accent.g, accent.b, (0.75 + 0.2 * pulse) * alpha), 3.0, true)
+		draw_arc(c, r + 3.0, 0.0, TAU, 64, Color(accent.r, accent.g, accent.b, 0.10 + 0.10 * pulse), 5.0, true)
+	elif cd > 0.0:
+		# حلقة تقدّم الشحن: ما انقضى من الانتظار
+		var done := 1.0 - cd
+		draw_arc(c, r - 1.5, -PI * 0.5, -PI * 0.5 + TAU * done, 64, Color(accent.r, accent.g, accent.b, 0.9), 3.5, true)
+	_draw_icon(name, c, r, alpha * (0.45 if cd > 0.0 else 1.0))
 	if cd > 0.0:
-		var pts := PackedVector2Array([c])
-		var st := int(48.0 * cd) + 2
-		for i in range(st + 1):
-			var ang2 := -PI * 0.5 + TAU * (cd * float(i) / float(st))
-			pts.append(c + Vector2(cos(ang2), sin(ang2)) * (r - 5.0))
-		draw_colored_polygon(pts, Color(0.05, 0.02, 0.15, 0.62))
 		var f := ThemeDB.fallback_font
 		var secs := cd * (punch_total if name == "punch" else special_total)
 		var txt := "%.1f" % secs
-		var fs := int(r * 0.52)
+		var fs := int(r * 0.46)
 		var tw := f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		draw_string_outline(f, c + Vector2(-tw * 0.5, fs * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color(0, 0, 0, 0.8))
+		draw_string_outline(f, c + Vector2(-tw * 0.5, fs * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 5, Color(0, 0, 0, 0.55))
 		draw_string(f, c + Vector2(-tw * 0.5, fs * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95))
 
 
@@ -263,44 +249,24 @@ func _draw_icon(name: String, c: Vector2, r: float, a: float) -> void:
 			draw_line(c + Vector2(-8, -6) * s, c + Vector2(16, -14) * s, w, 8 * s, true)
 			draw_line(c + Vector2(-34, 30) * s, c + Vector2(34, 30) * s, Color(1, 1, 1, 0.55 * a), 5 * s, true)
 		"punch":
-			var s2 := u * 1.25
-			var ol := Color(0.30, 0.04, 0.08, a)
-			var skin := Color(1, 0.97, 0.94, a)
-			var shade := Color(0.93, 0.80, 0.78, a)
-			# كفّ القفاز: ظل ثم لون ثم خط خارجي
-			draw_rect(Rect2(c + Vector2(-29, -11) * s2, Vector2(58, 44) * s2), ol, true)
-			draw_rect(Rect2(c + Vector2(-26, -8) * s2, Vector2(52, 38) * s2), skin, true)
-			draw_rect(Rect2(c + Vector2(-26, 16) * s2, Vector2(52, 14) * s2), shade, true)
+			# قبضة أحادية اللون نظيفة: جسم + أربعة مفاصل + إبهام، بلا حدود كرتونية
+			var s2 := u * 1.4
+			var wf := Color(1, 1, 1, 0.94 * a)
+			var cut := Color(0.03, 0.05, 0.10, 0.55 * a)
+			draw_rect(Rect2(c + Vector2(-24, -8) * s2, Vector2(48, 36) * s2), wf, true)
 			for i in range(4):
-				var fx := -19.5 + 13.0 * float(i)
-				draw_circle(c + Vector2(fx, -12) * s2, 10.4 * s2, ol)
-				draw_circle(c + Vector2(fx, -12) * s2, 8.4 * s2, skin)
-				draw_circle(c + Vector2(fx + 1.5, -8) * s2, 4.2 * s2, shade)
-			draw_circle(c + Vector2(-27, 14) * s2, 11.0 * s2, ol)
-			draw_circle(c + Vector2(-27, 14) * s2, 9.0 * s2, skin)
+				draw_circle(c + Vector2(-18.0 + 12.0 * float(i), -9) * s2, 6.6 * s2, wf)
+			draw_circle(c + Vector2(-25, 12) * s2, 7.5 * s2, wf)
 			for i in range(1, 4):
-				draw_line(c + Vector2(-26 + 13.0 * float(i), -9) * s2, c + Vector2(-26 + 13.0 * float(i), 2) * s2, Color(0.55, 0.1, 0.15, a), 2.5)
-			# حزام المعصم
-			draw_rect(Rect2(c + Vector2(-30, 34) * s2, Vector2(60, 12) * s2), ol, true)
-			draw_rect(Rect2(c + Vector2(-27, 36) * s2, Vector2(54, 8) * s2), Color(1.0, 0.82, 0.25, a), true)
-			# خطوط سرعة
-			for k2 in range(3):
-				draw_line(c + Vector2(-44, -6 + 12.0 * float(k2)) * s2, c + Vector2(-34 - 4.0 * float(k2), -6 + 12.0 * float(k2)) * s2, Color(1, 1, 1, 0.55 * a), 3.0, true)
+				draw_line(c + Vector2(-24 + 12.0 * float(i), -9) * s2, c + Vector2(-24 + 12.0 * float(i), 3) * s2, cut, 2.0, true)
+			draw_line(c + Vector2(-24, 19) * s2, c + Vector2(24, 19) * s2, cut, 2.0, true)
+			draw_rect(Rect2(c + Vector2(-24, 32) * s2, Vector2(48, 7) * s2), Color(1, 1, 1, 0.55 * a), true)
 		"special":
-			var s3 := u * 1.2
+			var s3 := u * 1.3
 			var bolt := PackedVector2Array([
 				c + Vector2(6, -44) * s3, c + Vector2(-26, 6) * s3, c + Vector2(-4, 6) * s3,
 				c + Vector2(-12, 44) * s3, c + Vector2(28, -10) * s3, c + Vector2(4, -10) * s3])
-			# توهج خارجي
-			for g in range(3):
-				var gp := PackedVector2Array()
-				for v in bolt:
-					gp.append(c + (v - c) * (1.28 - 0.08 * float(g)))
-				draw_colored_polygon(gp, Color(1, 0.9, 0.4, (0.10 + 0.05 * float(g)) * a))
 			var cb := bolt.duplicate()
 			cb.append(bolt[0])
-			draw_colored_polygon(bolt, Color("ffcf2e") if a > 0.9 else Color(1, 0.82, 0.25, a))
-			# نصف علوي أفتح لإعطاء حجم
-			var half := PackedVector2Array([c + Vector2(6, -44) * s3, c + Vector2(-26, 6) * s3, c + Vector2(-4, 6) * s3, c + Vector2(14, -22) * s3])
-			draw_colored_polygon(half, Color(1.0, 0.97, 0.7, a))
-			draw_polyline(cb, Color(0.30, 0.08, 0.45, a), 4.0, true)
+			draw_colored_polygon(bolt, Color(1, 1, 1, 0.94 * a))
+			draw_polyline(cb, Color(1, 1, 1, 0.35 * a), 6.0, true)
