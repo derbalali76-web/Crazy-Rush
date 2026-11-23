@@ -8,40 +8,28 @@ signal restart_pressed
 signal home_pressed
 
 class ProgressView extends Control:
+	## شريط التقدم بتصميم المرجع: شريط فارغ + تعبئة خضراء + علامة اللاعب + علم النهاية.
+	const BAR := preload("res://assets/ui/hud/bar_empty.png")
+	const FILL := preload("res://assets/ui/hud/bar_fill.png")
+	const MARK := preload("res://assets/ui/hud/marker.png")
+	const FLAG := preload("res://assets/ui/hud/flag.png")
+	const X0 := 16.0      # بداية المجرى داخل الصورة (بالنسبة لأصل الشريط)
+	const X1 := 560.0     # نهايته
 	var value := 0.0
-	var rivals: Array = []      # قيم 0..1 للمنافسين
+	var rivals: Array = []
 	var rival_colors: Array = []
+	func _init() -> void:
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	func _draw() -> void:
-		var w := size.x
-		var h := 22.0
-		var y := size.y * 0.5 - h * 0.5
-		draw_rect(Rect2(0, y + 4, w, h), Color(0, 0, 0, 0.35), true)
-		draw_rect(Rect2(0, y, w, h), Color("0e1a52"), true)
-		draw_rect(Rect2(0, y, w, h), Color("5aa0ff"), false, 3.0)
-		draw_rect(Rect2(3, y + 3, maxf((w - 6.0) * value, 0.0), h - 6), Color("ffc21a"), true)
-		draw_rect(Rect2(3, y + 3, maxf((w - 6.0) * value, 0.0), (h - 6) * 0.45), Color("ffe680"), true)
-		# علم النهاية
-		var fx := w + 4.0
-		draw_line(Vector2(fx, y - 12), Vector2(fx, y + h + 6), Color.WHITE, 4.0)
-		for i in range(2):
-			for j in range(2):
-				var cc := Color.WHITE if (i + j) % 2 == 0 else Color.BLACK
-				draw_rect(Rect2(fx + 2 + i * 9, y - 12 + j * 9, 9, 9), cc, true)
-		for k in range(rivals.size()):
-			var rx := 3.0 + (w - 6.0) * clampf(float(rivals[k]), 0.0, 1.0)
-			var rc: Color = rival_colors[k] if k < rival_colors.size() else Color.WHITE
-			draw_circle(Vector2(rx, y + h * 0.5), 8.0, Color.WHITE)
-			draw_circle(Vector2(rx, y + h * 0.5), 6.0, rc)
-		# علامة اللاعب (رأس ثعلب مبسّط)
-		var px := 3.0 + (w - 6.0) * value
-		var c := Vector2(px, y + h * 0.5)
-		draw_colored_polygon(PackedVector2Array([c + Vector2(-17, -8), c + Vector2(-11, -28), c + Vector2(-3, -12)]), Color("ff7a18"))
-		draw_colored_polygon(PackedVector2Array([c + Vector2(17, -8), c + Vector2(11, -28), c + Vector2(3, -12)]), Color("ff7a18"))
-		draw_circle(c + Vector2(0, 2), 19.0, Color.WHITE)
-		draw_circle(c + Vector2(0, 2), 16.0, Color("ff7a18"))
-		draw_circle(c + Vector2(0, 8), 9.0, Color("fff0d8"))
-		draw_circle(c + Vector2(-6, 0), 3.2, Color("14131a"))
-		draw_circle(c + Vector2(6, 0), 3.2, Color("14131a"))
+		# الأصل (0,0) = (524,40) في المرجع
+		draw_texture(BAR, Vector2.ZERO)
+		var w := (X1 - X0) * clampf(value, 0.0, 1.0)
+		if w > 1.0:
+			draw_texture_rect(FILL, Rect2(X0, 11, w, 20), false)
+		draw_texture(FLAG, Vector2(1092 - 524, 14 - 40))
+		var px := X0 + w
+		draw_texture(MARK, Vector2(px - 56.0, 15.0 - 51.0 + 21.0 - 10.0))
+
 
 var root: Control
 var progress_view: ProgressView
@@ -75,24 +63,129 @@ func _ready() -> void:
 	_layout()
 
 
+const REF_W := 1672.0
+const REF_H := 941.0
+const T_LOGO := preload("res://assets/ui/hud/logo.png")
+const T_TIMER := preload("res://assets/ui/hud/timer.png")
+const T_LAP := preload("res://assets/ui/hud/lap.png")
+const T_PAUSE := preload("res://assets/ui/hud/pause.png")
+const T_MEDAL := [preload("res://assets/ui/hud/medal1.png"), preload("res://assets/ui/hud/medal2.png"), preload("res://assets/ui/hud/medal3.png")]
+const ROW0 := 162.0
+const ROW_DY := 53.0
+
+var left_root: Control
+var right_root: Control
+var center_root: Control
+var rank_num: Label
+var rank_tot: Label
+var lap_label: Label
+var _rows: Array = []          # لكل مركز: {bg, hi, medal, num, face, name}
+var _order_key := ""
+var _bold: FontVariation
+
+
+func _b(l: Label) -> Label:
+	## خط أثقل لأرقام/أسماء الواجهة (قريب من خط المرجع)
+	if _bold == null:
+		_bold = FontVariation.new()
+		_bold.base_font = UiKit.font()
+		_bold.variation_embolden = 0.85
+	l.add_theme_font_override("font", _bold)
+	return l
+
+
+
+
+func _spr(parent: Control, tex: Texture2D, pos: Vector2) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = tex
+	t.position = pos
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(t)
+	return t
+
+
+func _panel(parent: Control, r: Rect2, fill: Color, edge: Color, radius: int, bw := 0) -> Panel:
+	var p := Panel.new()
+	p.position = r.position
+	p.size = r.size
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = fill
+	sb.border_color = edge
+	sb.set_border_width_all(bw)
+	sb.set_corner_radius_all(radius)
+	sb.anti_aliasing = true
+	p.add_theme_stylebox_override("panel", sb)
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(p)
+	return p
+
+
 func _build() -> void:
 	controls = TouchControls.new()
 	root.add_child(controls)
 
+	# ثلاث مجموعات مرجعية (يسار / وسط / يمين) تُقاس بارتفاع الشاشة وتلتصق بحوافها
+	left_root = Control.new()
+	left_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(left_root)
+	center_root = Control.new()
+	center_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(center_root)
+	right_root = Control.new()
+	right_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(right_root)
+
+	# --- يسار: الشعار + المركز + لوحة الترتيب
+	_spr(left_root, T_LOGO, Vector2(236, 0))
+	rank_num = _b(UiKit.label("1", 112, Color("ffc928"), 16, HORIZONTAL_ALIGNMENT_RIGHT))
+	rank_num.add_theme_color_override("font_outline_color", Color("5a2400"))
+	rank_num.position = Vector2(14, 0)
+	rank_num.size = Vector2(100, 120)
+	left_root.add_child(rank_num)
+	rank_tot = _b(UiKit.label("/4", 62, Color.WHITE, 10, HORIZONTAL_ALIGNMENT_LEFT))
+	rank_tot.add_theme_color_override("font_outline_color", Color("3a2a10"))
+	rank_tot.position = Vector2(112, 22)
+	rank_tot.size = Vector2(100, 80)
+	left_root.add_child(rank_tot)
+	for p in range(RaceLogic.RACERS):
+		_make_row(p)
+
+	# --- وسط: شريط التقدم
 	progress_view = ProgressView.new()
-	progress_view.size = Vector2(520, 60)
+	progress_view.size = Vector2(640, 110)
 	progress_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(progress_view)
+	center_root.add_child(progress_view)
 
-	time_label = UiKit.label("00:00.00", 34, Color.WHITE, 7)
-	time_label.size = Vector2(170, 54)
-	root.add_child(time_label)
+	# --- يمين: المؤقت + اللفة + الإيقاف (+ عدّاد العملات)
+	_spr(right_root, T_TIMER, Vector2(1236, 6))
+	time_label = _b(UiKit.label("00:00.00", 44, Color.WHITE, 9))
+	time_label.position = Vector2(1308, 20)
+	time_label.size = Vector2(206, 56)
+	right_root.add_child(time_label)
+	_spr(right_root, T_LAP, Vector2(1280, 80))
+	lap_label = _b(UiKit.label("1/1", 40, Color.WHITE, 8))
+	lap_label.position = Vector2(1392, 93)
+	lap_label.size = Vector2(90, 50)
+	right_root.add_child(lap_label)
+	_spr(right_root, T_PAUSE, Vector2(1546, 2))
 
-	coin_label = UiKit.label("0", 34, Color("ffd23a"), 7)
-	coin_label.size = Vector2(90, 54)
-	root.add_child(coin_label)
+	pause_btn = Button.new()
+	pause_btn.flat = true
+	pause_btn.focus_mode = Control.FOCUS_NONE
+	pause_btn.position = Vector2(1556, 12)
+	pause_btn.size = Vector2(102, 96)
+	pause_btn.pressed.connect(func(): pause_pressed.emit())
+	right_root.add_child(pause_btn)
+
+	# عدّاد العملات (غير موجود في المرجع لكنه ضروري للّعب): كبسولة بنفس الطراز تحت اللفة
+	_panel(right_root, Rect2(1290, 156, 176, 46), Color(0.07, 0.1, 0.3, 0.92), Color("5aa0ff"), 23, 2)
 	coin_icon = Control.new()
 	coin_icon.size = Vector2(44, 44)
+	coin_icon.position = Vector2(1290, 156)
+	coin_icon.scale = Vector2(0.95, 0.95)
 	coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	coin_icon.draw.connect(func():
 		coin_icon.draw_circle(Vector2(22, 24), 21, Color(0, 0, 0, 0.35))
@@ -105,34 +198,15 @@ func _build() -> void:
 			var a := -PI * 0.5 + TAU * float(k) / 10.0
 			star.append(Vector2(22 + cos(a) * rr, 22 + sin(a) * rr))
 		coin_icon.draw_colored_polygon(star, Color("fff3a0")))
-	root.add_child(coin_icon)
-
-	pause_btn = Button.new()
-	pause_btn.size = Vector2(64, 64)
-	pause_btn.focus_mode = Control.FOCUS_NONE
-	var sb := UiKit.style(Color("4aa3ff"), Color("2456d8"), 32, Color.WHITE, 4)
-	sb.content_margin_left = 0
-	sb.content_margin_right = 0
-	pause_btn.add_theme_stylebox_override("normal", sb)
-	pause_btn.add_theme_stylebox_override("hover", sb)
-	pause_btn.add_theme_stylebox_override("pressed", UiKit.style(Color("3a82e0"), Color("1a40b0"), 32, Color.WHITE, 4))
-	pause_btn.pressed.connect(func(): pause_pressed.emit())
-	root.add_child(pause_btn)
-	var bars := Control.new()
-	bars.size = pause_btn.size
-	bars.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bars.draw.connect(func():
-		bars.draw_rect(Rect2(20, 17, 9, 30), Color.WHITE, true)
-		bars.draw_rect(Rect2(35, 17, 9, 30), Color.WHITE, true))
-	pause_btn.add_child(bars)
+	right_root.add_child(coin_icon)
+	coin_label = _b(UiKit.label("0", 32, Color("ffd23a"), 7))
+	coin_label.position = Vector2(1336, 154)
+	coin_label.size = Vector2(124, 50)
+	right_root.add_child(coin_label)
 
 	countdown = UiKit.label("", 180, Color("ffd23a"), 18)
 	countdown.size = Vector2(900, 260)
 	root.add_child(countdown)
-
-	rank_label = UiKit.label("", 46, Color("ffe45a"), 9, HORIZONTAL_ALIGNMENT_LEFT)
-	rank_label.size = Vector2(300, 64)
-	root.add_child(rank_label)
 
 	banner = UiKit.label("", 54, Color("7dffb0"), 10)
 	banner.size = Vector2(800, 80)
@@ -146,26 +220,106 @@ func _build() -> void:
 	fps_label = UiKit.label("", 17, Color("d8ffd0"), 4, HORIZONTAL_ALIGNMENT_LEFT)
 	fps_label.size = Vector2(430, 120)
 	fps_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	root.add_child(fps_label)
+	left_root.add_child(fps_label)
+	fps_label.position = Vector2(14, 20 + ROW0 + ROW_DY * RaceLogic.RACERS)
+
+
+func _make_row(p: int) -> void:
+	var yc := ROW0 + ROW_DY * float(p)
+	var row := {}
+	row.bg = _panel(left_root, Rect2(60, yc - 22, 176, 44), Color(0.08, 0.07, 0.18, 0.55), Color(0.5, 0.55, 0.8, 0.25), 20, 1)
+	row.hi = _panel(left_root, Rect2(11, yc - 25, 261, 50), Color("2a8cff"), Color.WHITE, 24, 3)
+	row.hi.visible = false
+	var shadow := row.hi.get_theme_stylebox("panel") as StyleBoxFlat
+	shadow.shadow_color = Color(0.2, 0.6, 1.0, 0.55)
+	shadow.shadow_size = 8
+	row.medal = _spr(left_root, T_MEDAL[p] if p < 3 else T_MEDAL[0], Vector2(8, yc - 30))
+	row.medal.visible = p < 3
+	# ميدالية عامة للمراكز ≥ 4 (دائرة رمادية برقم)
+	var circ := Control.new()
+	circ.position = Vector2(10, yc - 27)
+	circ.size = Vector2(54, 54)
+	circ.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	circ.draw.connect(func():
+		circ.draw_circle(Vector2(27, 29), 26, Color(0, 0, 0, 0.35))
+		circ.draw_circle(Vector2(27, 27), 25, Color("e8edf5"))
+		circ.draw_circle(Vector2(27, 27), 22, Color("6b7388"))
+		circ.draw_circle(Vector2(27, 25), 18, Color("858da3")))
+	circ.visible = p >= 3
+	left_root.add_child(circ)
+	row.circ = circ
+	row.num = _b(UiKit.label(str(p + 1), 34, Color.WHITE, 7))
+	row.num.position = Vector2(10, yc - 27)
+	row.num.size = Vector2(54, 54)
+	row.num.visible = p >= 3
+	left_root.add_child(row.num)
+	var face := TextureRect.new()
+	face.texture = Characters.icon("fox")
+	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	face.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	face.position = Vector2(68, yc - 29)
+	face.size = Vector2(58, 58)
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_root.add_child(face)
+	row.face = face
+	row.name = _b(UiKit.label("", 30, Color.WHITE, 6))
+	row.name.position = Vector2(128, yc - 24)
+	row.name.size = Vector2(106, 48)
+	left_root.add_child(row.name)
+	_rows.append(row)
+
+
+## order: قائمة {name, player, color} مرتَّبة من الأول إلى الأخير
+func set_standings(order: Array) -> void:
+	var key := ""
+	for o in order:
+		key += "%s|%s;" % [o.name, o.player]
+	if key == _order_key:
+		return
+	_order_key = key
+	for p in range(_rows.size()):
+		var row: Dictionary = _rows[p]
+		var vis := p < order.size()
+		for k in ["bg", "face", "name"]:
+			row[k].visible = vis
+		if not vis:
+			row.hi.visible = false
+			row.medal.visible = false
+			row.circ.visible = false
+			row.num.visible = false
+			continue
+		var o: Dictionary = order[p]
+		var me: bool = o.player
+		row.name.text = o.name
+		row.hi.visible = me
+		row.bg.visible = not me
+		row.face.modulate = Color.WHITE if me else Color(1, 1, 1, 0.95)
+		# رقم المركز: ميدالية للثلاثة الأولى (إلا اللاعب فيُعرض رقمه على الأزرق)، ودائرة رمادية لغيرهم
+		var medal_ok := p < 3 and not me
+		row.medal.visible = medal_ok
+		row.circ.visible = p >= 3 and not me
+		row.num.visible = (p >= 3) or me
+		row.num.add_theme_font_size_override("font_size", 38 if me else 34)
 
 
 func _layout() -> void:
 	var vp := get_viewport().get_visible_rect().size
-	progress_view.position = Vector2((vp.x - 520.0) * 0.5, 14)
-	pause_btn.position = Vector2(vp.x - 84, 16)
-	time_label.position = Vector2(vp.x - 270, 20)
-	coin_label.position = Vector2(vp.x - 365, 20)
-	coin_icon.position = Vector2(vp.x - 410, 24)
+	var s := vp.y / REF_H
+	left_root.scale = Vector2(s, s)
+	left_root.position = Vector2.ZERO
+	right_root.scale = Vector2(s, s)
+	right_root.position = Vector2(vp.x - REF_W * s, 0)
+	center_root.scale = Vector2(s, s)
+	center_root.position = Vector2((vp.x - REF_W * s) * 0.5 + 524.0 * s, 40.0 * s)
 	countdown.position = Vector2((vp.x - 900.0) * 0.5, vp.y * 0.5 - 200)
 	banner.position = Vector2((vp.x - 800.0) * 0.5, vp.y * 0.30)
 	toast.position = Vector2((vp.x - 900.0) * 0.5, vp.y * 0.18)
-	rank_label.position = Vector2(20, 12)
-	fps_label.position = Vector2(14, 84)
 
 
 func set_rank(rank: int, total: int) -> void:
-	rank_label.text = "المركز %d" % rank
-	rank_label.add_theme_color_override("font_color", [Color("ffe45a"), Color("e8eef8"), Color("ffb77a")][rank - 1] if rank <= 3 else Color.WHITE)
+	rank_num.text = str(rank)
+	rank_tot.text = "/%d" % total
 
 
 func set_rivals(values: Array, colors: Array) -> void:

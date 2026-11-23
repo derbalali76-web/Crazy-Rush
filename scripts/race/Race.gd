@@ -580,6 +580,18 @@ func _update_hud() -> void:
 		hud.set_rank(logic.rank_of(logic.player), RaceLogic.RACERS)
 	else:
 		hud.set_rank(_final_rank, RaceLogic.RACERS)
+	var order := []
+	var nk := 0
+	var nm := {}
+	for i in range(RaceLogic.RACERS):
+		if i == logic.player:
+			nm[i] = "فوكسي"
+		else:
+			nm[i] = RaceLogic.NAMES[nk]
+			nk += 1
+	for i in logic.standings():
+		order.append({"name": nm[i], "player": i == logic.player})
+	hud.set_standings(order)
 	var vals := []
 	var cols := []
 	for rv in rivals:
