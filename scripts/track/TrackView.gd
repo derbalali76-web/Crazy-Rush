@@ -52,7 +52,8 @@ func _mmi(mesh: Mesh, xfs: Array, cols: Array, mat: Material, parent: Node3D, sh
 			mm.set_instance_color(i, cols[i])
 	var inst := MultiMeshInstance3D.new()
 	inst.multimesh = mm
-	inst.material_override = mat
+	if mat != null:
+		inst.material_override = mat
 	inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadow else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(inst)
 
@@ -189,7 +190,7 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 						(palms_a if _rng.randf() < 0.5 else palms_b).append(_place(s, xx + _rng.randf_range(-1.5, 1.5), top_y, _rng.randf() * TAU, _rng.randf_range(0.8, 1.2)))
 				continue
 			# أشجار النخيل
-			if _rng.randf() < 0.30 * d:
+			if _rng.randf() < 0.30 * d and not Toon.premium_enabled:
 				var xp: float = sd * _rng.randf_range(10.5, 26.0)
 				(palms_a if _rng.randf() < 0.5 else palms_b).append(_place(s + _rng.randf_range(0, 5), xp, -1.0, _rng.randf() * TAU, _rng.randf_range(0.85, 1.35)))
 			if _rng.randf() < 0.55 * d and not Toon.premium_enabled:
@@ -199,9 +200,9 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 			if _rng.randf() < 0.14 * d and not Toon.premium_enabled:
 				(rocks_a if _rng.randf() < 0.5 else rocks_b).append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(8.0, 20.0), -1.1, _rng.randf() * TAU, _rng.randf_range(0.8, 1.8)))
 			if d >= 0.5:
-				if _rng.randf() < 0.20 * d:
+				if _rng.randf() < 0.20 * d and not Toon.premium_enabled:
 					trees_r.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(11.0, 30.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.5)))
-				if _rng.randf() < 0.16 * d:
+				if _rng.randf() < 0.16 * d and not Toon.premium_enabled:
 					trees_c.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(13.0, 34.0), -1.0, _rng.randf() * TAU, _rng.randf_range(0.8, 1.6)))
 				if _rng.randf() < 0.05 * d and not Toon.premium_enabled:
 					boulders.append(_place(s + _rng.randf_range(0, 5), sd * _rng.randf_range(15.0, 30.0), -1.2, _rng.randf() * TAU, _rng.randf_range(0.7, 1.4)))
@@ -231,6 +232,7 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 ## ديكور «بريميوم»: صخور ونباتات حقيقية (PropLib) بمجموعات، مع LOD بالمسافة عبر visibility_range لكل شريحة 30 م.
 ## المسار وما حوله (إزاحة < 7.8 م) خالٍ دائمًا.
 const LOD_RANGES := [[0.0, 45.0], [45.0, 95.0], [95.0, 400.0]]
+const LOD_RANGES_TREE := [[0.0, 40.0], [40.0, 100.0], [100.0, 400.0]]
 
 
 func _build_premium_props(s0: float, s1: float, node: Node3D) -> void:
@@ -239,7 +241,7 @@ func _build_premium_props(s0: float, s1: float, node: Node3D) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 9100 + int(s0)
 	var slice_len := 30.0
-	var kinds := ["rock1", "rock2", "rock3", "fern", "anthurium", "calathea"]
+	var kinds := ["rock1", "rock2", "rock3", "fern", "anthurium", "calathea", "tree_a", "tree_b", "tree_stump_01", "tree_stump_02", "dead_tree_trunk", "dead_tree_trunk_02", "root_cluster_01", "single_root"]
 	var s_a := s0
 	while s_a < s1:
 		var buckets := {}
@@ -261,22 +263,34 @@ func _build_premium_props(s0: float, s1: float, node: Node3D) -> void:
 				if absf(xx) < 7.6:
 					continue
 				buckets[kind].append(_place(cs + rng.randf_range(-1.8, 1.8), xx, -1.0, rng.randf() * TAU, rng.randf_range(1.6, 2.8)))
+		# أشجار حقيقية (لحاء + أوراق) وبقايا خشب وجذور
+		var n_tree := int(round(2.4 * density))
+		for i in range(n_tree):
+			var sdt := -1.0 if rng.randf() < 0.5 else 1.0
+			var tk := "tree_a" if rng.randf() < 0.5 else "tree_b"
+			buckets[tk].append(_place(s_a + rng.randf() * slice_len, sdt * rng.randf_range(10.5, 24.0), -1.0, rng.randf() * TAU, rng.randf_range(1.2, 2.0)))
+		for i in range(int(round(2.0 * density))):
+			var sdw := -1.0 if rng.randf() < 0.5 else 1.0
+			var wk: String = ["tree_stump_01", "tree_stump_02", "dead_tree_trunk", "dead_tree_trunk_02", "root_cluster_01", "single_root"][rng.randi() % 6]
+			buckets[wk].append(_place(s_a + rng.randf() * slice_len, sdw * rng.randf_range(8.4, 15.0), -1.0, rng.randf() * TAU, rng.randf_range(1.6, 2.6)))
 		for k in kinds:
 			var xfs: Array = buckets[k]
 			if xfs.is_empty():
 				continue
+			var is_tree: bool = k.begins_with("tree_a") or k.begins_with("tree_b")
 			var mat_kind: String = "rock" if k.begins_with("rock") else k
-			var mat := PropLib.material(mat_kind, Toon.use_normal_maps)
+			var mat: Material = null if is_tree else PropLib.material(mat_kind, Toon.use_normal_maps)
+			var ranges: Array = LOD_RANGES_TREE if is_tree else LOD_RANGES
 			for lod in range(3):
-				var m := PropLib.mesh(k, lod)
+				var m: Mesh = PropLib.tree_mesh(k, lod, Toon.use_normal_maps) if is_tree else PropLib.mesh(k, lod)
 				if m == null:
 					continue
 				var before := node.get_child_count()
-				_mmi(m, xfs, [], mat, node, lod == 0 and mat_kind == "rock")
+				_mmi(m, xfs, [], mat, node, lod == 0 and (mat_kind == "rock" or is_tree))
 				var inst := node.get_child(node.get_child_count() - 1)
 				if node.get_child_count() > before and inst is MultiMeshInstance3D:
-					inst.visibility_range_begin = LOD_RANGES[lod][0]
-					inst.visibility_range_end = LOD_RANGES[lod][1]
+					inst.visibility_range_begin = ranges[lod][0]
+					inst.visibility_range_end = ranges[lod][1]
 		s_a += slice_len
 
 

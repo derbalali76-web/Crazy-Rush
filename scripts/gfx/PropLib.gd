@@ -13,6 +13,25 @@ const MATS := {
 	"calathea": ["calathea_orbifolia_01", "calathea_orbifolia_01", 1.0],
 }
 
+## مجسمات مبسّطة من CI بنسيج واحد: الاسم -> (diff, nor) في assets/art/props/tex
+const TREE_PROPS := ["tree_stump_01", "tree_stump_02", "dead_tree_trunk", "dead_tree_trunk_02", "root_cluster_01", "single_root", "dead_quiver_trunk"]
+
+## شجرتان مولَّدتان (tools/blender/build_trees.py): سطح 0 لحاء (Bark001) وسطح 1 أوراق (الكالاثيا).
+static func apply_tree_materials(mi: MeshInstance3D, use_normal := true) -> void:
+	var bark := StandardMaterial3D.new()
+	bark.albedo_texture = load("res://assets/src/textures/Bark001/albedo.jpg")
+	bark.uv1_triplanar = false
+	bark.roughness = 0.95
+	bark.albedo_color = Color(0.62, 0.50, 0.40)   # يغمّق لحاء Bark001 الفاتح ليبدو غابة استوائية
+	if use_normal and ResourceLoader.exists("res://assets/src/textures/Bark001/normal.jpg"):
+		bark.normal_enabled = true
+		bark.normal_texture = load("res://assets/src/textures/Bark001/normal.jpg")
+	mi.set_surface_override_material(0, bark)
+	var lm := material("calathea", use_normal).duplicate() as StandardMaterial3D
+	lm.albedo_color = Color(1.45, 1.55, 1.1)   # يفتّح الأوراق ويميلها للأخضر المصفر
+	mi.set_surface_override_material(1, lm)
+
+
 static var _mat_cache := {}
 static var _mesh_cache := {}
 
@@ -21,6 +40,17 @@ static func material(kind: String, use_normal := true) -> StandardMaterial3D:
 	var key := "%s_%s" % [kind, use_normal]
 	if _mat_cache.has(key):
 		return _mat_cache[key]
+	if kind in TREE_PROPS:
+		var tm := StandardMaterial3D.new()
+		tm.albedo_texture = load(DIR + "tex/%s_diff.jpg" % kind)
+		if use_normal and ResourceLoader.exists(DIR + "tex/%s_nor.jpg" % kind):
+			tm.normal_enabled = true
+			tm.normal_texture = load(DIR + "tex/%s_nor.jpg" % kind)
+		tm.roughness = 0.9
+		tm.cull_mode = BaseMaterial3D.CULL_DISABLED
+		tm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		_mat_cache[key] = tm
+		return tm
 	var info: Array = MATS[kind]
 	var base: String = TEX + info[0] + "/textures/" + info[1]
 	var m := StandardMaterial3D.new()
@@ -59,3 +89,22 @@ static func mesh(name: String, lod: int) -> Mesh:
 	root.free()
 	_mesh_cache[path] = found
 	return found
+
+
+## شبكة شجرة بموادها مضمّنة في الأسطح (MultiMesh لا يدعم تجاوز مادة لكل سطح).
+static func tree_mesh(name: String, lod: int, use_normal := true) -> Mesh:
+	var key := "treemesh_%s_%d_%s" % [name, lod, use_normal]
+	if _mesh_cache.has(key):
+		return _mesh_cache[key]
+	var src := mesh(name, lod)
+	if src == null:
+		return null
+	var m: Mesh = src.duplicate()
+	var holder := MeshInstance3D.new()
+	holder.mesh = m
+	apply_tree_materials(holder, use_normal)
+	for i in range(m.get_surface_count()):
+		m.surface_set_material(i, holder.get_surface_override_material(i))
+	holder.free()
+	_mesh_cache[key] = m
+	return m

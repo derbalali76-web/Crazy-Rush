@@ -31,6 +31,8 @@ func _ready() -> void:
 			await _measure()
 		"props":
 			await _scene_props()
+		"trees":
+			await _scene_trees()
 		"settings":
 			add_child(SettingsPanel.new())
 	for i in range(frames):
@@ -267,3 +269,36 @@ func _scene_props() -> void:
 			mi2.scale = Vector3.ONE * 1.4
 			add_child(mi2)
 		k += 1
+
+
+func _scene_trees() -> void:
+	_env()
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.position = Vector3(0.0, 3.0, 12.0)
+	cam.look_at(Vector3(0.0, 1.5, 0.0))
+	cam.current = true
+	var floor_mesh := PlaneMesh.new()
+	floor_mesh.size = Vector2(60, 30)
+	var fm := StandardMaterial3D.new()
+	fm.albedo_color = Color("5a7a45")
+	var fl := MeshInstance3D.new()
+	fl.mesh = floor_mesh
+	fl.material_override = fm
+	add_child(fl)
+	var i := 0
+	for kind in PropLib.TREE_PROPS:
+		var mi := MeshInstance3D.new()
+		mi.mesh = PropLib.mesh(kind, 0)
+		mi.material_override = PropLib.material(kind, true)
+		mi.position = Vector3(-10.0 + float(i) * 2.9, 0.0, 0.0)
+		add_child(mi)
+		print("TREE ", kind, " aabb=", mi.get_aabb().size)
+		i += 1
+	for k in range(2):
+		var tn := "tree_%s" % ["a", "b"][k]
+		var ti := MeshInstance3D.new()
+		ti.mesh = PropLib.mesh(tn, 0)
+		PropLib.apply_tree_materials(ti, true)
+		ti.position = Vector3(-4.0 + k * 7.0, 0.0, -4.0)
+		add_child(ti)

@@ -8,7 +8,7 @@ OUT = os.path.join(ROOT, "assets/art/props"); TEX = os.path.join(OUT, "tex")
 os.makedirs(TEX, exist_ok=True)
 TARGETS = {"tree_stump_01": (4000, 1500, 500), "tree_stump_02": (4000, 1500, 500), "dead_tree_trunk": (5000, 2000, 700),
            "dead_tree_trunk_02": (6000, 2500, 800), "root_cluster_01": (5000, 2000, 700), "single_root": (3500, 1400, 500),
-           "dead_quiver_trunk": (3500, 1400, 500), "jacaranda_tree": (14000, 6000, 2000)}
+           "dead_quiver_trunk": (3500, 1400, 500)}
 
 def tri(o):
     o.data.calc_loop_triangles(); return len(o.data.loop_triangles)
