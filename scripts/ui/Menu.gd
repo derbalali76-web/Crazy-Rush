@@ -119,16 +119,16 @@ func _build() -> void:
 	coins.size = Vector2(112, 52)
 	coins.clip_text = true
 	_root.add_child(coins)
-	_unavailable(Rect2(1240, 22, 56, 56), 10, 0.0, false)             # زر + (المتجر)
+	_hit(Rect2(1240, 22, 56, 56), func(): _open_store(0))             # زر + (متجر العملات)
 	# الجواهر
-	_unavailable(Rect2(1312, 22, 240, 56), 18)
+	_hit(Rect2(1312, 22, 240, 56), func(): _open_store(1))             # متجر الجواهر
 	# الملف الشخصي
 	_hit(Rect2(30, 15, 440, 140), _open_account)                       # الملف الشخصي
 
 	# --- العمود الأيسر
 	for y in [245.0, 362.0, 480.0]:
 		_unavailable(Rect2(12, y, 258, 96), 17, 32.0)
-	_hit(Rect2(12, 598, 258, 96), _open_store)                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
+	_hit(Rect2(12, 598, 258, 96), func(): _open_store(0))                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
 	# اختيار الشخصية
 	_dyn = Control.new()
 	_dyn.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -233,13 +233,15 @@ func _open_select() -> void:
 	add_child(cs)
 
 
-func _open_store() -> void:
+func _open_store(tab := 0) -> void:
 	if _settings:
 		return
 	var st := StoreScreen.new()
 	st.closed.connect(func(): _settings = null)
 	_settings = st
 	add_child(st)
+	if tab != 0:
+		st._select(tab)
 
 
 func _open_settings() -> void:
