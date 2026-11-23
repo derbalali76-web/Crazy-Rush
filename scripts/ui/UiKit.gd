@@ -149,13 +149,17 @@ static func bold_label(text: String, size: int, color: Color, outline_color: Col
 	return l
 
 
-## ملاءمة شاشة مرجعية W×H لأي نسبة عرض: تمدّد أفقي طفيف (حتى 12%) ثم هوامش تُملأ بامتداد حافة الصورة.
+## ملاءمة شاشة مرجعية W×H: تمتدّ لتملأ الشاشة كاملة بلا هوامش، مع حدّ لتشوّه النسبة (من 0.8 إلى 1.3) وما زاد يُملأ بخلفية ناعمة.
 ## يعيد [مقياس Vector2, موضع Vector2].
 static func fit(vp: Vector2, w: float, h: float) -> Array:
-	var s := minf(vp.x / w, vp.y / h)
-	var sx := minf(vp.x / w, s * 1.12)
-	var sy := minf(vp.y / h, s * 1.12) if vp.y / h > s else s
-	var sc := Vector2(sx, sy)
+	var fx := vp.x / w
+	var fy := vp.y / h
+	var sc := Vector2(fx, fy)
+	var r := fx / fy
+	if r > 1.3:
+		sc = Vector2(fy * 1.3, fy)
+	elif r < 0.8:
+		sc = Vector2(fx, fx / 0.8)
 	return [sc, (vp - Vector2(w, h) * sc) * 0.5]
 
 
