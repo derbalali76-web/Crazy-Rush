@@ -191,7 +191,7 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 					var xx: float = sd * _rng.randf_range(15.0, 34.0)
 					pillars.append(_place(s + _rng.randf_range(0, 6), xx, -9.5, _rng.randf() * TAU, _rng.randf_range(0.8, 1.35)))
 					var top_y := -1.6
-					if _rng.randf() < 0.8:
+					if _rng.randf() < 0.8 and not Toon.premium_enabled:
 						(palms_a if _rng.randf() < 0.5 else palms_b).append(_place(s, xx + _rng.randf_range(-1.5, 1.5), top_y, _rng.randf() * TAU, _rng.randf_range(0.8, 1.2)))
 				continue
 			# أشجار النخيل
@@ -227,7 +227,7 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 	_mmi(TrackProtos.get_mesh("rock_a"), rocks_a, [], Toon.textured(3, 0.55), node, true)
 	_mmi(TrackProtos.get_mesh("rock_b"), rocks_b, [], Toon.textured(3, 0.55), node, true)
 	_mmi(TrackProtos.get_mesh("flower"), flowers, [], Toon.solid(false), node, false)
-	_mmi(TrackProtos.get_mesh("pillar"), pillars, [], Toon.solid(false), node, false)
+	_mmi(TrackProtos.get_mesh("pillar"), pillars, [], _cliff_mat() if Toon.premium_enabled else Toon.solid(false), node, false)
 	_mmi(TrackProtos.get_mesh("tree_round"), trees_r, [], Toon.textured(2, 0.42), node, true)
 	_mmi(TrackProtos.get_mesh("tree_cone"), trees_c, [], Toon.textured(2, 0.42), node, true)
 	_mmi(TrackProtos.get_mesh("tuft"), tufts, [], Toon.textured(2, 0.42), node, false)
@@ -575,10 +575,13 @@ func _build_far() -> void:
 		while s4 < c[1]:
 			for sd4 in [-1.0, 1.0]:
 				var x4: float = sd4 * rng.randf_range(58.0, 80.0)
-				var xf4 := _place(s4, x4, -2.0, rng.randf() * TAU, 1.5)
+				var xf4 := _place(s4, x4, -2.0, (PI * 0.5 + rng.randf_range(-0.15, 0.15)) if Toon.premium_enabled else rng.randf() * TAU, 1.5)
 				_mesh_node("cliff", xf4, far_nodes, _cliff_mat() if Toon.premium_enabled else Toon.solid(false), false)
 				var fall := _mesh_node("waterfall", Transform3D(Basis(Vector3.UP, atan2(-sd4, 0.0) + (PI * 0.5 if sd4 > 0 else -PI * 0.5)), xf4.origin + Vector3(-sd4 * 17.0, 13.0, 0)), far_nodes, Toon.waterfall(), false)
-				fall.look_at_from_position(xf4.origin + data.right(s4) * (-sd4 * 17.0) + Vector3(0, 12.0, 0), data.center(s4) + Vector3(0, 12.0, 0), Vector3.UP)
+				var fd := 24.0 if Toon.premium_enabled else 17.0
+				fall.look_at_from_position(xf4.origin + data.right(s4) * (-sd4 * fd) + Vector3(0, 12.0, 0), data.center(s4) + Vector3(0, 12.0, 0), Vector3.UP)
+				if Toon.premium_enabled:
+					fall.scale = Vector3(1.8, 1.0, 1.0)
 			s4 += 70.0
 
 

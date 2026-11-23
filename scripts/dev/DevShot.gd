@@ -161,6 +161,27 @@ func _scene_race() -> void:
 			var mi := n as MeshInstance3D
 			if mi.mesh != null and mi.get_aabb().size.x > 30.0 and mi.get_parent().name == "Far":
 				print("BIG ", mi.name, " parent=", mi.get_parent().name, " size=", mi.get_aabb().size, " pos=", mi.global_position, " mat=", mi.material_override)
+	if args.has("wf"):
+		var best: MeshInstance3D = null
+		var bd := 1e9
+		var cc: Vector3 = r.view.data.center(float(args.get("wf", "0")))
+		for n3 in r.view.far_nodes.get_children():
+			var m3 := n3 as MeshInstance3D
+			if m3 and m3.material_override is ShaderMaterial and (m3.material_override as ShaderMaterial).shader.resource_path.contains("waterfall"):
+				var dd := m3.global_position.distance_to(cc)
+				if dd < bd:
+					bd = dd
+					best = m3
+		r.set_process(false)
+		var tgt := best.global_position
+		var dir := (cc - tgt)
+		dir.y = 0
+		dir = dir.normalized()
+		r.cam.global_position = tgt + dir * float(args.get("wfd", "40")) + Vector3(0, float(args.get("wfh", "8")), 0)
+		r.cam.look_at(tgt + Vector3(0, 4, 0), Vector3.UP)
+		r.cam.fov = 60.0
+		print("WF dist=", bd)
+		await get_tree().process_frame
 	print("race s=", r.runner.s, " state=", r.runner.state, " coins=", r.runner.coins_got)
 
 

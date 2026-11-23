@@ -122,20 +122,22 @@ static func coin() -> ShaderMaterial:
 
 
 static func water() -> ShaderMaterial:
-	if _cache.has("water"):
-		return _cache["water"]
+	var key := "water_p" if premium_enabled else "water"
+	if _cache.has(key):
+		return _cache[key]
 	var m := ShaderMaterial.new()
-	m.shader = _shader("res://shaders/water.gdshader")
-	_cache["water"] = m
+	m.shader = _shader("res://shaders/water_premium.gdshader" if premium_enabled else "res://shaders/water.gdshader")
+	_cache[key] = m
 	return m
 
 
 static func waterfall() -> ShaderMaterial:
-	if _cache.has("waterfall"):
-		return _cache["waterfall"]
+	var key := "waterfall_p" if premium_enabled else "waterfall"
+	if _cache.has(key):
+		return _cache[key]
 	var m := ShaderMaterial.new()
-	m.shader = _shader("res://shaders/waterfall.gdshader")
-	_cache["waterfall"] = m
+	m.shader = _shader("res://shaders/waterfall_premium.gdshader" if premium_enabled else "res://shaders/waterfall.gdshader")
+	_cache[key] = m
 	return m
 
 
