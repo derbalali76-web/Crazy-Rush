@@ -8,7 +8,17 @@ signal closed
 const W := 1672.0
 const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
-const BG := preload("res://assets/ui/costumes_ref.png")
+const IMAGES := {
+	"fox": "res://assets/ui/costumes_ref.png",
+	"bombo": "res://assets/ui/costumes_bombo_ref.png",
+}
+
+## الشخصيات التي لها صورة متجر جاهزة
+static func has_store(id: String) -> bool:
+	return IMAGES.has(id)
+
+var char_id := "fox"
+var BG: Texture2D
 
 var _root: Control
 var _bg_img: Image
@@ -17,6 +27,7 @@ var _bg_img: Image
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	BG = load(IMAGES.get(char_id, IMAGES["fox"])) as Texture2D
 	_bg_img = BG.get_image()
 	var vp := get_viewport_rect().size
 	set_deferred("size", vp)
@@ -91,13 +102,40 @@ func _patch_num(x: float, y: float, w: float, h: float, sample_x: int, text: Str
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
 	var l := UiKit.num_label(text, 34)
-	l.position = Vector2(x, y - 4)
+	l.position = Vector2(x - 6, y - 4)
 	l.size = Vector2(w, h + 8)
 	l.clip_text = true
 	_root.add_child(l)
 
 
 func _build() -> void:
+	if char_id == "bombo":
+		_build_bombo()
+	else:
+		_build_fox()
+	_hit(Rect2(1560, 22, 96, 92), func():
+		closed.emit()
+		queue_free())
+
+
+func _build_bombo() -> void:
+	_patch_num(1100, 34, 112, 40, 1100, str(Settings.total_coins))
+	_patch_num(1362, 34, 98, 40, 1358, "0")
+	# ست بطاقات: لا يملك المستخدم أيًا منها بعد
+	var xs := [1325.0, 1002.0, 680.0]
+	for i in range(6):
+		_unavailable(Rect2(xs[i % 3], 222.0 + (i / 3) * 278.0, 305, 263), 20, 28.0, true, 0.3)
+	_unavailable(Rect2(1160, 128, 236, 76), 15, 0.0, true, 0.6)
+	_unavailable(Rect2(905, 128, 245, 76), 15, 0.0, true, 0.6)
+	_unavailable(Rect2(652, 128, 240, 76), 15, 0.0, true, 0.6)
+	_unavailable(Rect2(12, 145, 144, 705), 14, 0.0, true, 0.5)
+	_unavailable(Rect2(678, 802, 355, 112), 20, 0.0, true, 0.55)
+	_unavailable(Rect2(1085, 798, 545, 118), 24, 0.0, true, 0.5)
+	_unavailable(Rect2(170, 510, 80, 100), 10, 0.0, false, 0.0)
+	_unavailable(Rect2(588, 510, 80, 100), 10, 0.0, false, 0.0)
+
+
+func _build_fox() -> void:
 	# أرصدة حقيقية فوق الأرقام المرسومة
 	_patch_num(1132, 34, 106, 42, 1236, str(Settings.total_coins))
 	_patch_num(1388, 34, 84, 42, 1478, "0")
@@ -118,8 +156,3 @@ func _build() -> void:
 	# الأسهم والبطاقة الأولى: لا بديل ما دام زي واحد فقط
 	_unavailable(Rect2(205, 520, 80, 100), 10, 0.0, false, 0.0)
 	_unavailable(Rect2(610, 520, 80, 100), 10, 0.0, false, 0.0)
-
-	# العودة
-	_hit(Rect2(1560, 22, 96, 92), func():
-		closed.emit()
-		queue_free())

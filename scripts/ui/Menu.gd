@@ -227,7 +227,11 @@ func _refresh_char() -> void:
 func _open_costumes() -> void:
 	if _settings:
 		return
+	var cid: String = ORDER[_focus]
+	if not CostumesScreen.has_store(cid):
+		cid = "fox"
 	var cs := CostumesScreen.new()
+	cs.char_id = cid
 	cs.closed.connect(func(): _settings = null)
 	_settings = cs
 	add_child(cs)
