@@ -25,6 +25,7 @@ var _btn_touch: Dictionary = {}     # index -> اسم الزر
 var _gest: Dictionary = {}          # index -> {start, t, done}
 var _pressed: Dictionary = {}       # اسم الزر -> عدد اللمسات
 var _kb_steer := 0.0
+var _tex_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -228,7 +229,20 @@ func _draw_button(name: String, d: Dictionary) -> void:
 		draw_string(f, c + Vector2(-tw * 0.5, fs * 0.34), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.95))
 
 
+func _tex(path: String) -> Texture2D:
+	if not _tex_cache.has(path):
+		_tex_cache[path] = load(path) if ResourceLoader.exists(path) else null
+	return _tex_cache[path]
+
+
 func _draw_icon(name: String, c: Vector2, r: float, a: float) -> void:
+	# أيقونات مصوّرة (assets/ui) للّكمة والقدرة الخاصة؛ الرسم بالكود احتياطي إن غابت.
+	if name == "punch" or name == "special":
+		var tex := _tex("res://assets/ui/icon_%s.png" % name)
+		if tex != null:
+			var side := r * (1.42 if name == "punch" else 1.30)
+			draw_texture_rect(tex, Rect2(c - Vector2(side, side) * 0.5, Vector2(side, side)), false, Color(1, 1, 1, a))
+			return
 	var w := Color(1, 1, 1, a)
 	var o := Color(0.1, 0.1, 0.3, a)
 	var u := r / 80.0
