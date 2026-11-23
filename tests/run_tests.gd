@@ -22,6 +22,7 @@ func _init() -> void:
 	test_race8()
 	test_direct_strike()
 	test_grid_and_punch_fixes()
+	test_branch_track()
 	await test_foxy_clips()
 	await test_foxy_glb()
 	print("RESULT fails=", fails)
@@ -415,3 +416,104 @@ func test_grid_and_punch_fixes() -> void:
 	check(hs.last <= 910.0, "jungle final straight is hazard-free (last %.0f)" % hs.last)
 	check(hs.max_pit <= 8.0, "jungle pits jumpable (max %.0f m)" % hs.max_pit)
 	check(jd.coins.size() >= 100, "jungle has coins (%d)" % jd.coins.size())
+
+
+# ------------------------------------------------------------------ حلبة التفرعات (layout 2، تجريبية)
+func _bot_route(high_a: bool, high_b: bool, skill: float, seed_v: int) -> Dictionary:
+	TrackData.layout = 2
+	var tr := TrackData.new()
+	var r := Runner.new(tr)
+	var ai := RacerAI.new(skill, 0.0, seed_v)
+	ai._routes = {"A": high_a, "B": high_b}
+	r.start_race()
+	var t := 0.0
+	var max_y := -99.0
+	var min_y := 99.0
+	var mA0 := -1.0
+	var mA1 := -1.0
+	while t < 160.0 and r.state != Runner.State.FINISHED:
+		ai.update(1.0 / 120.0, r, [])
+		r.step(1.0 / 120.0)
+		t += 1.0 / 120.0
+		max_y = maxf(max_y, tr.center(r.s).y + r.y)
+		min_y = minf(min_y, tr.center(r.s).y + r.y)
+		if mA0 < 0.0 and r.s >= 262.0:
+			mA0 = t
+		if mA1 < 0.0 and r.s >= 420.0:
+			mA1 = t
+	TrackData.layout = 0
+	return {"finish": r.finish_time if r.state == Runner.State.FINISHED else -1.0, "falls": r.falls, "a_time": mA1 - mA0, "span": max_y - min_y}
+
+
+func test_branch_track() -> void:
+	TrackData.layout = 2
+	var d := TrackData.new()
+	check(d.has_heights and d.forks.size() == 2 and d.tunnels.size() == 2, "branch layout: 2 forks, 2 tunnels")
+	# ارتفاعات حقيقية: العمود العلوي أعلى من السفلي بمقدار ≥ 6 م في ذروة التفرع
+	check(d.deck_h(340.0, -4.0) - d.deck_h(340.0, 4.0) >= 6.5, "fork A: high lane is >= 6.5 m above low lane")
+	check(d.deck_h(780.0, 4.0) - d.deck_h(780.0, -4.0) >= 5.5, "fork B: high lane is >= 5.5 m above low lane")
+	check(not d.solid_at(300.0, 0.0) and d.solid_at(340.0, 0.0), "fork A: divider void with a drop/crossing window at 340")
+	check(d.ceiling_at(330.0, 4.0) < 10.0 and d.ceiling_at(330.0, -4.0) == INF, "tunnel ceiling only over the low lane")
+	var cl := 0.0
+	for i in range(0, 1000, 5):
+		cl = maxf(cl, absf(d.center(float(i) + 5.0).y - d.center(float(i)).y) / 5.0)
+	check(cl < 0.20, "centerline slope stays comfortable (max %.3f)" % cl)
+	TrackData.layout = 0
+	# مسارات مفروضة: كلها تُنهى بلا سقوط، والعلوي أسرع (جائزة السرعة)
+	var rl := _bot_route(false, false, 1.0, 7)
+	var rh := _bot_route(true, true, 1.0, 7)
+	check(rl.finish > 0.0 and rl.falls == 0, "tunnel/low route finishes cleanly (t=%.1f, falls=%d)" % [rl.finish, rl.falls])
+	check(rh.finish > 0.0 and rh.falls == 0, "high/shortcut route finishes cleanly (t=%.1f, falls=%d)" % [rh.finish, rh.falls])
+	check(rh.finish < rl.finish - 2.0, "shortcut gives a time reward (%.1fs vs %.1fs)" % [rh.finish, rl.finish])
+	check(rh.span > 8.0, "real vertical range experienced (%.1f m)" % rh.span)
+	# 8 متسابقين على الحلبة المتفرعة
+	TrackData.layout = 2
+	var pr := Runner.new(TrackData.new())
+	var logic := RaceLogic.new(pr, 3, 321)
+	logic.start()
+	var pai := RacerAI.new(0.85, 0.4, 5)
+	var t := 0
+	var bad_rank := 0
+	var used_high := {"A": 0, "B": 0}
+	for i in range(RaceLogic.RACERS):
+		var a = logic.ais[i]
+		if a != null:
+			pass
+	while t < 120 * 240:
+		pai.update(1.0 / 120.0, pr, logic.runners)
+		logic.step(1.0 / 120.0)
+		t += 1
+		if t % 120 == 0:
+			var st := logic.standings()
+			var prev_s := 1e9
+			var unfinished_ok := true
+			for k in st:
+				var rr := logic.runners[k]
+				if rr.state != Runner.State.FINISHED:
+					if rr.s > prev_s + 0.001:
+						unfinished_ok = false
+					prev_s = rr.s
+			if not unfinished_ok:
+				bad_rank += 1
+		var all_done := true
+		for rr in logic.runners:
+			if rr.state != Runner.State.FINISHED:
+				all_done = false
+		if all_done:
+			break
+	var fin := 0
+	var falls := 0
+	for rr in logic.runners:
+		if rr.state == Runner.State.FINISHED:
+			fin += 1
+		falls += rr.falls
+	for i in range(RaceLogic.RACERS):
+		var a = logic.ais[i]
+		if a != null:
+			for k in ["A", "B"]:
+				if a._routes.get(k, false):
+					used_high[k] += 1
+	TrackData.layout = 0
+	check(fin >= 7, "branch: >= 7/8 racers finish (finished=%d, falls=%d, t=%.0fs)" % [fin, falls, float(t) / 120.0])
+	check(bad_rank == 0, "branch: rank order consistent with distance (violations=%d)" % bad_rank)
+	check(used_high.A > 0 and used_high.A < 7, "AI splits between routes at fork A (high=%d/7)" % used_high.A)

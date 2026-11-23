@@ -2,6 +2,7 @@ class_name TrackView
 extends Node3D
 ## المشهد المرئي للمسار: ألواح، حبال، ديكور، عقبات، عملات، عناصر بعيدة. يعتمد MultiMesh وتقسيم الأجزاء (Chunks).
 
+const COL_W_VIS := 4.2
 const CHUNK := 60.0
 const WATER_Y := -24.0
 
@@ -61,6 +62,12 @@ func _mmi(mesh: Mesh, xfs: Array, cols: Array, mat: Material, parent: Node3D, sh
 func _frame_xf(s: float, x: float, y: float = 0.0) -> Transform3D:
 	var f := data.frame(s)
 	f.origin = data.center(s) + data.right(s) * x + Vector3.UP * y
+	if data.has_heights:
+		# ارتفاع العمود + ميل المنحدر الفعلي لسطحه (الألواح تتبع الصعود والهبوط)
+		f.origin.y += data.deck_h(s, x)
+		var a := atan2(data.deck_h(s + 0.6, x) - data.deck_h(s - 0.6, x), 1.2)
+		if absf(a) > 0.001:
+			f.basis = f.basis * Basis(Vector3.RIGHT, a)
 	return f
 
 
@@ -131,8 +138,11 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 		_mmi(TrackProtos.get_mesh("pennant"), pennants, [], Toon.double_sided(false), node, false)
 		_mmi(TrackProtos.get_mesh("lantern"), lanterns, [], Toon.solid(false), node, false)
 	_build_ropes(s0, s1, node)
-	_build_scenery(s0, s1, node, ci)
-	if Toon.premium_enabled:
+	if data.has_heights:
+		_build_relief(s0, s1, node)   # Graybox: كتل صخرية وأنفاق وجدران بدل الديكور
+	else:
+		_build_scenery(s0, s1, node, ci)
+	if Toon.premium_enabled and not data.has_heights:
 		_build_premium_props(s0, s1, node)
 		_build_ruins(s0, s1, node)
 	_build_obstacles(s0, s1, node)
@@ -207,6 +217,84 @@ func _build_ruins(s0: float, s1: float, node: Node3D) -> void:
 		_mmi(_ruin_deco, deco_xfs, [], mat, node, true)
 
 
+# ------------------------------------------------------------------ Graybox للتضاريس (layout 2)
+## كتل تحت الأسطح المرتفعة، جدران وأسقف الأنفاق، وكتل الجبال فوقها. ألوان رمادية بسيطة للاختبار.
+func _build_relief(s0: float, s1: float, node: Node3D) -> void:
+	var mb := MeshBuilder.new()
+	var rock := Color("7d7468")
+	var rock_d := Color("5a544c")
+	var ceil_c := Color("4a4640")
+	var s := floorf(s0 / 4.0) * 4.0 + 2.0
+	while s < s1:
+		var up := data.forward(s)
+		var yaw := atan2(-up.x, -up.z)
+		for col in range(3):
+			var cx: float = TrackData.COLX[col]
+			if not data.solid_at(s, cx):
+				continue
+			var h := data.deck_h(s, cx)
+			if h > 0.8 or data.has_heights and h < -0.8:
+				# كتلة داعمة تحت السطح المرتفع (من السطح إلى القاع)
+				var top := h - 0.3
+				var bot := -10.0
+				var base := data.center(s) + data.right(s) * cx
+				var sz := Vector3(COL_W_VIS, top - bot, 4.1)
+				var xf := Transform3D(Basis(Vector3.UP, yaw), base + Vector3(0, (top + bot) * 0.5, 0))
+				mb.add_rbox(sz, 0.25, rock if int(s / 4.0) % 2 == 0 else rock_d, xf, 2)
+		s += 4.0
+	# أنفاق: سقف وجدار داخلي وخارجي + كتلة جبل
+	for t in data.tunnels:
+		if t.s1 < s0 or t.s0 > s1:
+			continue
+		var col: int = t.col
+		var sgn := 1.0 if col == 2 else -1.0
+		var ss := maxf(floorf(maxf(t.s0, s0) / 4.0) * 4.0 + 2.0, t.s0)
+		while ss < minf(t.s1, s1):
+			var up2 := data.forward(ss)
+			var yaw2 := atan2(-up2.x, -up2.z)
+			var dh2 := data.deck_h(ss, sgn * 4.0)
+			var c0 := data.center(ss)
+			var r0 := data.right(ss)
+			var ch: float = t.height
+			var basis := Basis(Vector3.UP, yaw2)
+			# سقف (x من 2 إلى 7)
+			mb.add_rbox(Vector3(5.6, 1.2, 4.1), 0.2, ceil_c, Transform3D(basis, c0 + r0 * (sgn * 4.6) + Vector3(0, dh2 + ch + 0.6, 0)), 2)
+			# جدار داخلي (جهة الفراغ) وجدار خارجي
+			if int(ss / 4.0) % 4 == 0:   # أعمدة داعمة كل 16 م بدل جدار كامل: نوافذ تُظهر المسار المجاور وتفتح المشهد
+				mb.add_rbox(Vector3(1.1, ch + 1.6, 4.1), 0.15, rock_d, Transform3D(basis, c0 + r0 * (sgn * 1.9) + Vector3(0, dh2 + ch * 0.5 - 0.2, 0)), 2)
+			mb.add_rbox(Vector3(1.4, ch + 1.6, 4.1), 0.15, rock, Transform3D(basis, c0 + r0 * (sgn * 6.9) + Vector3(0, dh2 + ch * 0.5 - 0.2, 0)), 2)
+			ss += 4.0
+	# كتل الجبل فوق الأنفاق
+	for m in data.mounds:
+		var sm0 := maxf(float(m.s0), s0)
+		var sm1 := minf(float(m.s1), s1)
+		if sm1 <= sm0:
+			continue
+		var sc := 0.5 * (float(m.s0) + float(m.s1))
+		if sc < s0 or sc >= s1:
+			continue   # كل كتلة تُرسم مرة واحدة في الشريحة التي تحوي منتصفها
+		var cc := data.center(sc)
+		var rr := data.right(sc)
+		var xc := 0.5 * (float(m.x0) + float(m.x1))
+		var up3 := data.forward(sc)
+		var basis3 := Basis(Vector3.UP, atan2(-up3.x, -up3.z))
+		var dh3 := data.deck_h(sc, 4.0 if xc > 0.0 else -4.0)
+		var ch3: float = 6.5
+		for t3 in data.tunnels:
+			if t3.s0 >= float(m.s0) - 1.0 and t3.s0 <= float(m.s1):
+				ch3 = float(t3.height)
+		# كتلة الجبل فوق السقف (مستطيلة مدوّرة): لا تتداخل مع فراغ النفق
+		var xf3 := Transform3D(basis3, cc + rr * xc + Vector3(0, dh3 + ch3 + 1.2 + 3.6, 0))
+		mb.add_rbox(Vector3(float(m.x1) - float(m.x0), 7.2, float(m.s1) - float(m.s0)), 3.0, Color("6e7a5a"), xf3, 5, Color("8a9a6a"))
+	if mb.vertex_count() == 0:
+		return
+	var mi := MeshInstance3D.new()
+	mi.mesh = mb.build()
+	mi.material_override = Toon.solid(false)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.add_child(mi)
+
+
 func _build_ropes(s0: float, s1: float, node: Node3D) -> void:
 	var mb := MeshBuilder.new()
 	for sd in [-1.0, 1.0]:
@@ -215,7 +303,7 @@ func _build_ropes(s0: float, s1: float, node: Node3D) -> void:
 			var s := s0
 			while s <= s1 + 0.01:
 				var sag := 0.14 * (1.0 - pow(fmod(s, 3.0) / 1.5 - 1.0, 2.0))
-				pts.append(data.center(s) + data.right(s) * (sd * 6.25) + Vector3.UP * (lvl - sag))
+				pts.append(data.center(s) + data.right(s) * (sd * 6.25) + Vector3.UP * (lvl - sag + data.deck_h(s, sd * 5.0)))
 				s += 0.75
 			mb.add_tube(pts, 0.05, TrackProtos.ROPE, 5, Transform3D.IDENTITY, false, false)
 	# عارضتان خشبيتان تحدّان حافتي الجسر (تعطيان عمقًا وتفصيلًا)
@@ -223,7 +311,7 @@ func _build_ropes(s0: float, s1: float, node: Node3D) -> void:
 		var edge: Array = []
 		var s2 := s0
 		while s2 <= s1 + 0.01:
-			edge.append(data.center(s2) + data.right(s2) * (sd * 6.6) + Vector3.UP * -0.14)
+			edge.append(data.center(s2) + data.right(s2) * (sd * 6.6) + Vector3.UP * (-0.14 + data.deck_h(s2, sd * 5.0)))
 			s2 += 3.0
 		mb.add_tube(edge, 0.17, TrackProtos.WOOD_D, 6, Transform3D.IDENTITY, false, false)
 	var mi := MeshInstance3D.new()

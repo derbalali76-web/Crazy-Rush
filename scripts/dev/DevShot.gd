@@ -140,6 +140,9 @@ func _scene_race() -> void:
 	var act: String = args.get("act", "")
 	var guard := 0
 	var pai := RacerAI.new(1.0, float(args.get("aggr", "0.0")), 11)
+	if args.has("route"):
+		var rt: String = args.get("route", "HH")
+		pai._routes = {"A": rt[0] == "H", "B": rt[1] == "H"}
 	while r.runner.s < target_s and guard < 60000:
 		pai.update(1.0 / 120.0, r.runner, r.logic.runners)
 		r.logic.step(1.0 / 120.0)
@@ -259,7 +262,7 @@ func _measure() -> void:
 	r.phase = Race.Phase.RACING
 	r.logic.start()
 	var pai := RacerAI.new(1.0, 0.0, 11)
-	for s_target in [20.0, 120.0, 260.0]:
+	for s_target in [float(args.get("m1", "20")), float(args.get("m2", "120")), float(args.get("m3", "260"))]:
 		var guard := 0
 		while r.runner.s < s_target and guard < 60000:
 			pai.update(1.0 / 120.0, r.runner, r.logic.runners)

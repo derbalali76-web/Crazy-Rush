@@ -22,6 +22,7 @@ var foxy: Foxy
 var view: TrackView
 var hud: Hud
 var cam: Camera3D
+var _cam_ref := 0.0            # ارتفاع السطح المرجعي للكاميرا (ناعم): يتبع الصعود والهبوط في الحلبات متعددة الارتفاعات
 var sun: DirectionalLight3D
 var env: Environment
 var phase: int = Phase.LOADING
@@ -621,7 +622,7 @@ func _pose_foxy(f: Foxy, r: Runner) -> void:
 	f.run_speed = r.speed
 	f.lean = clampf(r.lat_v / Runner.MAX_LAT, -1.0, 1.0)
 	f.vy = r.vy
-	f.height_above = r.y
+	f.height_above = r.y - data.deck_h(r.s, r.x)
 	f.set_flash(r.is_invulnerable() and r.state != Runner.State.FALLING)
 	match r.state:
 		Runner.State.WAIT:
@@ -655,7 +656,8 @@ func _spawn_ghost() -> void:
 # ------------------------------------------------------------------ الكاميرا
 func _reset_camera() -> void:
 	var f := data.frame(runner.s)
-	var base := data.world(runner.s, runner.x * 0.7, 0.0)
+	_cam_ref = data.deck_h(runner.s, runner.x) if data.has_heights else 0.0
+	var base := data.world(runner.s, runner.x * 0.7, _cam_ref)
 	var fw := data.forward(runner.s)
 	_cam_fwd = fw
 	_cam_pos = base - fw * FOLLOW_DIST + Vector3.UP * FOLLOW_HEIGHT
@@ -671,9 +673,12 @@ func _update_camera(delta: float) -> void:
 	var turn := _cam_fwd.cross(fw).y
 	_cam_fwd = _cam_fwd.lerp(fw, 1.0 - exp(-delta * 5.0)).normalized()
 	_roll = lerpf(_roll, clampf(turn * 3.0, -0.06, 0.06) - runner.lat_v / Runner.MAX_LAT * 0.03, 1.0 - exp(-delta * 4.0))
-	var y_follow := runner.y * 0.55
+	var tgt_ref := data.deck_h(s_use, runner.x) if data.has_heights else 0.0
+	_cam_ref = lerpf(_cam_ref, tgt_ref, 1.0 - exp(-delta * 3.2))
+	var y_rel := runner.y - _cam_ref
+	var y_follow := _cam_ref + y_rel * 0.55
 	if runner.state == Runner.State.FALLING:
-		y_follow = maxf(runner.y, -1.0) * 0.2
+		y_follow = _cam_ref + maxf(y_rel, -1.0) * 0.2
 	# الكاميرا تتبع الجانب بنسبة أقل (يبقى المسار أمامك واضحًا) وتتقدم قليلًا باتجاه الحركة الجانبية
 	var base := data.world(s_use, clampf(runner.x * 0.70 + runner.lat_v * 0.06, -4.6, 4.6), y_follow)
 	var boost_k := 1.0 if runner.t_dash > 0.0 else (0.6 if runner.t_boost > 0.0 else 0.0)
@@ -684,10 +689,19 @@ func _update_camera(delta: float) -> void:
 		extra_h = minf(_finish_t * 0.5, 0.9)
 	var want_pos := base - _cam_fwd * (FOLLOW_DIST + extra_d) + Vector3.UP * (FOLLOW_HEIGHT + extra_h + (0.3 if runner.state == Runner.State.SLIDE else 0.0))
 	# حماية: لا تنزل الكاميرا تحت سطح الجسر ولا تخرج عن حواف المسار (لا اختراق للمجسمات الجانبية)
-	var deck := data.center(s_use).y
+	var deck := data.center(s_use).y + _cam_ref
 	if runner.state != Runner.State.FALLING:
 		want_pos.y = maxf(want_pos.y, deck + 1.7)
-	var want_look := base + _cam_fwd * LOOK_AHEAD + data.right(s_use) * (runner.lat_v * 0.10) + Vector3.UP * (0.75 + runner.y * 0.25)
+	if data.has_heights:
+		# داخل النفق: لا ترتفع الكاميرا فوق السقف
+		var cl := data.ceiling_at(s_use, runner.x)
+		if cl < INF:
+			want_pos.y = minf(want_pos.y, data.center(s_use).y + cl - 0.8)
+	var ahead_h := 0.0
+	if data.has_heights:
+		# تطلّع للأمام: الكاميرا تميل نحو ارتفاع السطح القادم (يُشعر بالصعود والهبوط)
+		ahead_h = (data.deck_h(s_use + LOOK_AHEAD, runner.x) - tgt_ref) * 0.65
+	var want_look := base + _cam_fwd * LOOK_AHEAD + data.right(s_use) * (runner.lat_v * 0.10) + Vector3.UP * (0.75 + y_rel * 0.25 + ahead_h)
 	_cam_pos = _cam_pos.lerp(want_pos, 1.0 - exp(-delta * 8.0))
 	_cam_look = _cam_look.lerp(want_look, 1.0 - exp(-delta * 10.0))
 	var shake_off := Vector3.ZERO
@@ -716,7 +730,7 @@ func _place_blob(b: MeshInstance3D, r: Runner, show: bool) -> void:
 	if not over:
 		return
 	var fr := data.frame(r.s)
-	b.global_transform = Transform3D(fr.basis * Basis.from_scale(Vector3.ONE * (1.0 / (1.0 + maxf(r.y, 0.0) * 0.35))), data.center(r.s) + data.right(r.s) * r.x + Vector3.UP * 0.04)
+	b.global_transform = Transform3D(fr.basis * Basis.from_scale(Vector3.ONE * (1.0 / (1.0 + maxf(r.y, 0.0) * 0.35))), data.center(r.s) + data.right(r.s) * r.x + Vector3.UP * (0.04 + data.deck_h(r.s, r.x)))
 
 
 func _update_fx(delta: float) -> void:

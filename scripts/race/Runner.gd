@@ -56,6 +56,7 @@ var s := TrackData.START_S
 var x := 0.0
 var y := 0.0
 var vy := 0.0
+var _ground_dy := 0.0          # تغيّر ارتفاع السطح في آخر خطوة أرضية (لإقلاع المنحدرات)
 var lat_v := 0.0
 var shove_v := 0.0             # دفع جانبي يتلاشى (من لكمة خصم)
 var speed := 0.0
@@ -156,7 +157,7 @@ func step(dt: float) -> void:
 	if s >= TrackData.FINISH_S and state != State.FINISHED:
 		state = State.FINISHED
 		finish_time = time
-		y = maxf(y, 0.0)
+		y = maxf(y, track.deck_h(s, x))
 		finished.emit(finish_time)
 	input.clear_events()
 
@@ -215,7 +216,13 @@ func _steer(dt: float) -> void:
 	var target := clampf(input.steer, -1.0, 1.0) * lim
 	lat_v = move_toward(lat_v, target, LAT_ACCEL * dt)
 	shove_v = move_toward(shove_v, 0.0, SHOVE_DECAY * dt)
-	x = clampf(x + (lat_v + shove_v) * dt, -RAIL, RAIL)
+	var nx := clampf(x + (lat_v + shove_v) * dt, -RAIL, RAIL)
+	if track.has_heights and track.solid_at(s, nx) and track.deck_h(s, nx) > y + 0.7:
+		# جدار: العمود المجاور أعلى من قدميك (لا تسلق جانبي)
+		nx = x
+		lat_v = 0.0
+		shove_v = 0.0
+	x = nx
 	if absf(x) >= RAIL - 0.001 and signf(lat_v) == signf(x):
 		lat_v = 0.0
 
@@ -236,23 +243,33 @@ func _speed_update(dt: float) -> void:
 
 func _physics_vertical(dt: float) -> void:
 	var solid := track.solid_at(s, x)
+	var fh := track.deck_h(s, x)   # ارتفاع سطح العمود (0 في الحلبات المستقرة)
 	if _grounded and state != State.FINISHED:
-		if solid:
-			y = 0.0
+		if solid and y - fh <= 0.5:
+			var dy := fh - y
+			y = fh
 			vy = 0.0
+			_ground_dy = dy
 			_respawn_s = s
 		else:
-			# غادر حافة الألواح: مهلة قصيرة ثم سقوط
+			# غادر حافة الألواح (أو انخفض السطح فجأة): مهلة قصيرة ثم سقوط
 			_grounded = false
-			t_coyote = COYOTE
+			if solid:
+				t_coyote = 0.0                 # نزول إلى عمود أخفض: لا مهلة قفز
+			else:
+				t_coyote = COYOTE
+				# إقلاع من منحدر صاعد: احتفظ بسرعة الصعود (قفزة طبيعية من المنحدر)
+				if track.has_heights and _ground_dy > 0.0:
+					vy = clampf(_ground_dy / maxf(dt, 0.0001), 0.0, 9.0)
 			if state == State.RUN or state == State.SLIDE:
 				state = State.AIR
 	if not _grounded:
 		vy -= GRAVITY * dt
 		y += vy * dt
-		if y <= 0.0 and y > -0.5 and solid and vy <= 0.0:
+		var rise_ok := (vy <= 0.0) if not track.has_heights else (vy <= 5.0)
+		if y <= fh and y > fh - 0.6 and solid and rise_ok:
 			var hard := vy < -12.0
-			y = 0.0
+			y = fh
 			vy = 0.0
 			_grounded = true
 			if state == State.AIR:
@@ -265,7 +282,7 @@ func _physics_vertical(dt: float) -> void:
 				slid.emit()
 			elif t_jump_buf > 0.0:
 				pass
-		elif y < -2.2 and not solid:
+		elif y < track.abyss_y(s, x) and not solid:
 			if state != State.FALLING and state != State.FINISHED:
 				state = State.FALLING
 				t_fall = FALL_RESPAWN
@@ -284,10 +301,16 @@ func _find_respawn() -> void:
 
 func _respawn() -> void:
 	s = maxf(_respawn_s, TrackData.START_S)
-	# اختر عمودًا صلبًا على نفس المسافة
+	# اختر عمودًا صلبًا على نفس المسافة (الأقرب إلى موضع السقوط)
 	if not track.solid_at(s, x):
-		x = 0.0
-	y = 0.0
+		var best := 0.0
+		var bd := 1e9
+		for cx in [-4.0, 0.0, 4.0]:
+			if track.solid_at(s, cx) and absf(cx - x) < bd:
+				bd = absf(cx - x)
+				best = cx
+		x = best
+	y = track.deck_h(s, x)
 	vy = 0.0
 	lat_v = 0.0
 	speed = BASE_SPEED * 0.6

@@ -11,6 +11,7 @@ var _rng := RandomNumberGenerator.new()
 var _decided: Dictionary = {}     # معرّف العائق -> هل سيتصرف بشكل صحيح
 var _lane_t := 0.0
 var chasing := false
+var _routes := {}              # معرّف التفرع -> true للمسار العلوي (اختصار بمهارة) / false للنفق
 
 
 func _init(p_skill: float, p_aggr: float, seed_v: int) -> void:
@@ -30,6 +31,15 @@ func update(dt: float, r: Runner, others: Array) -> void:
 				_decided.erase(k)
 	_tick -= dt
 	_lane_t -= dt
+	# تفرعات: اختر المسار (علوي بمهارة وخطر وجائزة سرعة، أو نفق آمن) والتزم بعموده حتى نهاية التفرع
+	var fk := r.track.fork_at(r.s, 42.0)
+	if not fk.is_empty():
+		var fid: String = fk.id
+		if not _routes.has(fid):
+			_routes[fid] = _rng.randf() < clampf(0.05 + skill * 0.50 + aggression * 0.06, 0.0, 0.9)
+		var col: int = fk.high_col if _routes[fid] else fk.low_col
+		lane_x = TrackData.COLX[col]
+		_lane_t = 1.0
 	if _lane_t <= 0.0:
 		_lane_t = _rng.randf_range(1.5, 3.5)
 		lane_x = clampf(lane_x + _rng.randf_range(-2.5, 2.5), -4.8, 4.8)
@@ -88,7 +98,7 @@ func update(dt: float, r: Runner, others: Array) -> void:
 					break
 	chasing = false
 	# هجوم: توجّه نحو أقرب منافس أمامك خلال 7 أمتار
-	if aggression > 0.3:
+	if aggression > 0.3 and fk.is_empty():
 		for other in others:
 			if other == r:
 				continue

@@ -13,6 +13,7 @@ var sfx_volume: float = 0.8
 var show_fps: bool = false
 var auto_quality: bool = true
 var vibration: bool = true
+var branch_track: bool = false    # حلبة التفرعات متعددة الارتفاعات (Graybox تجريبي)
 var premium_track: bool = false   # حلبة الغابة التجريبية (بريميوم): تخطيط متعرج + ديكور حقيقي
 var best_time: float = 0.0
 var total_coins: int = 0
@@ -33,6 +34,7 @@ func load_settings() -> void:
 	steer_sensitivity = clampf(float(cf.get_value("controls", "sensitivity", 1.0)), 0.4, 1.8)
 	vibration = bool(cf.get_value("controls", "vibration", true))
 	premium_track = bool(cf.get_value("gfx", "premium_track", false))
+	branch_track = bool(cf.get_value("gfx", "branch_track", false))
 	sfx_volume = clampf(float(cf.get_value("audio", "sfx", 0.8)), 0.0, 1.0)
 	best_time = float(cf.get_value("progress", "best_time", 0.0))
 	total_coins = int(cf.get_value("progress", "coins", 0))
@@ -46,6 +48,7 @@ func save_settings() -> void:
 	cf.set_value("controls", "sensitivity", steer_sensitivity)
 	cf.set_value("controls", "vibration", vibration)
 	cf.set_value("gfx", "premium_track", premium_track)
+	cf.set_value("gfx", "branch_track", branch_track)
 	cf.set_value("audio", "sfx", sfx_volume)
 	cf.set_value("progress", "best_time", best_time)
 	cf.set_value("progress", "coins", total_coins)
@@ -60,6 +63,7 @@ func reset_defaults() -> void:
 	auto_quality = true
 	vibration = true
 	premium_track = false
+	branch_track = false
 	save_settings()
 	quality_changed.emit()
 

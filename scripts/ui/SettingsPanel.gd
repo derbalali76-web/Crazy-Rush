@@ -44,12 +44,12 @@ func _ready() -> void:
 		b.pressed.connect(func(): _set_quality(qi))
 		p.add_child(b)
 		_q_buttons.append(b)
-	y += 82
+	y += 70
 	var hint := UiKit.label("المنخفضة أخفّ على الهواتف المتوسطة (دقة أقل، بلا ظلال، ديكور أقل).", 20, Color("c9d6ff"), 3, HORIZONTAL_ALIGNMENT_RIGHT)
 	hint.size = Vector2(pw - 60, 30)
 	hint.position = Vector2(0, y)
 	p.add_child(hint)
-	y += 52
+	y += 40
 
 	# --- الحساسية
 	var sl := UiKit.label("حساسية التوجيه", 28, Color.WHITE, 5, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -73,16 +73,18 @@ func _ready() -> void:
 	_sens_label.size = Vector2(90, 40)
 	_sens_label.position = Vector2(500, y)
 	p.add_child(_sens_label)
-	y += 66
+	y += 56
 
 	# --- مفاتيح
 	_add_toggle(p, "اهتزاز اللمس", "vibration", y, pw)
-	y += 56
+	y += 50
 	_add_toggle(p, "عرض عدّاد الأداء (FPS)", "show_fps", y, pw)
-	y += 56
+	y += 50
 	_add_toggle(p, "تخفيف الرسومات تلقائيًا عند الثقل", "auto_quality", y, pw)
-	y += 56
+	y += 50
 	_add_toggle(p, "حلبة الغابة التجريبية (بريميوم)", "premium_track", y, pw)
+	y += 50
+	_add_toggle(p, "حلبة التفرعات متعددة الارتفاعات (تجريبي)", "branch_track", y, pw)
 
 	var reset := UiKit.button("استعادة الافتراضي", UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, Vector2(300, 62), 26)
 	reset.position = Vector2(40, ph - 88)

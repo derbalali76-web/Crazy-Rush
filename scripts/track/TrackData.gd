@@ -23,6 +23,14 @@ var pads: Array = []         # {s, x, used}
 var canyon: Array = []       # نطاقات [s0, s1] يظهر فيها الوادي المائي بدل الأرض
 var signs: Array = []        # لافتات تحذير قبل الحفر
 
+## ---- تجريبي (layout 2): ارتفاعات لكل عمود + تفرعات + أنفاق. الافتراضي بلا أثر (كل الارتفاعات صفر).
+var has_heights := false
+var col_off: Array = [[], [], []]      # لكل عمود مفاتيح [s, ارتفاع نسبةً للخط المركزي]
+var common_off: Array = []             # فرق ارتفاع مشترك لكل الأعمدة (مثل هبوط قفزة الوادي)
+var forks: Array = []                  # {id, s0, s1, high_col, low_col}
+var tunnels: Array = []                # {s0, s1, col, height}
+var mounds: Array = []                 # كتل جبلية للرسم فقط {s0, s1, x0, x1, top}
+
 const COLX := [-4.0, 0.0, 4.0]
 
 
@@ -69,6 +77,11 @@ func _build_centerline() -> void:
 		curv = _bends_to_keys([[130.0, 110.0, 75.0], [270.0, 140.0, -100.0], [450.0, 170.0, 120.0], [680.0, 100.0, -70.0], [800.0, 90.0, 55.0]])
 		slope = [[0, 0.0], [150, 0.0], [190, 0.05], [250, 0.05], [300, -0.045], [345, 0.0], [470, 0.0], [510, 0.04],
 			[570, 0.04], [620, -0.05], [665, 0.0], [820, 0.0], [850, 0.03], [890, 0.03], [930, -0.035], [960, 0.0], [LENGTH + 20, 0.0]]
+	if layout == 2:
+		# منعطفات لطيفة؛ الصعود والهبوط الرئيسيان على الخط المركزي نفسه، وفروق التفرع على الأعمدة
+		curv = _bends_to_keys([[130.0, 110.0, 35.0], [470.0, 150.0, -50.0], [700.0, 120.0, 45.0]])
+		slope = [[0, 0.0], [110, 0.0], [135, 0.06], [245, 0.06], [270, 0.0], [440, 0.0], [470, -0.045], [540, -0.045], [560, 0.0],
+			[574, 0.0], [584, 0.15], [592, 0.15], [598, -0.02], [680, -0.02], [700, 0.0], [LENGTH + 20, 0.0]]
 	count = int((LENGTH + 40.0) / STEP) + 1
 	pos.resize(count)
 	fwd.resize(count)
@@ -120,6 +133,43 @@ func world(s: float, x: float, y: float = 0.0) -> Vector3:
 
 func ground_y(s: float) -> float:
 	return center(s).y
+
+
+## ارتفاع سطح العمود عند (s, x) نسبةً للخط المركزي. صفر دائمًا في الحلبات المستقرة (سلوك متطابق).
+func deck_h(s: float, x: float) -> float:
+	if not has_heights:
+		return 0.0
+	var h := 0.0
+	if not common_off.is_empty():
+		h = _keys_value(common_off, s)
+	var keys: Array = col_off[col_of(x)]
+	if not keys.is_empty():
+		h += _keys_value(keys, s)
+	return h
+
+
+## مستوى السقوط (الهاوية) تحت العمود: يُعدّ اللاعب ساقطًا إن نزل عنه فوق فراغ.
+func abyss_y(s: float, x: float) -> float:
+	return deck_h(s, x) - 2.2
+
+
+## سقف النفق عند (s, x) أو +INF إن لم يكن نفقًا (تستعمله الكاميرا).
+func ceiling_at(s: float, x: float) -> float:
+	if not has_heights:
+		return INF
+	var c := col_of(x)
+	for t in tunnels:
+		if int(t.col) == c and s >= t.s0 - 4.0 and s <= t.s1 + 4.0:
+			return deck_h(s, x) + float(t.height)
+	return INF
+
+
+## التفرع الذي يشمل المسافة s (أو {}).
+func fork_at(s: float, lead := 0.0) -> Dictionary:
+	for f in forks:
+		if s >= f.s0 - lead and s <= f.s1:
+			return f
+	return {}
 
 
 # ------------------------------------------------------------------ الحفر والتحقق من الأرضية
@@ -191,6 +241,10 @@ func _pad(s: float, x: float) -> void:
 func _layout() -> void:
 	if layout == 1:
 		_layout_jungle()
+		return
+	if layout == 2:
+		_layout_branch()
+		_apply_heights()
 		return
 	var L := COLX[0]
 	var M := COLX[1]
@@ -378,6 +432,103 @@ func _layout_jungle() -> void:
 	_crate(892, R)
 	# 8) الخط الأخير: نظيف
 	_pad(930, M)
+	_coin_line(936, 990, M, 0.9, 3.0)
+
+
+## يضيف ارتفاع السطح لكل عملة وعائق (إحداثيات y مطلقة نسبةً للخط المركزي).
+func _apply_heights() -> void:
+	if not has_heights:
+		return
+	for i in range(coins.size()):
+		var c: Vector3 = coins[i]
+		coins[i] = Vector3(c.x, c.y, c.z + deck_h(c.x, c.y))
+	for o in obstacles:
+		var xc := 0.5 * (float(o.x0) + float(o.x1))
+		var h := deck_h(float(o.s), xc)
+		o["y0"] = float(o.y0) + h
+		o["y1"] = float(o.y1) + h
+		o["base_h"] = h
+		if o.type == "hammer":
+			o["pivot_y"] = float(o.pivot_y) + h
+
+
+## تفرع: عمود علوي (ridge) وعمود سفلي (نفق) يفصل بينهما فراغ، مع ممر هبوط وعتبة مهارة وسرعة مكافأة.
+## side = -1 العلوي يسار، +1 العلوي يمين. يضيف الفراغ والعتبة والمسرّعات والنفق والعملات.
+func _fork(id: String, s0: float, side: int, hi: float) -> void:
+	var hc := 0 if side < 0 else 2
+	var lc := 2 if side < 0 else 0
+	var hx: float = COLX[hc]
+	var lx: float = COLX[lc]
+	var sg := float(side)
+	# العمود العلوي: يصعد خلال 38 م ويبقى ثم ينزل خلال 41 م
+	col_off[hc] = [[0.0, 0.0], [s0, 0.0], [s0 + 38.0, hi], [s0 + 112.0, hi], [s0 + 153.0, 0.0], [LENGTH + 20.0, 0.0]]
+	# الفراغ الفاصل (العمود الأوسط) مع نافذة هبوط/عبور بين s0+78 و s0+98
+	_pit(s0, s0 + 78.0, 2)
+	signs.append(s0 - 14.0)
+	_pit(s0 + 98.0, s0 + 158.0, 2)
+	# عتبة المهارة: ثلم 6 م في المسار العلوي ثم مسرّعان
+	_pit(s0 + 56.0, s0 + 62.0, 1 << hc)
+	_coin_arc(s0 + 59.0, hx, 10.0, 2.8, 7)
+	_pad(s0 + 70.0, hx)
+	_pad(s0 + 92.0, hx)
+	_coin_line(s0 + 36.0, s0 + 52.0, hx)
+	_coin_line(s0 + 66.0, s0 + 76.0, hx)
+	# النفق السفلي
+	tunnels.append({"s0": s0 + 25.0, "s1": s0 + 140.0, "col": lc, "height": 7.5})
+	_crate(s0 + 42.0, lx)
+	_log(s0 + 60.0, lx - 1.8, lx + 1.8)
+	_vine(s0 + 82.0, lx - 1.8, lx + 1.8)
+	_crate(s0 + 104.0, lx, 2)
+	_log(s0 + 122.0, lx - 1.8, lx + 1.8)
+	_coin_line(s0 + 30.0, s0 + 138.0, lx, 0.9, 6.0)
+	# ممر الهبوط (الفراغ مغلق): عملات على العمود الأوسط
+	_coin_line(s0 + 80.0, s0 + 96.0, COLX[1], 0.9, 4.0)
+	# كتل الجبل للرسم
+	mounds.append({"s0": s0 + 20.0, "s1": s0 + 145.0, "x0": 2.2 if lc == 2 else -14.0, "x1": 14.0 if lc == 2 else -2.2, "top": 13.0})
+	forks.append({"id": id, "s0": s0, "s1": s0 + 158.0, "high_col": hc, "low_col": lc, "side": side, "hi": hi})
+
+
+func _layout_branch() -> void:
+	has_heights = true
+	var M := COLX[1]
+	var R := COLX[2]
+	var L := COLX[0]
+	# 1) انطلاق سهل
+	_coin_line(40, 70, M)
+	_crate(84, M)
+	_coin_arc(84, M, 7.0, 2.4, 5)
+	_coin_line(98, 116, R)
+	_pad(122, R)
+	# 2) مرتفع صاعد بعقبات خفيفة
+	_log(152, -6.0, 2.0)
+	_coin_line(142, 160, R)
+	_log(176, -2.0, 6.0)
+	_vine(204, -6.0, 6.0)
+	_coin_line(190, 230, M, 0.9, 4.0)
+	# 3) تفرع A (العلوي يسار، 262 → 420)
+	_fork("A", 262.0, -1, 7.0)
+	# 4) وادٍ هابط ثم قفزة الوادي 592→600 (كامل العرض) بمنحدر إقلاع وهبوط أخفض
+	_coin_line(450, 500, M, 0.9, 4.0)
+	_crate(470, L)
+	_crate(470, R)
+	_log(500, -6.0, 2.0)
+	_vine(526, -6.0, 6.0)
+	_pad(560, M)
+	_pit(592.0, 600.0, 7)
+	signs.append(578.0)
+	_coin_arc(596.0, M, 12.0, 3.4, 8)
+	common_off = [[0.0, 0.0], [594.0, 0.0], [596.5, -2.2], [LENGTH + 20.0, -2.2]]
+	_pad(606, M)
+	# 5) هبوط ثم تفرع B (العلوي يمين) 700 → 858 مع عودة الارتفاع للصفر
+	_crate(640, M)
+	_log(656, 1.0, 6.0)
+	_log(672, -6.0, -1.0)
+	_fork("B", 700.0, 1, 6.0)
+	# 6) النهاية
+	_crate(880, L)
+	_crate(880, R)
+	_pad(900, M)
+	_vine(918, -6.0, 6.0)
 	_coin_line(936, 990, M, 0.9, 3.0)
 
 
