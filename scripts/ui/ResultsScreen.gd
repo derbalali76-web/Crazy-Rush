@@ -10,6 +10,8 @@ const W := 1672.0
 const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
 const BG := preload("res://assets/ui/results_ref.png")
+## حدود صفوف الجدول المرسومة (y من، y إلى) بإحداثيات المرجع
+const ROWS := [Vector2(200, 273), Vector2(279, 341), Vector2(345, 402), Vector2(405, 463), Vector2(466, 522), Vector2(523, 578), Vector2(580, 637), Vector2(636, 692)]
 const ORD := ["الأول", "الثاني", "الثالث", "الرابع", "الخامس", "السادس", "السابع", "الثامن"]
 
 var data: Dictionary = {}
@@ -141,8 +143,8 @@ func _build() -> void:
 	# المكافآت: العملات الحقيقية فقط
 	_patch2(Rect2(158, 346, 152, 64), 154, 306)
 	_lbl(str(int(data.get("coins", 0))), Rect2(160, 348, 150, 60), 48, Color("ffe15a"), HORIZONTAL_ALIGNMENT_CENTER, 5)
-	_unavailable(Rect2(62, 432, 245, 72), 18, 0.86)    # الجواهر
-	_unavailable(Rect2(62, 518, 245, 84), 18, 0.86)    # الخبرة
+	_unavailable(Rect2(62, 432, 245, 72), 18, 0.72)    # الجواهر
+	_unavailable(Rect2(62, 518, 245, 84), 18, 0.72)    # الخبرة
 	if data.get("new_best", false):
 		_lbl("رقم قياسي جديد!", Rect2(30, 648, 310, 44), 28, Color("fff3a0"), HORIZONTAL_ALIGNMENT_CENTER, 6)
 
@@ -150,14 +152,13 @@ func _build() -> void:
 	_patch(Rect2(436, 660, 240, 44), 425)
 	_lbl("المركز " + ORD[clampi(rank - 1, 0, ORD.size() - 1)], Rect2(430, 655, 250, 52), 38, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 6)
 
-	# جدول الترتيب (يتكيف مع عدد المتسابقين)
-	_box(Rect2(814, 198, 820, 492), Color("01174f"), Color(0, 0, 0, 0), 22, 0)
-	var n := maxi(st.size(), 1)
-	var rh := minf(78.0, (480.0 - (n - 1) * 8.0) / n)
-	var y := 204.0
-	for k in range(st.size()):
-		_row(k, st[k], y, rh)
-		y += rh + 8.0
+	# جدول الترتيب: صفوف المرجع الفنية كما هي، ونستبدل النصوص والصور بقيم حقيقية
+	var n := mini(st.size(), ROWS.size())
+	for k in range(n):
+		_row(k, st[k])
+	for k in range(n, ROWS.size()):
+		var rr: Vector2 = ROWS[k]
+		_box(Rect2(814, rr.x - 3.0, 820, rr.y - rr.x + 6.0), Color("061c68"), Color(0, 0, 0, 0), 14, 0)
 
 	# الأزرار
 	_hit(Rect2(60, 775, 430, 140), func(): home_pressed.emit())
@@ -169,38 +170,34 @@ func _build() -> void:
 	_lbl(perf, Rect2(20, 160, 560, 30), 17, Color("c9ffd6"), HORIZONTAL_ALIGNMENT_LEFT, 4)
 
 
-func _row(k: int, e: Dictionary, y: float, h: float) -> void:
-	var cols := [
-		[Color("f2b51c"), Color("ffe27a")],
-		[Color("8fb0e8"), Color("d8e6ff")],
-		[Color("d9803a"), Color("ffc080")],
-	]
-	var fill: Color
-	var edge: Color
-	if k < 3:
-		fill = cols[k][0]
-		edge = cols[k][1]
-	else:
-		fill = Color("1b57d0")
-		edge = Color("4a9bff")
+func _row(k: int, e: Dictionary) -> void:
+	var rr: Vector2 = ROWS[k]
+	var top := rr.x
+	var h := rr.y - rr.x
 	var is_player: bool = bool(e.get("player", false))
-	var rb := _box(Rect2(820, y, 808, h), fill, Color.WHITE if is_player else edge, int(h * 0.4), 4 if is_player else 2)
-	var tc := Color("1a1040") if k < 2 else Color.WHITE
-	_lbl(str(k + 1), Rect2(18, 0, 80, h), int(h * 0.62), tc, HORIZONTAL_ALIGNMENT_CENTER, 0 if k < 2 else 4, rb)
+	var tc := Color("2a1450") if k < 2 else Color.WHITE
+	# الاسم
+	_patch2(Rect2(1034, top + 6, 152, h - 12), 1026, 1188)
+	_lbl(str(e.get("name", "")), Rect2(1034, top, 160, h), 34, tc, HORIZONTAL_ALIGNMENT_CENTER, 0 if k < 2 else 4)
+	# الزمن (داخل كبسولته المرسومة)
+	_patch2(Rect2(1270, top + 10, 135, h - 20), 1268, 1406)
+	_lbl(str(e.get("time_text", "")), Rect2(1268, top + 6, 140, h - 12), 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 3)
+	# الشخصية
 	var ic := Characters.icon(str(e.get("character", Settings.selected_character if is_player else "fox")))
 	if ic:
-		var isz := h - 8.0
 		var tr := TextureRect.new()
 		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tr.stretch_mode = TextureRect.STRETCH_SCALE
 		tr.texture = ic
-		tr.size = Vector2(isz * 1.1, isz)
-		tr.position = Vector2(115, 4)
+		tr.size = Vector2(80, h - 6)
+		tr.position = Vector2(932, top + 3)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		rb.add_child(tr)
-	_lbl(str(e.get("name", "")), Rect2(240, 0, 250, h), int(h * 0.5), tc, HORIZONTAL_ALIGNMENT_LEFT, 0 if k < 2 else 4, rb)
-	var pill := _box(Rect2(500, h * 0.14, 180, h * 0.72), Color(0.05, 0.07, 0.25, 0.75), Color(0, 0, 0, 0), int(h * 0.3), 0, rb)
-	_lbl(str(e.get("time_text", "")), Rect2(0, 0, 180, h * 0.72), int(h * 0.44), Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 3, pill)
+		_root.add_child(tr)
+	# كبسولة العملات: للاعب عملاته الحقيقية، ولغيره تُخفى (لا مكافآت وهمية)
 	if is_player:
-		var cp := _box(Rect2(700, h * 0.14, 90, h * 0.72), Color(0.05, 0.07, 0.25, 0.75), Color(0, 0, 0, 0), int(h * 0.3), 0, rb)
-		_lbl("+%d" % int(data.get("coins", 0)), Rect2(0, 0, 90, h * 0.72), int(h * 0.42), Color("ffe15a"), HORIZONTAL_ALIGNMENT_CENTER, 3, cp)
+		_patch2(Rect2(1500, top + 10, 112, h - 20), 1497, 1614)
+		_lbl("+%d" % int(data.get("coins", 0)), Rect2(1496, top + 6, 120, h - 12), 30, Color("2a1450") if k == 0 else Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 0 if k < 2 else 3)
+		var ring := _box(Rect2(820, top - 1, 812, h + 2), Color(0, 0, 0, 0), Color.WHITE, int(h * 0.45), 4)
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	else:
+		_patch2(Rect2(1436, top + 4, 186, h - 8), 1428, 1431)
