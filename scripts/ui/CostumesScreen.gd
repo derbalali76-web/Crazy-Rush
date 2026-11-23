@@ -11,6 +11,7 @@ const TAG_TEXT := "غير متاح حاليًا"
 const IMAGES := {
 	"fox": "res://assets/ui/costumes_ref.png",
 	"bombo": "res://assets/ui/costumes_bombo_ref.png",
+	"ziko": "res://assets/ui/costumes_ziko_ref.png",
 }
 
 ## الشخصيات التي لها صورة متجر جاهزة
@@ -109,7 +110,7 @@ func _patch_num(x: float, y: float, w: float, h: float, sample_x: int, text: Str
 
 
 func _build() -> void:
-	if char_id == "bombo":
+	if char_id == "bombo" or char_id == "ziko":
 		_build_bombo()
 	else:
 		_build_fox()
@@ -121,6 +122,35 @@ func _build() -> void:
 func _build_bombo() -> void:
 	_patch_num(1100, 34, 112, 40, 1100, str(Settings.total_coins))
 	_patch_num(1362, 34, 98, 40, 1358, "0")
+	if char_id == "ziko":
+		_fix_text(Rect2(1345, 678, 272, 38), 1338, 1622, 683, "زي النينجا السيبراني", 28)
+	if char_id == "bombo":
+		_fix_bombo_name()
+	_build_six()
+
+
+func _fix_text(r: Rect2, lx: int, rx: int, sy: int, text: String, size: int) -> void:
+	var strip := Image.create(2, int(r.size.y), false, Image.FORMAT_RGBA8)
+	for i in range(int(r.size.y)):
+		strip.set_pixel(0, i, _bg_img.get_pixel(lx, sy + i))
+		strip.set_pixel(1, i, _bg_img.get_pixel(rx, sy + i))
+	var pt := TextureRect.new()
+	pt.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	pt.texture = ImageTexture.create_from_image(strip)
+	pt.position = r.position
+	pt.size = r.size
+	pt.stretch_mode = TextureRect.STRETCH_SCALE
+	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(pt)
+	var l := UiKit.bold_label(text, size, Color.WHITE, Color("0a0a40"), 7)
+	l.position = r.position - Vector2(0, 4)
+	l.size = r.size + Vector2(0, 8)
+	l.clip_text = true
+	_root.add_child(l)
+
+
+func _fix_bombo_name() -> void:
 	# تصحيح الاسم المرسوم («يومبو» ← «بومبو»)
 	var strip := Image.create(2, 40, false, Image.FORMAT_RGBA8)
 	for i in range(40):
@@ -140,6 +170,9 @@ func _build_bombo() -> void:
 	nm.size = Vector2(268, 52)
 	nm.clip_text = true
 	_root.add_child(nm)
+
+
+func _build_six() -> void:
 	# ست بطاقات: لا يملك المستخدم أيًا منها بعد
 	var xs := [1325.0, 1002.0, 680.0]
 	for i in range(6):
