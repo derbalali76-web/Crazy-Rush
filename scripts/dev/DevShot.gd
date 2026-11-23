@@ -22,7 +22,11 @@ func _ready() -> void:
 		"sheet":
 			await _scene_fox()
 		"menu":
-			add_child(Menu.new())
+			var mn := Menu.new()
+			add_child(mn)
+			if args.get("sel", "") != "":
+				await get_tree().process_frame
+				mn._set_focus(int(args.get("sel", "0")))
 		"store":
 			var sts := StoreScreen.new()
 			add_child(sts)
@@ -48,7 +52,11 @@ func _ready() -> void:
 		"account":
 			add_child(AccountScreen.new())
 		"select":
-			add_child(CharacterSelect.new())
+			var cs := CharacterSelect.new()
+			add_child(cs)
+			if args.get("sel", "") != "":
+				await get_tree().process_frame
+				cs._set_focus(int(args.get("sel", "0")))
 		"race":
 			await _scene_race()
 		"touch":
