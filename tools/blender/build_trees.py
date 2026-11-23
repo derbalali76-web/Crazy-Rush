@@ -71,6 +71,8 @@ def build(name, seed, lod, trunk_h, spread, nbranch, leaf_per, leaf_scale):
     lm = bmesh.new(); lm.from_mesh(leaf_mesh)
     luv = lm.loops.layers.uv.verify() if lm.loops.layers.uv else None
     uvl = bm.loops.layers.uv.verify()
+    if lod == 2:
+        tips = tips[::2] + [tips[-1]]
     for tip in tips:
         for j in range(leaf_per):
             pos = tip + Vector((random.gauss(0, spread * 0.35), random.gauss(0, spread * 0.35), random.gauss(0, 0.5)))
@@ -98,8 +100,8 @@ def build(name, seed, lod, trunk_h, spread, nbranch, leaf_per, leaf_scale):
     return len(me.loop_triangles), os.path.getsize(path)
 
 # المتغيّران a (طويل مستدير) وb (أعرض)
-CFG = {"tree_a": dict(seed=11, trunk_h=7.5, spread=2.4, nbranch=6, leaf_per=(5, 3, 2), leaf_scale=(2.1, 2.6, 3.2)),
-       "tree_b": dict(seed=29, trunk_h=6.0, spread=3.2, nbranch=7, leaf_per=(5, 3, 2), leaf_scale=(2.2, 2.7, 3.3))}
+CFG = {"tree_a": dict(seed=11, trunk_h=7.5, spread=2.4, nbranch=6, leaf_per=(2, 1, 1), leaf_scale=(2.8, 3.4, 4.6)),
+       "tree_b": dict(seed=29, trunk_h=6.0, spread=3.2, nbranch=7, leaf_per=(2, 1, 1), leaf_scale=(2.9, 3.5, 4.7))}
 for name, c in CFG.items():
     for lod in range(3):
         tris, size = build(name, c["seed"], lod, c["trunk_h"], c["spread"], c["nbranch"], c["leaf_per"][lod], c["leaf_scale"][lod])

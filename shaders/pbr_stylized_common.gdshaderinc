@@ -8,6 +8,7 @@ uniform float vc_mix = 0.65;          // 0 لون الخامة كما هو، 1 �
 uniform float tex_sat = 0.55;
 uniform float normal_strength = 0.9;
 uniform bool use_normal = true;
+uniform bool planar_only = false;   // عينة واحدة من الأعلى (أرض مسطحة): أرخص بثلاث مرات
 uniform bool world_space = false;
 uniform vec4 shade_color : source_color = vec4(0.46, 0.40, 0.70, 1.0);
 uniform float band_soft = 0.32;       // أنعم من الكرتون الصلب
@@ -40,14 +41,14 @@ void fragment() {
 	vec2 ux = v_pos.zy * tex_scale;
 	vec2 uy = v_pos.xz * tex_scale;
 	vec2 uz = v_pos.xy * tex_scale;
-	vec3 t = texture(albedo_tex, ux).rgb * w.x + texture(albedo_tex, uy).rgb * w.y + texture(albedo_tex, uz).rgb * w.z;
+	vec3 t = planar_only ? texture(albedo_tex, uy).rgb : texture(albedo_tex, ux).rgb * w.x + texture(albedo_tex, uy).rgb * w.y + texture(albedo_tex, uz).rgb * w.z;
 	float lum = dot(t, vec3(0.299, 0.587, 0.114));
 	vec3 graded = mix(vec3(lum), t, tex_sat);
 	vec3 from_vc = v_col * clamp(lum / tex_avg_lum, 0.35, 1.7);
 	ALBEDO = mix(graded, from_vc, vc_mix);
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
-	if (use_normal) {
+	if (use_normal && !planar_only) {
 		vec3 tx = texture(normal_tex, ux).xyz * 2.0 - 1.0;
 		vec3 ty = texture(normal_tex, uy).xyz * 2.0 - 1.0;
 		vec3 tz = texture(normal_tex, uz).xyz * 2.0 - 1.0;

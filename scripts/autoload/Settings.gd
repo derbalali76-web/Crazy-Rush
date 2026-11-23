@@ -82,7 +82,8 @@ func profile() -> Dictionary:
 		Quality.HIGH:
 			return {"scale": 1.0, "msaa": 2, "shadows": true, "density": 1.0, "view": 260.0, "outline": true, "fog": true}
 		_:
-			return {"scale": 0.85, "msaa": 0, "shadows": true, "density": 0.65, "view": 200.0, "outline": true, "fog": true}
+			# الوضع المميز أثقل على البكسل (خامات PBR): دقة أقل على الشاشات عالية الدقة
+			return {"scale": 0.70 if premium_track else 0.85, "msaa": 0, "shadows": true, "density": 0.65, "view": 200.0, "outline": true, "fog": true}
 
 
 func quality_name() -> String:

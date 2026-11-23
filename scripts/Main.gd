@@ -27,7 +27,7 @@ func _start_race() -> void:
 	await get_tree().process_frame
 	# الحلبة التجريبية (بريميوم) اختيارية من الإعدادات؛ الافتراضي هو الحلبة المستقرة بلا تغيير.
 	Toon.premium_enabled = Settings.premium_track
-	Toon.use_normal_maps = Settings.quality != Settings.Quality.LOW
+	Toon.use_normal_maps = Settings.quality == Settings.Quality.HIGH
 	TrackData.layout = 1 if Settings.premium_track else 0
 	var r := Race.new()
 	r.exit_to_menu.connect(_show_menu)

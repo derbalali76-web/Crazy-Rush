@@ -41,6 +41,23 @@ static func _make_board() -> ArrayMesh:
 	return mb.build()
 
 
+## نسخة خفيفة للوضع المميز (48 مثلثًا بدل 204): ألواح الجسر هي أكثر عنصر تكرارًا في المشهد.
+static func _make_board_p() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_rbox(Vector3(3.94, 0.26, 0.90), 0.07, WOOD, _xf(Vector3(0, -0.13, 0)), 2, WOOD_L)
+	for sx in [-1.65, 1.65]:
+		mb.add_ellipsoid(Vector3(0.07, 0.04, 0.07), WOOD_D, _xf(Vector3(sx, 0.005, 0.0)), 5, 3)
+	return mb.build()
+
+
+static func _make_post_p() -> ArrayMesh:
+	var mb := MeshBuilder.new()
+	mb.add_cylinder(0.17, 0.13, 1.55, WOOD_D, _xf(Vector3(0, -0.2, 0)), 6, true, WOOD)
+	mb.add_ellipsoid(Vector3(0.17, 0.15, 0.17), WOOD_L, _xf(Vector3(0, 1.38, 0)), 6, 4)
+	mb.add_torus(0.15, 0.04, ROPE, _xf(Vector3(0, 1.1, 0)), 8, 4)
+	return mb.build()
+
+
 static func _make_stringer() -> ArrayMesh:
 	var mb := MeshBuilder.new()
 	mb.add_rbox(Vector3(0.45, 0.42, 6.2), 0.1, WOOD_D, _xf(Vector3(0, -0.48, 0)), 3)

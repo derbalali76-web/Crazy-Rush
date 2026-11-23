@@ -135,8 +135,12 @@ func _setup_environment() -> void:
 	sun.light_energy = 0.82
 	sun.light_color = Color("fff0d6")
 	sun.shadow_enabled = bool(prof.shadows)
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 55.0
+	if Toon.premium_enabled and Settings.quality != Settings.Quality.HIGH:
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL   # مرور واحد بدل اثنين
+		sun.directional_shadow_max_distance = 42.0
+	else:
+		sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+		sun.directional_shadow_max_distance = 55.0
 	sun.shadow_bias = 0.06
 	sun.directional_shadow_blend_splits = true
 	sun.shadow_blur = 1.6

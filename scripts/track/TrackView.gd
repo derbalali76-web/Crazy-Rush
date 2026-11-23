@@ -124,9 +124,9 @@ func _build_chunk(ci: int, node: Node3D) -> void:
 				if int(round(s / 3.0)) % 4 == 0 and density >= 0.5:
 					lanterns.append(_frame_xf(s, sd * 6.25, 0.0))
 		s += 3.0
-	_mmi(TrackProtos.get_mesh("board"), boards, board_cols, Toon.textured(1, 0.34), node, false)
+	_mmi(TrackProtos.get_mesh("board_p" if Toon.premium_enabled else "board"), boards, board_cols, Toon.textured(1, 0.34), node, false)
 	_mmi(TrackProtos.get_mesh("stringer"), stringers, [], Toon.textured(1, 0.34), node, false)
-	_mmi(TrackProtos.get_mesh("post"), posts, [], Toon.textured(1, 0.34), node, true)
+	_mmi(TrackProtos.get_mesh("post_p" if Toon.premium_enabled else "post"), posts, [], Toon.textured(1, 0.34), node, true)
 	if not Toon.premium_enabled:
 		_mmi(TrackProtos.get_mesh("pennant"), pennants, [], Toon.double_sided(false), node, false)
 		_mmi(TrackProtos.get_mesh("lantern"), lanterns, [], Toon.solid(false), node, false)
@@ -307,8 +307,8 @@ func _build_scenery(s0: float, s1: float, node: Node3D, ci: int) -> void:
 
 ## ديكور «بريميوم»: صخور ونباتات حقيقية (PropLib) بمجموعات، مع LOD بالمسافة عبر visibility_range لكل شريحة 30 م.
 ## المسار وما حوله (إزاحة < 7.8 م) خالٍ دائمًا.
-const LOD_RANGES := [[0.0, 45.0], [45.0, 95.0], [95.0, 400.0]]
-const LOD_RANGES_TREE := [[0.0, 40.0], [40.0, 100.0], [100.0, 400.0]]
+const LOD_RANGES := [[0.0, 24.0], [24.0, 60.0], [60.0, 190.0]]
+const LOD_RANGES_TREE := [[0.0, 28.0], [28.0, 75.0], [75.0, 190.0]]
 
 
 func _build_premium_props(s0: float, s1: float, node: Node3D) -> void:

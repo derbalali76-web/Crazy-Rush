@@ -39,6 +39,7 @@ static func premium(mode: int, wind := -1.0) -> ShaderMaterial:
 	m.set_shader_parameter("vc_mix", d.vc)
 	m.set_shader_parameter("tex_sat", d.sat)
 	m.set_shader_parameter("use_normal", use_normal_maps)
+	m.set_shader_parameter("planar_only", mode == 4)
 	if wind >= 0.0:
 		m.set_shader_parameter("wind_amount", wind)
 	_cache[key] = m

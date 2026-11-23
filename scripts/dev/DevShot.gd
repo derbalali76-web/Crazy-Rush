@@ -269,6 +269,30 @@ func _measure() -> void:
 		for i in 6:
 			await get_tree().process_frame
 		await RenderingServer.frame_post_draw
+		if args.get("brk", "0") == "1":
+			var cam_p: Vector3 = r.cam.global_position
+			var agg := {}
+			for n in r.view.find_children("*", "MultiMeshInstance3D", true, false):
+				var mmi := n as MultiMeshInstance3D
+				var mm := mmi.multimesh
+				if mm == null or mm.mesh == null or not mmi.is_visible_in_tree():
+					continue
+				var tri := 0
+				for si in range(mm.mesh.get_surface_count()):
+					var arr := mm.mesh.surface_get_arrays(si)
+					var idx = arr[Mesh.ARRAY_INDEX]
+					tri += (idx.size() / 3) if idx != null else (arr[Mesh.ARRAY_VERTEX].size() / 3)
+				var vis := 0
+				for i in range(mm.instance_count):
+					var d := mm.get_instance_transform(i).origin.distance_to(cam_p)
+					if d >= mmi.visibility_range_begin and (mmi.visibility_range_end <= 0.0 or d < mmi.visibility_range_end) and d < 160.0:
+						vis += 1
+				var key := "%s tri=%d" % [mm.mesh.resource_path.get_file() if mm.mesh.resource_path != "" else mm.mesh.get_class(), tri]
+				agg[key] = agg.get(key, 0) + vis * tri
+			var ks := agg.keys()
+			ks.sort_custom(func(a, b): return agg[a] > agg[b])
+			for k in ks.slice(0, 12):
+				print("  BRK ", k, " => ", agg[k])
 		print("MEASURE q=%d s=%.0f prims=%d draws=%d objs=%d" % [Settings.quality, r.runner.s,
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
