@@ -134,8 +134,10 @@ func _build() -> void:
 	_unavailable(Rect2(1138, 468, 520, 120), 26)
 	_unavailable(Rect2(1130, 600, 525, 120), 26)
 	# --- الشريط السفلي
-	for x in [25.0, 235.0, 445.0, 655.0]:
+	for x in [25.0, 235.0]:
 		_unavailable(Rect2(x, 808, 200, 112), 16, 30.0)
+	_hit(Rect2(445, 808, 200, 112), _open_tracks)                     # المسارات
+	_hit(Rect2(655, 808, 200, 112), _open_select)                     # الشخصيات
 
 	# أفضل زمن
 	if Settings.best_time > 0.0:
