@@ -1,92 +1,147 @@
 class_name Menu
-extends Node3D
-## القائمة الرئيسية: فوكسي على منصة + أزرار حقيقية.
+extends Control
+## القائمة الرئيسية: الصورة المرجعية كخلفية فنية + عناصر Godot حقيقية فوقها.
+## كل ما لم يُطوَّر بعد معتَّم بوسم «غير متاح حاليًا».
 
 signal play_pressed
 
-var _fox: Foxy
-var _cam: Camera3D
-var _t := 0.0
-var _ui: CanvasLayer
+const W := 1672.0
+const H := 941.0
+const TAG_TEXT := "غير متاح حاليًا"
+const BG := preload("res://assets/ui/menu_ref.png")
+
+var _root: Control
 var _settings: Control
+var _bg_img: Image
 
 
 func _ready() -> void:
-	var sky := Sky.new()
-	var pm := ProceduralSkyMaterial.new()
-	pm.sky_top_color = Color("3f86e8")
-	pm.sky_horizon_color = Color("cfe6ff")
-	pm.ground_horizon_color = Color("cfe6ff")
-	pm.ground_bottom_color = Color("9fb6d8")
-	sky.sky_material = pm
-	var e := Environment.new()
-	e.background_mode = Environment.BG_SKY
-	e.sky = sky
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color("c4b4f0")
-	e.ambient_light_energy = 0.34
-	var we := WorldEnvironment.new()
-	we.environment = e
-	add_child(we)
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-48, -35, 0)
-	sun.light_energy = 0.85
-	sun.light_color = Color("fff0d6")
-	sun.shadow_enabled = bool(Settings.profile().shadows)
-	add_child(sun)
-	Settings.apply_to_viewport(get_viewport(), sun)
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	_bg_img = BG.get_image()
+	var vp := get_viewport_rect().size
+	set_deferred("size", vp)
+	custom_minimum_size = vp
 
-	var pod := MeshBuilder.new()
-	pod.add_cylinder(1.9, 1.8, 0.35, Color("8e6bd8"), Transform3D(Basis(), Vector3(0, -0.35, 0)), 40, true, Color("a98af0"))
-	pod.add_cylinder(2.3, 2.3, 0.2, Color("5a3fb0"), Transform3D(Basis(), Vector3(0, -0.55, 0)), 40)
-	Toon.mesh_instance(pod.build(), Toon.solid(), self)
+	# خلفية ضبابية ناعمة تملأ الأطراف على الشاشات الأعرض
+	var small := _bg_img.duplicate() as Image
+	small.resize(40, 22, Image.INTERPOLATE_BILINEAR)
+	var blur := TextureRect.new()
+	blur.texture = ImageTexture.create_from_image(small)
+	blur.size = vp
+	blur.stretch_mode = TextureRect.STRETCH_SCALE
+	blur.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	blur.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	blur.modulate = Color(0.75, 0.8, 0.95)
+	blur.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(blur)
 
-	_fox = Foxy.create(true)
-	add_child(_fox)
-	_fox.anim = Foxy.Anim.IDLE
-	_fox.rotation_degrees.y = 160.0
+	var s := minf(vp.x / W, vp.y / H)
+	_root = Control.new()
+	_root.size = Vector2(W, H)
+	_root.scale = Vector2(s, s)
+	_root.position = (vp - Vector2(W, H) * s) * 0.5
+	add_child(_root)
+	var bg := TextureRect.new()
+	bg.texture = BG
+	bg.size = Vector2(W, H)
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(bg)
 
-	_cam = Camera3D.new()
-	_cam.fov = 38.0
-	add_child(_cam)
-	_cam.position = Vector3(0.0, 1.5, 6.4)
-	_cam.look_at(Vector3(0.0, 1.0, 0), Vector3.UP)
-	_cam.make_current()
-	# تحريك الكاميرا يمينًا قليلًا ليبقى فوكسي في الثلث الأيسر
-	_cam.h_offset = 0.9
+	_build()
 
-	_ui = CanvasLayer.new()
-	add_child(_ui)
-	var root := Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_ui.add_child(root)
-	var vp := get_viewport().get_visible_rect().size
-	var title := UiKit.label("CRAZY RUSH", 92, Color("ffd23a"), 14)
-	title.size = Vector2(700, 120)
-	title.position = Vector2(vp.x * 0.68 - 350, vp.y * 0.12)
-	root.add_child(title)
-	var sub := UiKit.label("سباق فوكسي المجنون", 34, Color.WHITE, 8)
-	sub.size = Vector2(700, 50)
-	sub.position = Vector2(vp.x * 0.68 - 350, vp.y * 0.12 + 118)
-	root.add_child(sub)
-	var play := UiKit.button("العب الآن", UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, Vector2(340, 96), 44)
-	play.position = Vector2(vp.x * 0.68 - 170, vp.y * 0.50)
-	play.pressed.connect(func(): play_pressed.emit())
-	root.add_child(play)
-	var set := UiKit.button("الإعدادات", UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, Vector2(260, 72), 30)
-	set.position = Vector2(vp.x * 0.68 - 130, vp.y * 0.50 + 118)
-	set.pressed.connect(_open_settings)
-	root.add_child(set)
-	var best := UiKit.label("", 26, Color("fff3a0"), 6)
-	best.size = Vector2(500, 40)
-	best.position = Vector2(vp.x * 0.68 - 250, vp.y * 0.86)
+
+func _hit(r: Rect2, cb: Callable) -> void:
+	var b := Button.new()
+	b.flat = true
+	b.position = r.position
+	b.size = r.size
+	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(cb)
+	_root.add_child(b)
+
+
+func _box(r: Rect2, fill: Color, edge: Color, radius := 24, bw := 2) -> Panel:
+	var p := Panel.new()
+	p.position = r.position
+	p.size = r.size
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = fill
+	sb.border_color = edge
+	sb.set_border_width_all(bw)
+	sb.set_corner_radius_all(radius)
+	sb.anti_aliasing = true
+	p.add_theme_stylebox_override("panel", sb)
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(p)
+	return p
+
+
+## تعتيم عنصر لم يُطوَّر بعد + وسم «غير متاح حاليًا» (ويمنع اللمس عليه).
+func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true) -> void:
+	var cover := _box(r, Color(0.03, 0.05, 0.2, 0.52), Color(0, 0, 0, 0), 26, 0)
+	cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	if not show_tag:
+		return
+	var tw := minf(r.size.x - 10.0, fsize * 7.2)
+	var th := fsize * 1.6
+	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
+	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	t.size = tag.size
+	tag.add_child(t)
+
+
+func _build() -> void:
+	# --- الأزرار الفعّالة
+	_hit(Rect2(1100, 775, 555, 145), func(): play_pressed.emit())      # العب الآن
+	_hit(Rect2(1158, 208, 500, 120), func(): play_pressed.emit())      # ضد الكمبيوتر
+	_hit(Rect2(1562, 18, 104, 108), _open_settings)                   # الإعدادات
+
+	# --- عدّاد العملات الحقيقي (فوق الرقم المرسوم)
+	var strip := Image.create(1, 52, false, Image.FORMAT_RGBA8)
+	for i in range(52):
+		strip.set_pixel(0, i, _bg_img.get_pixel(1236, 24 + i))
+	var pt := TextureRect.new()
+	pt.texture = ImageTexture.create_from_image(strip)
+	pt.position = Vector2(1122, 24)
+	pt.size = Vector2(112, 52)
+	pt.stretch_mode = TextureRect.STRETCH_SCALE
+	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(pt)
+	var coins := UiKit.label(str(Settings.total_coins), 36, Color.WHITE, 4)
+	coins.position = Vector2(1122, 24)
+	coins.size = Vector2(112, 52)
+	coins.clip_text = true
+	_root.add_child(coins)
+	_unavailable(Rect2(1240, 22, 56, 56), 10, 0.0, false)             # زر + (المتجر)
+	# الجواهر
+	_unavailable(Rect2(1312, 22, 240, 56), 18)
+	# الملف الشخصي
+	_unavailable(Rect2(30, 15, 440, 140), 24)
+
+	# --- العمود الأيسر
+	for y in [245.0, 362.0, 480.0, 598.0]:
+		_unavailable(Rect2(12, y, 258, 96), 17, 32.0)
+	# اختيار الشخصية
+	_unavailable(Rect2(478, 570, 90, 100), 10, 0.0, false)
+	_unavailable(Rect2(980, 570, 90, 100), 10, 0.0, false)
+	# --- الأزرار اليمنى
+	_unavailable(Rect2(1148, 340, 510, 115), 26)
+	_unavailable(Rect2(1138, 468, 520, 120), 26)
+	_unavailable(Rect2(1130, 600, 525, 120), 26)
+	# --- الشريط السفلي
+	for x in [25.0, 235.0, 445.0, 655.0]:
+		_unavailable(Rect2(x, 808, 200, 112), 16, 30.0)
+
+	# أفضل زمن
 	if Settings.best_time > 0.0:
-		best.text = "أفضل زمن: %.2f ث    العملات: %d" % [Settings.best_time, Settings.total_coins]
-	root.add_child(best)
-	var ph := UiKit.label("المرحلة 1 — نسخة اختبار", 20, Color(1, 1, 1, 0.8), 4)
-	ph.size = Vector2(400, 30)
-	ph.position = Vector2(20, vp.y - 40)
-	root.add_child(ph)
+		var best := UiKit.label("أفضل زمن: %.2f ث" % Settings.best_time, 28, Color("fff3a0"), 6)
+		best.position = Vector2(40, 165)
+		best.size = Vector2(430, 40)
+		_root.add_child(best)
 
 
 func _open_settings() -> void:
@@ -97,9 +152,4 @@ func _open_settings() -> void:
 		_settings.queue_free()
 		_settings = null)
 	_settings = sp
-	_ui.add_child(sp)
-
-
-func _process(delta: float) -> void:
-	_t += delta
-	_fox.rotation_degrees.y = 160.0 + sin(_t * 0.6) * 14.0
+	add_child(sp)
