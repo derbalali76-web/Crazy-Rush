@@ -1,196 +1,93 @@
 class_name TrackSelect
-extends Control
-## شاشة «اختر الحلبة» (تصميم المرجع). المتاحة: حلبة الشلالات (الحلبة الحالية)؛
-## بقية الحلبات والبطولات والتحديات والمكافآت معتَّمة بوسم «غير متاح حاليًا».
+extends ScreenBase
+## شاشة «اختر الحلبة»: صور بلا نصوص + نصوص حقيقية. المتاحة للعب: الشلالات فقط؛ الباقي بوسم «غير متاح حاليًا».
 
 signal start_pressed
 signal choose_character_pressed
-signal closed
 
-const W := 1670.0
-const H := 942.0
-const TAG_TEXT := "غير متاح حاليًا"
-## شاشة لكل حلبة (الصورة المرجعية بها لوحتها وبطاقتها المميَّزة). المتاحة للعب: الشلالات فقط.
 const TRACKS := [
-	{"id": "waterfalls", "img": preload("res://assets/ui/track_ref.png"), "playable": true},
-	{"id": "forest", "img": preload("res://assets/ui/track_forest.png"), "playable": false},
-	{"id": "desert", "img": preload("res://assets/ui/track_desert.png"), "playable": false},
-	{"id": "city", "img": preload("res://assets/ui/track_city.png"), "playable": false},
-	{"id": "snow", "img": preload("res://assets/ui/track_snow.png"), "playable": false},
-	{"id": "volcano", "img": preload("res://assets/ui/track_volcano.png"), "playable": false},
+	{"id": "waterfalls", "name": "الشلالات", "img": "res://assets/ui/c_t_waterfalls.webp", "playable": true},
+	{"id": "forest", "name": "الغابة", "img": "res://assets/ui/c_t_forest.webp", "playable": false},
+	{"id": "desert", "name": "الصحراء", "img": "res://assets/ui/c_t_desert.webp", "playable": false},
+	{"id": "city", "name": "المدينة", "img": "res://assets/ui/c_t_city.webp", "playable": false},
+	{"id": "snow", "name": "الثلج", "img": "res://assets/ui/c_t_snow.webp", "playable": false},
+	{"id": "volcano", "name": "البركان", "img": "res://assets/ui/c_t_volcano.webp", "playable": false},
 ]
-## بطاقات الحلبات السفلية (يسار → يمين)
+## مستطيلات الزرّين + (من كشف الصور) لكل حلبة
+const PLUS := [
+	[Rect2(1407, 19, 54, 41), Rect2(1652, 20, 53, 40)],
+	[Rect2(1421, 20, 57, 42), Rect2(1669, 20, 56, 42)],
+	[Rect2(1416, 19, 61, 45), Rect2(1665, 19, 62, 45)],
+	[Rect2(1411, 20, 55, 41), Rect2(1666, 21, 54, 40)],
+	[Rect2(1421, 21, 59, 42), Rect2(1666, 20, 58, 42)],
+	[Rect2(1411, 20, 59, 44), Rect2(1663, 20, 60, 44)],
+]
 const CARDS := [
-	Rect2(118, 556, 250, 178), Rect2(380, 556, 226, 178), Rect2(614, 556, 226, 178),
-	Rect2(848, 556, 226, 178), Rect2(1082, 556, 230, 178), Rect2(1318, 556, 240, 178),
+	Rect2(135, 500, 270, 150), Rect2(425, 500, 240, 150), Rect2(690, 500, 245, 150),
+	Rect2(950, 500, 245, 150), Rect2(1215, 500, 245, 150), Rect2(1480, 500, 260, 150),
 ]
 
-var _root: Control
-var _bg_img: Image
+var _sel := 0
+var _layer: Control
 
 
-func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_bg_img = (TRACKS[0].img as Texture2D).get_image()
-	var vp := get_viewport_rect().size
-	set_deferred("size", vp)
-	custom_minimum_size = vp
+func _init() -> void:
+	bg_path = TRACKS[0].img
 
-	UiKit.add_backdrop(self, _bg_img, vp, W, H)
 
-	var fit := UiKit.fit(vp, W, H)
-	_root = Control.new()
-	_root.size = Vector2(W, H)
-	_root.scale = fit[0]
-	_root.position = fit[1]
-	add_child(_root)
-	var bg := TextureRect.new()
-	_bg = bg
-	bg.size = Vector2(W, H)
-	bg.stretch_mode = TextureRect.STRETCH_SCALE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(bg)
+func _build() -> void:
 	_select(0)
 
 
-func _hit(r: Rect2, cb: Callable) -> void:
-	var b := Button.new()
-	b.flat = true
-	b.position = r.position
-	b.size = r.size
-	b.focus_mode = Control.FOCUS_NONE
-	b.pressed.connect(cb)
-	_add(b)
-
-
-func _box(r: Rect2, fill: Color, edge: Color, radius := 24, bw := 2) -> Panel:
-	var p := Panel.new()
-	p.position = r.position
-	p.size = r.size
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = fill
-	sb.border_color = edge
-	sb.set_border_width_all(bw)
-	sb.set_corner_radius_all(radius)
-	sb.anti_aliasing = true
-	p.add_theme_stylebox_override("panel", sb)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add(p)
-	return p
-
-
-func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha := 0.55) -> void:
-	var cover := _box(r, Color(0.03, 0.05, 0.2, alpha), Color(0, 0, 0, 0), 26, 0)
-	cover.mouse_filter = Control.MOUSE_FILTER_STOP
-	if not show_tag:
-		return
-	var tw := minf(r.size.x - 10.0, fsize * 7.2)
-	var th := fsize * 1.6
-	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
-	t.size = tag.size
-	tag.add_child(t)
-
-
-
-func _patch2(x0: float, x1: float, y0: int, y1: int, cl: int, cr: int) -> void:
-	var h := y1 - y0
-	var st := Image.create(2, h, false, Image.FORMAT_RGBA8)
-	for i in range(h):
-		st.set_pixel(0, i, _bg_img.get_pixel(cl, y0 + i))
-		st.set_pixel(1, i, _bg_img.get_pixel(cr, y0 + i))
-	var t := TextureRect.new()
-	t.texture = ImageTexture.create_from_image(st)
-	t.position = Vector2(x0, y0)
-	t.size = Vector2(x1 - x0, h)
-	t.stretch_mode = TextureRect.STRETCH_SCALE
-	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add(t)
-
-
-func _fmt(t: float) -> String:
+static func _fmt(t: float) -> String:
 	if t <= 0.0:
 		return "--:--.--"
 	var m := int(t) / 60
 	return "%02d:%05.2f" % [m, t - m * 60.0]
 
 
-var _sel := 0
-var _bg: TextureRect
-var _layer: Control
-
-
 func _select(i: int) -> void:
 	_sel = i
-	_bg_img = (TRACKS[i].img as Texture2D).get_image()
-	_bg.texture = TRACKS[i].img
+	_tex = load(TRACKS[i].img)
+	_bg_rect.texture = _tex
 	if _layer:
 		_layer.queue_free()
 	_layer = Control.new()
 	_layer.size = Vector2(W, H)
 	_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_layer)
-	_build()
-
-
-func _add(n: Node) -> void:
-	_layer.add_child(n)
-
-
-func _build() -> void:
-	var playable: bool = TRACKS[_sel].playable
-	# --- اختيار الحلبة من الشريط السفلي
-	for i in range(CARDS.size()):
-		if i != _sel:
-			_hit(CARDS[i], func(): _select(i))
-	_unavailable(Rect2(30, 585, 72, 110), 10, 0.0, false)      # سهم يسار
-	_unavailable(Rect2(1568, 585, 72, 110), 10, 0.0, false)    # سهم يمين
-	_unavailable(Rect2(350, 438, 90, 90), 10, 0.0, false)      # معاينة
-	# --- المكافآت غير موجودة في اللعبة بعد
-	_unavailable(Rect2(1165, 405, 396, 112), 20, 14.0, true, 0.82)
-	_unavailable(Rect2(38, 782, 272, 100), 18, 0.0, true, 0.6)
-	_unavailable(Rect2(320, 782, 274, 100), 18, 0.0, true, 0.6)
-
-	# --- أفضل زمن (حقيقي للحلبة المتاحة، وغير متاح لغيرها)
-	_patch2(1250, 1388, 338, 378, 1252, 1386)
-	var bt := UiKit.label(_fmt(Settings.best_time) if playable else "--:--.--", 34, Color.WHITE, 4)
-	bt.position = Vector2(1250, 336)
-	bt.size = Vector2(138, 44)
-	bt.clip_text = true
-	_add(bt)
-
-	# --- العملات الحقيقية
-	var strip := Image.create(1, 34, false, Image.FORMAT_RGBA8)
-	for i in range(34):
-		strip.set_pixel(0, i, _bg_img.get_pixel(1191, 30 + i))
-	var pt := TextureRect.new()
-	pt.texture = ImageTexture.create_from_image(strip)
-	pt.position = Vector2(1194, 30)
-	pt.size = Vector2(100, 34)
-	pt.stretch_mode = TextureRect.STRETCH_SCALE
-	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add(pt)
-	var coins := UiKit.num_label(str(Settings.total_coins), 32)
-	coins.position = Vector2(1194, 17)
-	coins.size = Vector2(100, 42)
-	coins.clip_text = true
-	_add(coins)
-	_hit(Rect2(1296, 22, 52, 52), func(): UiKit.open_store(self, 0))
-	UiKit.counter(_layer, _bg_img, Rect2(1424, 19, 98, 44), 1424, str(Settings.gems), 34)
-	_hit(Rect2(1380, 18, 192, 58), func(): UiKit.open_store(self, 1))
-
-	# --- الأزرار
-	_hit(Rect2(1575, 10, 90, 80), func():
-		closed.emit()
-		queue_free())
-	_hit(Rect2(1198, 765, 432, 120), func(): choose_character_pressed.emit())
+	_host = _layer
+	var playable: bool = TRACKS[i].playable
+	var tname := Loc.t(TRACKS[i].name)
+	txt(Loc.t("اختر الحلبة"), Rect2(700, 12, 420, 80), 56, Color.WHITE, Color("3a0a14"), 9)
+	topbar(PLUS[i][0], PLUS[i][1], Rect2(1740, 0, 123, 100))
+	# اللوحة الكبيرة واللوحة اليمنى
+	txt(Loc.t("حلبة") + " " + tname, Rect2(500, 128, 300, 62), 40, Color.WHITE, Color("0a1a5a"), 7)
+	txt(tname, Rect2(1440, 112, 300, 70), 42, Color.WHITE, Color("0a1a5a"), 7)
+	num(_fmt(Settings.best_time) if playable else "--:--.--", Rect2(1390, 298, 140, 46), 30)
+	num(UiKit.fmt_int(Settings.total_coins) if playable else "--", Rect2(1385, 400, 215, 50), 32)
+	unavailable(Rect2(375, 385, 100, 100), 10, false)       # معاينة الفيديو
+	# بطاقات الحلبات
+	for k in range(CARDS.size()):
+		var c: Rect2 = CARDS[k]
+		txt(Loc.t(TRACKS[k].name), Rect2(c.position.x + 62, 596, c.size.x - 78, 48), 30, Color.WHITE, Color("0a1a5a"), 6)
+		if k != i:
+			hit(c, func(): _select(k))
+	unavailable(Rect2(25, 520, 95, 110), 10, false)       # سهم يسار
+	unavailable(Rect2(1755, 520, 95, 110), 10, false)     # سهم يمين
+	# الأزرار السفلية
+	txt(Loc.t("البطولات"), Rect2(120, 705, 205, 85), 34, Color.WHITE, Color("2a0a4a"), 6)
+	txt(Loc.t("التحديات"), Rect2(425, 705, 220, 85), 34, Color.WHITE, Color("2a0a4a"), 6)
+	unavailable(Rect2(45, 700, 290, 95), 14, true, 0.6, 40)
+	unavailable(Rect2(350, 700, 305, 95), 14, true, 0.6, 40)
+	txt(Loc.t("ابدأ السباق"), Rect2(790, 700, 390, 100), 58, Color.WHITE, Color("0b4a12"), 9)
+	txt(Loc.t("اختر الشخصية"), Rect2(1500, 705, 300, 85), 34, Color.WHITE, Color("0a2a6a"), 6)
+	hit(Rect2(1330, 700, 485, 95), func(): choose_character_pressed.emit())
 	if playable:
-		_hit(Rect2(608, 765, 575, 135), func(): start_pressed.emit())
+		hit(Rect2(670, 685, 645, 130), func(): start_pressed.emit())
 	else:
-		_unavailable(Rect2(608, 765, 575, 135), 30, 0.0, true, 0.6)
+		unavailable(Rect2(670, 685, 645, 130), 30, true, 0.6, 60)
+
+
+func _plus(tab: int) -> void:
+	UiKit.open_store(self, tab)

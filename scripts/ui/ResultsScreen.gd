@@ -1,151 +1,34 @@
 class_name ResultsScreen
-extends Control
-## شاشة نتائج السباق (تصميم المرجع): الخلفية الفنية صورة، والجدول والأرقام والأزرار حقيقية.
-## الشخصيات في الجدول تأتي من سجلّ Characters (entry.character، وإلا فوكسي مؤقتًا).
+extends ScreenBase
+## شاشة نتائج السباق: صورة بلا نصوص (منصّة بلا شخصيات)؛ الشخصيات والأسماء والأزمنة والمكافآت حقيقية.
+## الشخصيات تأتي من سجلّ Characters (entry.character، وإلا فوكسي).
 
 signal restart_pressed
 signal home_pressed
 
-const W := 1671.0
-const H := 941.0
-const TAG_TEXT := "غير متاح حاليًا"
-const BG := preload("res://assets/ui/results_v2_plate.png")
-## حدود صفوف الجدول المرسومة (y من، y إلى) بإحداثيات المرجع
-const CENTERS := [242.0, 316.0, 387.0, 457.0, 526.0, 595.0, 664.0, 733.0]
-const ROW_H := 64.0
+const ROWS := [210.0, 273.0, 335.0, 397.0]
+const ROW_H := 54.0
 ## منصّة التتويج: {x مركز الشخصية، y القدمين، الارتفاع الأقصى، العرض الأقصى}
 const PODIUM := [
-	{"x": 905.0, "y": 366.0, "h": 222.0, "w": 250.0},   # الأول
-	{"x": 672.0, "y": 388.0, "h": 178.0, "w": 200.0},   # الثاني
-	{"x": 1196.0, "y": 400.0, "h": 178.0, "w": 200.0},  # الثالث
+	{"x": 985.0, "y": 326.0, "h": 235.0, "w": 260.0},   # الأول
+	{"x": 742.0, "y": 352.0, "h": 190.0, "w": 210.0},   # الثاني
+	{"x": 1318.0, "y": 358.0, "h": 190.0, "w": 210.0},  # الثالث
 ]
 
 var data: Dictionary = {}
-var _root: Control
-var _bg_img: Image
-var _bold: FontVariation
 
 
-func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_bg_img = BG.get_image()
-	var vp := get_viewport_rect().size
-	set_deferred("size", vp)
-	custom_minimum_size = vp
-	UiKit.add_backdrop(self, _bg_img, vp, W, H)
-	var fit := UiKit.fit(vp, W, H)
-	_root = Control.new()
-	_root.size = Vector2(W, H)
-	_root.scale = fit[0]
-	_root.position = fit[1]
-	add_child(_root)
-	var bg := TextureRect.new()
-	bg.texture = BG
-	bg.size = Vector2(W, H)
-	bg.stretch_mode = TextureRect.STRETCH_SCALE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(bg)
-	_build()
+func _init() -> void:
+	bg_path = "res://assets/ui/c_results.webp"
 
 
-# ---------------------------------------------------------------- أدوات
-func _box(r: Rect2, fill: Color, edge: Color, radius := 24, bw := 2, parent: Control = null) -> Panel:
-	var p := Panel.new()
-	p.position = r.position
-	p.size = r.size
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = fill
-	sb.border_color = edge
-	sb.set_border_width_all(bw)
-	sb.set_corner_radius_all(radius)
-	sb.anti_aliasing = true
-	p.add_theme_stylebox_override("panel", sb)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	(parent if parent else _root).add_child(p)
-	return p
-
-
-func _lbl(text: String, r: Rect2, size := 36, color := Color.WHITE, align := HORIZONTAL_ALIGNMENT_CENTER, outline := 5, parent: Control = null) -> Label:
-	var l := UiKit.label(text, size, color, outline, align)
-	if _bold == null:
-		_bold = FontVariation.new()
-		_bold.base_font = UiKit.font()
-		_bold.variation_embolden = 0.8
-	l.add_theme_font_override("font", _bold)
-	l.position = r.position
-	l.size = r.size
-	l.clip_text = true
-	(parent if parent else _root).add_child(l)
-	return l
-
-
-func _hit(r: Rect2, cb: Callable) -> void:
-	var b := Button.new()
-	b.flat = true
-	b.position = r.position
-	b.size = r.size
-	b.focus_mode = Control.FOCUS_NONE
-	var hl := _box(r, Color(1, 1, 1, 0.2), Color(0, 0, 0, 0), 60, 0)
-	hl.visible = false
-	b.button_down.connect(func(): hl.visible = true)
-	b.button_up.connect(func(): hl.visible = false)
-	b.pressed.connect(cb)
-	_root.add_child(b)
-
-
-func _patch(r: Rect2, sample_x: int) -> void:
-	var img := Image.create(1, int(r.size.y), false, Image.FORMAT_RGBA8)
-	for i in range(int(r.size.y)):
-		img.set_pixel(0, i, _bg_img.get_pixel(sample_x, int(r.position.y) + i))
-	var tr := TextureRect.new()
-	tr.texture = ImageTexture.create_from_image(img)
-	tr.position = r.position
-	tr.size = r.size
-	tr.stretch_mode = TextureRect.STRETCH_SCALE
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(tr)
-
-
-func _patch2(r: Rect2, xl: int, xr: int) -> void:
-	var img := Image.create(2, int(r.size.y), false, Image.FORMAT_RGBA8)
-	for i in range(int(r.size.y)):
-		img.set_pixel(0, i, _bg_img.get_pixel(xl, int(r.position.y) + i))
-		img.set_pixel(1, i, _bg_img.get_pixel(xr, int(r.position.y) + i))
-	var tr := TextureRect.new()
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.stretch_mode = TextureRect.STRETCH_SCALE
-	tr.texture = ImageTexture.create_from_image(img)
-	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	tr.position = r.position
-	tr.size = r.size
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(tr)
-
-
-func _unavailable(r: Rect2, fsize := 20, alpha := 0.55) -> void:
-	var cover := _box(r, Color(0.03, 0.05, 0.2, alpha), Color(0, 0, 0, 0), 22, 0)
-	cover.mouse_filter = Control.MOUSE_FILTER_STOP
-	var tw := minf(r.size.x - 8.0, fsize * 7.2)
-	var th := fsize * 1.6
-	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
-	t.size = tag.size
-	tag.add_child(t)
-
-
-# ---------------------------------------------------------------- البناء
 func _build() -> void:
 	var st: Array = data.get("standings", [])
-
-	# --- منصّة التتويج بشخصياتنا (أول ثلاثة في الترتيب)
+	txt(Loc.t("نتيجة السباق"), Rect2(660, 28, 540, 92), 66, Color.WHITE, Color("0a1a5a"), 9)
+	# منصّة التتويج بشخصياتنا (أول ثلاثة في الترتيب)
 	for k in range(mini(3, st.size())):
 		var pd: Dictionary = PODIUM[k]
-		var cid := str(st[k].get("character", "fox"))
-		var tex := Characters.portrait(cid)
+		var tex := Characters.portrait(str(st[k].get("character", "fox")))
 		if tex == null:
 			continue
 		var ts := tex.get_size()
@@ -159,46 +42,33 @@ func _build() -> void:
 		tr.position = Vector2(float(pd.x) - tr.size.x * 0.5, float(pd.y) - tr.size.y)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(tr)
-
-	# --- المكافآت: العملات حقيقية، والجواهر والإعلان غير متاحين
-	_patch2(Rect2(736, 553, 178, 66), 731, 920)
-	_lbl("%d" % int(data.get("coins", 0)), Rect2(732, 530, 186, 80), 58, Color("ffd21a"), HORIZONTAL_ALIGNMENT_CENTER, 8)
-	_unavailable(Rect2(990, 548, 347, 80), 22, 0.82)
-	_unavailable(Rect2(596, 650, 722, 100), 26, 0.78)
+	# المكافآت
+	txt(Loc.t("مكافآتك"), Rect2(870, 418, 370, 54), 38, Color.WHITE, Color("0a1a5a"), 7)
+	num("%d" % int(data.get("coins", 0)), Rect2(800, 486, 240, 62), 44)
+	num("0", Rect2(1285, 486, 190, 62), 44)
+	unavailable(Rect2(1095, 480, 390, 74), 20, true, 0.5, 30)           # الجواهر غير مكتسبة بعد
+	txt(Loc.t("شاهد إعلانًا لمضاعفة العملات"), Rect2(820, 585, 620, 66), 32, Color.WHITE, Color("0b4a12"), 6)
+	unavailable(Rect2(650, 570, 830, 96), 26, true, 0.78, 40)
 	if data.get("new_best", false):
-		_lbl(Loc.t("رقم قياسي جديد!"), Rect2(1320, 168, 210, 40), 24, Color("fff3a0"), HORIZONTAL_ALIGNMENT_CENTER, 6)
-
-	# --- جدول الترتيب
-	var n := mini(st.size(), CENTERS.size())
-	for k in range(n):
+		txt(Loc.t("رقم قياسي جديد!"), Rect2(1330, 150, 300, 50), 30, Color("fff3a0"), Color("5a3a00"), 7)
+	# جدول الترتيب
+	for k in range(mini(st.size(), ROWS.size())):
 		_row(k, st[k])
-	if n < CENTERS.size():
-		var y0: float = CENTERS[n] - 38.0
-		_box(Rect2(103, y0, 402, 733.0 + 38.0 - y0), Color("0a2078"), Color(0, 0, 0, 0), 16, 0)
-
-	# --- الأزرار
-	_hit(Rect2(340, 805, 215, 110), func(): home_pressed.emit())
-	_hit(Rect2(620, 805, 265, 110), func(): restart_pressed.emit())
-	_unavailable(Rect2(950, 805, 382, 110), 26, 0.78)    # التالي (حلبة واحدة فقط حاليًا)
-
-	# --- معلومات الأداء (للاختبار)
+	# الأزرار
+	txt(Loc.t("التالي"), Rect2(1080, 715, 160, 80), 40, Color.WHITE, Color("0b4a12"), 7)
+	hit(Rect2(375, 705, 240, 105), func(): home_pressed.emit())
+	hit(Rect2(680, 705, 300, 105), func(): restart_pressed.emit())
+	unavailable(Rect2(1050, 705, 430, 105), 24, true, 0.78, 50)       # التالي: حلبة واحدة حاليًا
 	var perf := "FPS %.0f  •  p95 %.0f ms  •  %s" % [float(data.get("avg_fps", 0)), float(data.get("p95_ms", 0)), str(data.get("quality", ""))]
-	_lbl(perf, Rect2(1290, 10, 370, 28), 16, Color("c9ffd6"), HORIZONTAL_ALIGNMENT_RIGHT, 4)
+	txt(perf, Rect2(1450, 6, 400, 28), 16, Color("c9ffd6"), Color("0a1a5a"), 4, false, HORIZONTAL_ALIGNMENT_RIGHT)
 
 
 func _row(k: int, e: Dictionary) -> void:
-	var c: float = CENTERS[k]
-	var top := c - ROW_H * 0.5
+	var c: float = ROWS[k]
 	var is_player: bool = bool(e.get("player", false))
-	# الاسم
-	_patch2(Rect2(240, top + 6, 112, ROW_H - 12), 236, 352)
-	_lbl(str(e.get("name", "")), Rect2(236, top, 120, ROW_H), 32, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 6)
-	# الزمن
-	_patch2(Rect2(354, top + 8, 136, ROW_H - 16), 350, 493)
-	_lbl(str(e.get("time_text", "")), Rect2(352, top + 4, 142, ROW_H - 8), 31, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 6)
-	# الشخصية: إطار مربع مدوّر يغطي وجه المرجع الأصلي + وجه شخصيتنا
-	var gold := k == 0
-	var frame := _box(Rect2(164, c - 35.0, 74, 70), Color("f6b81c") if gold else Color("1d3fa8"), Color.WHITE, 20, 3)
+	txt(str(k + 1), Rect2(118, c - 28, 58, 56), 40, Color.WHITE, Color("3a1a00"), 6)
+	# الشخصية فوق الأفاتار المرسوم
+	var frame := box(Rect2(180, c - 28, 82, 56), Color("f6b81c") if k == 0 else Color("1d3fa8"), Color.WHITE, 20, 3)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ic := Characters.icon(str(e.get("character", Settings.selected_character if is_player else "fox")))
 	if ic:
@@ -207,10 +77,12 @@ func _row(k: int, e: Dictionary) -> void:
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tr.texture = ic
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		tr.size = Vector2(66, 66)
-		tr.position = Vector2(168, c - 33.0)
+		tr.size = Vector2(54, 54)
+		tr.position = Vector2(194, c - 27)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(tr)
+	txt(str(e.get("name", "")), Rect2(270, c - 27, 150, 54), 30, Color.WHITE, Color("0a1a5a"), 5)
+	txt(str(e.get("time_text", "")), Rect2(418, c - 27, 130, 54), 26, Color.WHITE, Color("0a1a5a"), 5)
 	if is_player:
-		var ring := _box(Rect2(103, c - 37.0, 398, 74), Color(0, 0, 0, 0), Color.WHITE, 30, 4)
+		var ring := box(Rect2(112, c - 31, 440, 62), Color(0, 0, 0, 0), Color.WHITE, 28, 4)
 		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE

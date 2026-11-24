@@ -1,19 +1,10 @@
 class_name SettingsPanel
-extends Control
-## شاشة الإعدادات: الصورة المرجعية كخلفية فنية + عناصر Godot حقيقية فوقها للقيم المتغيّرة.
-## كل ما لم يُطوَّر بعد معتَّم بوسم «غير متاح حاليًا».
+extends ScreenBase
+## شاشة الإعدادات: صورة بلا نصوص + عناصر Godot حقيقية للقيم المتغيّرة. ما لم يُطوَّر معتَّم بوسم «غير متاح حاليًا».
 
-signal closed
-
-const W := 1672.0
-const H := 941.0
-const TAG_TEXT := "غير متاح حاليًا"
 const C_ROW := Color("143a94")
 const C_ROW_EDGE := Color("2f6fe0")
-var BG: Texture2D = Loc.tex("res://assets/ui/settings_ref.png")
 
-var _root: Control
-var _bg_img: Image
 var _q_buttons: Array[Button] = []
 var _sens_label: Label
 var _sfx_label: Label
@@ -24,42 +15,17 @@ var _adv: Control
 var _toggles: Dictionary = {}
 
 
-func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	var back := ColorRect.new()
-	back.color = Color("0b1d55")
-	back.size = get_viewport_rect().size
-	add_child(back)
-	_bg_img = BG.get_image()
-	# خلفية ضبابية ناعمة من الصورة نفسها تملأ الأطراف على الشاشات الأعرض
-	var vp := get_viewport_rect().size
-	UiKit.add_backdrop(self, _bg_img, vp, W, H)
-	var fit := UiKit.fit(vp, W, H)
-	_root = Control.new()
-	_root.size = Vector2(W, H)
-	_root.scale = fit[0]
-	_root.position = fit[1]
-	add_child(_root)
+func _init() -> void:
+	bg_path = "res://assets/ui/c_settings.webp"
 
-	var bg := TextureRect.new()
-	bg.texture = BG
-	bg.size = Vector2(W, H)
-	bg.stretch_mode = TextureRect.STRETCH_SCALE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(bg)
-	# زر الإغلاق (✕ مرسومة في الصورة)
-	var x := Button.new()
-	x.flat = true
-	x.position = Vector2(1560, 18)
-	x.size = Vector2(92, 92)
-	x.focus_mode = Control.FOCUS_NONE
-	x.pressed.connect(_close)
-	_root.add_child(x)
 
+func _build() -> void:
+	txt(Loc.t("الإعدادات"), Rect2(860, 28, 430, 96), 64, Color.WHITE, Color("5a2a00"), 9)
+	hit(Rect2(1548, 20, 100, 92), _close)
+	# عناوين الصفوف
+	var rows := [["الصوت", 210.0], ["الموسيقى", 292.0], ["جودة الرسوم", 378.0], ["اللغة", 466.0], ["حساسية التوجيه", 540.0], ["الاهتزاز", 622.0], ["أداء اللعبة", 722.0]]
+	for r in rows:
+		txt(Loc.t(r[0]), Rect2(685, r[1] - 30, 215, 60), 30, Color.WHITE, Color("0a1a5a"), 5, false, HORIZONTAL_ALIGNMENT_RIGHT)
 	_build_controls()
 	_build_nav()
 	_build_advanced()
@@ -76,7 +42,7 @@ func _close() -> void:
 func _patch(r: Rect2) -> void:
 	var img := Image.create(1, int(r.size.y), false, Image.FORMAT_RGBA8)
 	for i in range(int(r.size.y)):
-		img.set_pixel(0, i, _bg_img.get_pixel(950, int(r.position.y) + i))
+		img.set_pixel(0, i, _bg_img.get_pixel(int(r.position.x) - 6, int(r.position.y) + i))
 	var tr := TextureRect.new()
 	tr.texture = ImageTexture.create_from_image(img)
 	tr.position = r.position
@@ -88,14 +54,13 @@ func _patch(r: Rect2) -> void:
 
 
 func _slider_row(cy: float, val: float, mn: float, mx: float, cb: Callable) -> Label:
-	_patch(Rect2(958, cy - 32, 472, 64))
-	_patch(Rect2(1440, cy - 28, 100, 56))
+	_patch(Rect2(950, cy - 34, 480, 68))
 	var sl := HSlider.new()
 	sl.min_value = mn
 	sl.max_value = mx
 	sl.step = 0.05
 	sl.value = val
-	sl.position = Vector2(975, cy - 30)
+	sl.position = Vector2(965, cy - 30)
 	sl.size = Vector2(430, 60)
 	_style_slider(sl)
 	sl.value_changed.connect(cb)
@@ -105,24 +70,24 @@ func _slider_row(cy: float, val: float, mn: float, mx: float, cb: Callable) -> L
 
 
 func _build_controls() -> void:
-	_sfx_label = _slider_row(218, Settings.sfx_volume, 0.0, 1.0, func(v: float):
+	_sfx_label = _slider_row(210, Settings.sfx_volume, 0.0, 1.0, func(v: float):
 		Settings.sfx_volume = v
 		_refresh()
 		Settings.save_settings())
-	_sens_label = _slider_row(578, Settings.steer_sensitivity, 0.5, 1.6, func(v: float):
+	_sens_label = _slider_row(540, Settings.steer_sensitivity, 0.5, 1.6, func(v: float):
 		Settings.steer_sensitivity = v
 		_refresh()
 		Settings.save_settings())
 
 	# الموسيقى (غير متاحة)
-	_unavailable(_root, Rect2(958, 276, 582, 60), 26)
+	_unavailable(_root, Rect2(950, 262, 600, 62), 26)
 
 	# جودة الرسوم: أزرار حقيقية فوق منطقة الأزرار المرسومة
-	_patch(Rect2(922, 352, 636, 90))
+	_patch(Rect2(905, 340, 660, 78))
 	var names := [Loc.t("منخفضة"), Loc.t("متوسطة"), Loc.t("عالية")]
-	var xs := [930, 1087, 1243]
+	var xs := [915, 1074, 1231]
 	for i in range(3):
-		var b := _btn(_root, names[i], Rect2(xs[i], 366, 142, 64), Color("0a3a9a"), Color("062a7a"), 32, Color("2f8cff"))
+		var b := _btn(_root, names[i], Rect2(xs[i], 347, 148, 62), Color("0a3a9a"), Color("062a7a"), 30, Color("2f8cff"))
 		var qi := i
 		b.pressed.connect(func():
 			Settings.set_quality(qi)
@@ -131,16 +96,18 @@ func _build_controls() -> void:
 		_q_buttons.append(b)
 	var hd := _btn(_root, "HD", Rect2(1397, 366, 146, 64), Color("3b4470"), Color("2a3258"), 34, Color("6b74a8"))
 	hd.disabled = true
-	_unavailable(_root, Rect2(1397, 366, 146, 64), 17)
+	_unavailable(_root, Rect2(1393, 347, 152, 62), 15)
 
 	# اللغة: ثلاث لغات (العربية / English / Français)
-	var lbx := _box(_root, Rect2(1027, 462, 418, 62), Color("0d1f66"), Color("4f78ff"), 24, 3)
+	_patch(Rect2(1000, 428, 460, 78))
+	var lbx := _box(_root, Rect2(1018, 436, 420, 62), Color("0d1f66"), Color("4f78ff"), 24, 3)
 	var lname := _lbl(lbx, Loc.NAMES[Loc.lang], Rect2(60, 0, 298, 62), 34, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 5)
 	for d in [[-1, Rect2(0, 0, 80, 62), "‹"], [1, Rect2(338, 0, 80, 62), "›"]]:
 		var step: int = d[0]
 		var ab := Button.new()
 		ab.text = d[2]
 		ab.flat = true
+		ab.text_direction = Control.TEXT_DIRECTION_LTR
 		ab.position = d[1].position
 		ab.size = d[1].size
 		ab.focus_mode = Control.FOCUS_NONE
@@ -156,8 +123,8 @@ func _build_controls() -> void:
 	lname.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# الاهتزاز: مفتاح حقيقي
-	_patch(Rect2(1105, 626, 240, 76))
-	_tog = _box(_root, Rect2(1117, 635, 208, 58), Color("1fa83a"), Color("c8ffd0"), 29, 3)
+	_patch(Rect2(1090, 588, 250, 70))
+	_tog = _box(_root, Rect2(1105, 595, 210, 56), Color("1fa83a"), Color("c8ffd0"), 29, 3)
 	_tog_lbl = _lbl(_tog, "", Rect2(0, 0, 150, 58), 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 4)
 	_tog_knob = _box(_tog, Rect2(150, 4, 50, 50), Color.WHITE, Color("d6dcef"), 25, 2)
 	var tb := Button.new()
@@ -172,17 +139,20 @@ func _build_controls() -> void:
 	_root.add_child(tb)
 
 	# أداء اللعبة (غير متاح)
-	_unavailable(_root, Rect2(910, 726, 628, 100), 30)
+	_unavailable(_root, Rect2(890, 674, 660, 100), 30)
 
 
 func _build_nav() -> void:
-	_hit_nav(Rect2(20, 355, 250, 88), func(): _push(AccountScreen.new()))
-	_hit_nav(Rect2(20, 462, 250, 88), func(): _push(HelpScreen.new()))
-	_hit_nav(Rect2(20, 570, 250, 88), func(): _push(AboutScreen.new()))
-	var adv := _btn(_root, Loc.t("خيارات متقدمة"), Rect2(18, 800, 255, 64), UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, 28)
-	adv.pressed.connect(func(): _adv.visible = true)
-	var reset := _btn(_root, Loc.t("استعادة الافتراضي"), Rect2(18, 874, 255, 56), UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, 24)
-	reset.pressed.connect(func():
+	var nav := [["الإعدادات", 238.0], ["حسابي", 338.0], ["المساعدة", 437.0], ["حول اللعبة", 537.0]]
+	for n in nav:
+		txt(Loc.t(n[0]), Rect2(105, n[1], 160, 80), 30, Color.WHITE, Color("0a1a5a"), 5)
+	_hit_nav(Rect2(15, 338, 255, 80), func(): _push(AccountScreen.new()))
+	_hit_nav(Rect2(15, 437, 255, 80), func(): _push(HelpScreen.new()))
+	_hit_nav(Rect2(15, 537, 255, 80), func(): _push(AboutScreen.new()))
+	txt(Loc.t("خيارات متقدمة"), Rect2(22, 757, 250, 64), 28, Color.WHITE, Color("2a0a5a"), 5)
+	txt(Loc.t("استعادة الافتراضي"), Rect2(22, 833, 250, 58), 24, Color.WHITE, Color("0a1a5a"), 5)
+	_hit_nav(Rect2(15, 757, 258, 66), func(): _adv.visible = true)
+	_hit_nav(Rect2(15, 833, 258, 60), func():
 		Settings.reset_defaults()
 		_refresh())
 

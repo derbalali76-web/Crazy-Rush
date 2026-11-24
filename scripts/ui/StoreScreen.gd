@@ -1,148 +1,74 @@
 class_name StoreScreen
-extends Control
-## شاشة المتجر (تصميم المرجع): تبويبان (العملات / الجواهر). الشراء الحقيقي والإعلانات غير مفعّلة بعد:
-## كل الحزم والمكافأة بالإعلان وشريط الإعلان معتَّمة بوسم «غير متاح حاليًا». العدّاد الأيسر حقيقي.
-signal closed
+extends ScreenBase
+## المتجر: تبويبان (عملات / جواهر). الشراء الحقيقي والإعلانات غير مفعّلة: أزرار الشراء والمكافأة والشريط بوسم «غير متاح حاليًا».
 
-const W := 1672.0
-const H := 941.0
-const TAG_TEXT := "غير متاح حاليًا"
 const TABS := [
-	{"img": preload("res://assets/ui/store_coins_ref.png"),
-	 "cols": [Vector2(320, 715), Vector2(728, 1120), Vector2(1132, 1545)], "rows": [Vector2(255, 492), Vector2(503, 752)],
-	 "side": Rect2(30, 235, 252, 548)},
-	{"img": preload("res://assets/ui/store_gems_ref.png"),
-	 "cols": [Vector2(298, 695), Vector2(708, 1105), Vector2(1118, 1520)], "rows": [Vector2(250, 487), Vector2(500, 747)],
-	 "side": Rect2(18, 225, 224, 542)},
+	{"img": "res://assets/ui/c_store_coins.webp",
+	 "cols": [Vector2(395, 752), Vector2(845, 1200), Vector2(1297, 1670)],
+	 "btn": [Vector2(437, 705), Vector2(888, 1157), Vector2(1345, 1618)],
+	 "pill": [Vector2(322, 365), Vector2(548, 592)], "bty": [Vector2(368, 420), Vector2(595, 648)],
+	 "side_pill": Rect2(90, 535, 175, 60), "side_btn": Rect2(50, 605, 245, 66), "ribbon": Rect2(45, 215, 250, 80),
+	 "plus_c": Rect2(1137, 15, 65, 54), "plus_g": Rect2(1538, 20, 65, 49), "tab_c": Rect2(580, 104, 330, 80), "tab_g": Rect2(1090, 104, 330, 80),
+	 "amounts": [500, 1500, 3500, 8000, 20000, 50000]},
+	{"img": "res://assets/ui/c_store_gems.webp",
+	 "cols": [Vector2(360, 720), Vector2(822, 1195), Vector2(1297, 1665)],
+	 "btn": [Vector2(405, 680), Vector2(868, 1148), Vector2(1340, 1625)],
+	 "pill": [Vector2(308, 350), Vector2(548, 592)], "bty": [Vector2(355, 405), Vector2(595, 640)],
+	 "side_pill": Rect2(40, 548, 195, 50), "side_btn": Rect2(35, 600, 205, 65), "ribbon": Rect2(20, 190, 225, 56),
+	 "plus_c": Rect2(1132, 15, 67, 54), "plus_g": Rect2(1538, 15, 68, 54), "tab_c": Rect2(580, 100, 330, 80), "tab_g": Rect2(1080, 100, 330, 80),
+	 "amounts": [50, 140, 300, 650, 1400, 3000]},
 ]
-const BG := preload("res://assets/ui/store_coins_ref.png")
+const PRICES := ["0.99$", "2.99$", "4.99$", "9.99$", "19.99$", "49.99$"]
 
-var _root: Control
-var _bg_img: Image
-var _bg: TextureRect
-var _layer: Control
 var _tab := 0
+var _layer: Control
 
 
-func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	_bg_img = (TABS[0].img as Texture2D).get_image()
-	var vp := get_viewport_rect().size
-	set_deferred("size", vp)
-	custom_minimum_size = vp
+func _init() -> void:
+	bg_path = TABS[0].img
 
-	UiKit.add_backdrop(self, _bg_img, vp, W, H)
 
-	var fit := UiKit.fit(vp, W, H)
-	_root = Control.new()
-	_root.size = Vector2(W, H)
-	_root.scale = fit[0]
-	_root.position = fit[1]
-	add_child(_root)
-	var bg := TextureRect.new()
-	_bg = bg
-	bg.texture = TABS[0].img
-	bg.size = Vector2(W, H)
-	bg.stretch_mode = TextureRect.STRETCH_SCALE
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(bg)
+func _build() -> void:
 	_select(0)
-
-
-func _hit(r: Rect2, cb: Callable) -> void:
-	var b := Button.new()
-	b.flat = true
-	b.position = r.position
-	b.size = r.size
-	b.focus_mode = Control.FOCUS_NONE
-	b.pressed.connect(cb)
-	_add(b)
-
-
-func _box(r: Rect2, fill: Color, edge: Color, radius := 24, bw := 2) -> Panel:
-	var p := Panel.new()
-	p.position = r.position
-	p.size = r.size
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = fill
-	sb.border_color = edge
-	sb.set_border_width_all(bw)
-	sb.set_corner_radius_all(radius)
-	sb.anti_aliasing = true
-	p.add_theme_stylebox_override("panel", sb)
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add(p)
-	return p
-
-
-func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha := 0.55, radius := 26) -> void:
-	var cover := _box(r, Color(0.03, 0.05, 0.2, alpha), Color(0, 0, 0, 0), radius, 0)
-	cover.mouse_filter = Control.MOUSE_FILTER_STOP
-	if not show_tag:
-		return
-	var tw := minf(r.size.x - 10.0, fsize * 7.2)
-	var th := fsize * 1.6
-	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
-	t.size = tag.size
-	tag.add_child(t)
-
-
-func _patch2(x0: float, x1: float, y0: int, y1: int, cl: int, cr: int) -> void:
-	var h := y1 - y0
-	var st := Image.create(2, h, false, Image.FORMAT_RGBA8)
-	for i in range(h):
-		st.set_pixel(0, i, _bg_img.get_pixel(cl, y0 + i))
-		st.set_pixel(1, i, _bg_img.get_pixel(cr, y0 + i))
-	var tr := TextureRect.new()
-	tr.texture = ImageTexture.create_from_image(st)
-	tr.position = Vector2(x0, y0)
-	tr.size = Vector2(x1 - x0, h)
-	tr.stretch_mode = TextureRect.STRETCH_SCALE
-	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_add(tr)
-
-
-
-func _add(n: Node) -> void:
-	_layer.add_child(n)
 
 
 func _select(i: int) -> void:
 	_tab = i
-	_bg_img = (TABS[i].img as Texture2D).get_image()
-	_bg.texture = TABS[i].img
+	var tb: Dictionary = TABS[i]
+	_tex = load(tb.img)
+	_bg_rect.texture = _tex
 	if _layer:
 		_layer.queue_free()
 	_layer = Control.new()
 	_layer.size = Vector2(W, H)
 	_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_layer)
-	_build()
-
-
-func _build() -> void:
-	var tb: Dictionary = TABS[_tab]
-	# --- الحزم (الشراء غير مفعّل بعد)
-	for r in tb.rows:
-		for c in tb.cols:
-			_unavailable(Rect2(c.x, r.x, c.y - c.x, r.y - r.x), 20, -78.0, true, 0.4)
-	# --- المكافأة بالإعلان + شريط الإعلان (الإعلانات لاحقًا)
-	_unavailable(tb.side, 18, -130.0, true, 0.45)
-	_unavailable(Rect2(92, 800, 1488, 125), 28, 0.0, true, 0.55)
-	# --- التبويبان
-	_hit(Rect2(425, 118, 415, 110), func(): _select(0))
-	_hit(Rect2(845, 118, 440, 110), func(): _select(1))
-	# --- عدّادا العملات والجواهر الحقيقيان (+ يفتح المتجر المناسب)
-	UiKit.counter(_layer, _bg_img, Rect2(890, 32, 150, 44), 884, str(Settings.total_coins), 34, -8.0)
-	UiKit.counter(_layer, _bg_img, Rect2(1250, 32, 150, 44), 1246, str(Settings.gems), 34, -8.0)
-	_hit(Rect2(1048, 30, 76, 72), func(): _select(0))
-	_hit(Rect2(1412, 30, 76, 72), func(): _select(1))
-	_hit(Rect2(1520, 10, 140, 108), func():
+	_host = _layer
+	# التبويبان
+	txt(Loc.t("العملات"), tb.tab_c, 44, Color.WHITE, Color("0a1a5a"), 7)
+	txt(Loc.t("الجواهر"), tb.tab_g, 44, Color.WHITE, Color("3a0a5a"), 7)
+	hit(Rect2(450, 92, 480, 100), func(): _select(0))
+	hit(Rect2(940, 92, 520, 100), func(): _select(1))
+	# الحزم: الكمية في الشريط، والسعر على الزر (معتَّم: الشراء غير مفعّل)
+	var n := 0
+	for ri in range(2):
+		for ci in range(3):
+			var c: Vector2 = tb.cols[ci]
+			var p: Vector2 = tb.pill[ri]
+			var b: Vector2 = tb.btn[ci]
+			var by: Vector2 = tb.bty[ri]
+			num(UiKit.fmt_int(tb.amounts[n]), Rect2(c.x, p.x - 7, c.y - c.x, p.y - p.x), 36)
+			unavailable(Rect2(b.x, by.x, b.y - b.x, by.y - by.x), 20, true, 0.5, 24)
+			n += 1
+	# مكافأة الإعلان (غير متاحة)
+	txt(Loc.t("مكافأة مجانية"), tb.ribbon, 34, Color.WHITE, Color("5a0a10"), 6)
+	num("+" + str(25 if i == 0 else 5), tb.side_pill, 34)
+	unavailable(tb.side_btn, 18, true, 0.5, 24)
+	unavailable(Rect2(100, 715, 1660, 105), 28, true, 0.55, 30)
+	topbar(tb.plus_c, tb.plus_g, Rect2(1700, 0, 160, 100), func():
 		closed.emit()
 		queue_free())
+
+
+func _plus(tab: int) -> void:
+	_select(tab)

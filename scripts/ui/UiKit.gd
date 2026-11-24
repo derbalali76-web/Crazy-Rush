@@ -203,6 +203,16 @@ static func _fold(t: float) -> float:
 
 
 ## يفتح المتجر فوق الشاشة المضيفة (tab 0 عملات / 1 جواهر)
+static func fmt_int(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	for i in range(s.length()):
+		if i > 0 and (s.length() - i) % 3 == 0:
+			out += ","
+		out += s[i]
+	return out
+
+
 static func open_store(host: Control, tab: int) -> void:
 	var st := StoreScreen.new()
 	host.add_child(st)
