@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cjohcxjp3t76y"
-path="res://.godot/imported/costumes_ziko_ref.png-7301c7fc57010e128a05951762234173.ctex"
+uid="uid://cxsyns015w3h0"
+path="res://.godot/imported/cs_batboot.webp-0b14ef926df226811ecc1d6497ff952c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_ziko_ref.png"
-dest_files=["res://.godot/imported/costumes_ziko_ref.png-7301c7fc57010e128a05951762234173.ctex"]
+source_file="res://assets/ui/cs_batboot.webp"
+dest_files=["res://.godot/imported/cs_batboot.webp-0b14ef926df226811ecc1d6497ff952c.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

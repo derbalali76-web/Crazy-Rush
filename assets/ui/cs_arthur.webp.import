@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfntoobnwas0i"
-path="res://.godot/imported/costumes_ref.png-c3018436d06e2f24e61524015da66822.ctex"
+uid="uid://ihnslvgvmvox"
+path="res://.godot/imported/cs_arthur.webp-1a5f5d7fc62b2411dc4ea77462399c7d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_ref.png"
-dest_files=["res://.godot/imported/costumes_ref.png-c3018436d06e2f24e61524015da66822.ctex"]
+source_file="res://assets/ui/cs_arthur.webp"
+dest_files=["res://.godot/imported/cs_arthur.webp-1a5f5d7fc62b2411dc4ea77462399c7d.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

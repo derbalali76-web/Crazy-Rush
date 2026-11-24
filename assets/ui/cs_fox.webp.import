@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dfssgq1ylhydu"
-path="res://.godot/imported/costumes_robo_ref.png-74450e7a7dd627ed61fa519a2720e7fd.ctex"
+uid="uid://0v6moi8jtei0"
+path="res://.godot/imported/cs_fox.webp-de566d8aa93efd558f4519ba0fc26bb8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_robo_ref.png"
-dest_files=["res://.godot/imported/costumes_robo_ref.png-74450e7a7dd627ed61fa519a2720e7fd.ctex"]
+source_file="res://assets/ui/cs_fox.webp"
+dest_files=["res://.godot/imported/cs_fox.webp-de566d8aa93efd558f4519ba0fc26bb8.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

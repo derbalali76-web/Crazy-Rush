@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://br8ybg07lmqew"
-path="res://.godot/imported/costumes_lulu_ref.png-f8df24c3b19a492cc72d0c7003db4994.ctex"
+uid="uid://ppawtvhwwdhe"
+path="res://.godot/imported/cs_bombo.webp-06dccd1960f0e989bc72887d8bc2af38.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_lulu_ref.png"
-dest_files=["res://.godot/imported/costumes_lulu_ref.png-f8df24c3b19a492cc72d0c7003db4994.ctex"]
+source_file="res://assets/ui/cs_bombo.webp"
+dest_files=["res://.godot/imported/cs_bombo.webp-06dccd1960f0e989bc72887d8bc2af38.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

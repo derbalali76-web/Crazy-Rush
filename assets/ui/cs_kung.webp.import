@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://beo3p4o8lj7er"
-path="res://.godot/imported/costumes_batboot_ref.png-36b303041de357205a56fdbfc48f97db.ctex"
+uid="uid://dlwxylcc05kbe"
+path="res://.godot/imported/cs_kung.webp-055889b89acdd2346196ddc95ba76df6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_batboot_ref.png"
-dest_files=["res://.godot/imported/costumes_batboot_ref.png-36b303041de357205a56fdbfc48f97db.ctex"]
+source_file="res://assets/ui/cs_kung.webp"
+dest_files=["res://.godot/imported/cs_kung.webp-055889b89acdd2346196ddc95ba76df6.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

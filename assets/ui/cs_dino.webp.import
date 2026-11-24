@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bhq8os6bl6fr1"
-path="res://.godot/imported/costumes_kung_ref.png-8c03ed0752f399b698faf1cbc68ec7ee.ctex"
+uid="uid://ccgteps1m1bv2"
+path="res://.godot/imported/cs_dino.webp-2360b14df13e4e8c41ed22b50c89a855.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_kung_ref.png"
-dest_files=["res://.godot/imported/costumes_kung_ref.png-8c03ed0752f399b698faf1cbc68ec7ee.ctex"]
+source_file="res://assets/ui/cs_dino.webp"
+dest_files=["res://.godot/imported/cs_dino.webp-2360b14df13e4e8c41ed22b50c89a855.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

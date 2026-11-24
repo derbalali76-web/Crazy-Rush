@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3h6ytpxb6jwb"
-path="res://.godot/imported/costumes_arthur_ref.png-a0d5f4fc51e80942afd4b0ff11f938e8.ctex"
+uid="uid://bcrx8mo3fl4tk"
+path="res://.godot/imported/cs_bibo.webp-33cbf00397b375096379297a92974380.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_arthur_ref.png"
-dest_files=["res://.godot/imported/costumes_arthur_ref.png-a0d5f4fc51e80942afd4b0ff11f938e8.ctex"]
+source_file="res://assets/ui/cs_bibo.webp"
+dest_files=["res://.godot/imported/cs_bibo.webp-33cbf00397b375096379297a92974380.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

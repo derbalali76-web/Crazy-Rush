@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8bd5d66pcq2v"
-path="res://.godot/imported/costumes_dino_ref.png-cd6b4dfe1bbe2b4375ead1b96c004e36.ctex"
+uid="uid://e4ww0adaq5o8"
+path="res://.godot/imported/cs_robo.webp-f17e5bcd491f442b27afc34cada0bc99.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_dino_ref.png"
-dest_files=["res://.godot/imported/costumes_dino_ref.png-cd6b4dfe1bbe2b4375ead1b96c004e36.ctex"]
+source_file="res://assets/ui/cs_robo.webp"
+dest_files=["res://.godot/imported/cs_robo.webp-f17e5bcd491f442b27afc34cada0bc99.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

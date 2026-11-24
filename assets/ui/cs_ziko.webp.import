@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c64ey72mg80s7"
-path="res://.godot/imported/costumes_sosu_ref.png-361d9f6b25b581cedf707dac25c1eb27.ctex"
+uid="uid://cosf038b4qkwh"
+path="res://.godot/imported/cs_ziko.webp-d29c3d35853692323b92a7f6a3f8f95c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_sosu_ref.png"
-dest_files=["res://.godot/imported/costumes_sosu_ref.png-361d9f6b25b581cedf707dac25c1eb27.ctex"]
+source_file="res://assets/ui/cs_ziko.webp"
+dest_files=["res://.godot/imported/cs_ziko.webp-d29c3d35853692323b92a7f6a3f8f95c.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

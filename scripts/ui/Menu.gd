@@ -273,9 +273,9 @@ func _open_costumes() -> void:
 	if _settings:
 		return
 	var cid: String = ORDER[_focus]
-	if not CostumesScreen.has_store(cid):
+	if not CostumeStoreScreen.has_store(cid):
 		cid = "fox"
-	var cs := CostumesScreen.new()
+	var cs := CostumeStoreScreen.new()
 	cs.char_id = cid
 	cs.closed.connect(func(): _settings = null)
 	_settings = cs

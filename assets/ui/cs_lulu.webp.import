@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dur3307e16260"
-path="res://.godot/imported/costumes_bombo_ref.png-1d25e97a7282900d76276d54ea8304b0.ctex"
+uid="uid://c7yjsu0uwk331"
+path="res://.godot/imported/cs_lulu.webp-f1e2886e3d602d5e532f8eda9bba2a67.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_bombo_ref.png"
-dest_files=["res://.godot/imported/costumes_bombo_ref.png-1d25e97a7282900d76276d54ea8304b0.ctex"]
+source_file="res://assets/ui/cs_lulu.webp"
+dest_files=["res://.godot/imported/cs_lulu.webp-f1e2886e3d602d5e532f8eda9bba2a67.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

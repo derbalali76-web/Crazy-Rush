@@ -66,7 +66,7 @@ func _ready() -> void:
 				bz.char_id = cid
 				add_child(bz)
 			else:
-				var cz := CostumesScreen.new()
+				var cz := CostumeStoreScreen.new()
 				cz.char_id = cid
 				add_child(cz)
 		"select":

@@ -2,22 +2,22 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d13y51lnw4iee"
-path="res://.godot/imported/costumes_bibo_ref.png-05f237fecac2dd403b4f06eba29a9bdd.ctex"
+uid="uid://dn4p1niomr4v2"
+path="res://.godot/imported/cs_zain.webp-c2a9c3029a19388cb2fb62c7d97d66ed.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/costumes_bibo_ref.png"
-dest_files=["res://.godot/imported/costumes_bibo_ref.png-05f237fecac2dd403b4f06eba29a9bdd.ctex"]
+source_file="res://assets/ui/cs_zain.webp"
+dest_files=["res://.godot/imported/cs_zain.webp-c2a9c3029a19388cb2fb62c7d97d66ed.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
-compress/lossy_quality=0.88
+compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
