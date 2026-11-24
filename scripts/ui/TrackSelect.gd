@@ -76,8 +76,8 @@ func _select(i: int) -> void:
 	unavailable(Rect2(25, 520, 95, 110), 10, false)       # سهم يسار
 	unavailable(Rect2(1755, 520, 95, 110), 10, false)     # سهم يمين
 	# الأزرار السفلية
-	txt(Loc.t("البطولات"), Rect2(120, 705, 205, 85), 34, Color.WHITE, Color("2a0a4a"), 6)
-	txt(Loc.t("التحديات"), Rect2(425, 705, 220, 85), 34, Color.WHITE, Color("2a0a4a"), 6)
+	txt(Loc.t("البطولات"), Rect2(180, 705, 150, 85), 34, Color.WHITE, Color("2a0a4a"), 6)
+	txt(Loc.t("التحديات"), Rect2(480, 705, 165, 85), 34, Color.WHITE, Color("2a0a4a"), 6)
 	unavailable(Rect2(45, 700, 290, 95), 14, true, 0.6, 40)
 	unavailable(Rect2(350, 700, 305, 95), 14, true, 0.6, 40)
 	txt(Loc.t("ابدأ السباق"), Rect2(790, 700, 390, 100), 58, Color.WHITE, Color("0b4a12"), 9)

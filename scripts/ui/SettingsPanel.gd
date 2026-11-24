@@ -25,7 +25,7 @@ func _build() -> void:
 	# عناوين الصفوف
 	var rows := [["الصوت", 210.0], ["الموسيقى", 292.0], ["جودة الرسوم", 378.0], ["اللغة", 466.0], ["حساسية التوجيه", 540.0], ["الاهتزاز", 622.0], ["أداء اللعبة", 722.0]]
 	for r in rows:
-		txt(Loc.t(r[0]), Rect2(685, r[1] - 30, 215, 60), 30, Color.WHITE, Color("0a1a5a"), 5, false, HORIZONTAL_ALIGNMENT_RIGHT)
+		txt(Loc.t(r[0]), Rect2(685, r[1] - 30, 190, 60), 30, Color.WHITE, Color("0a1a5a"), 5, false, HORIZONTAL_ALIGNMENT_RIGHT)
 	_build_controls()
 	_build_nav()
 	_build_advanced()

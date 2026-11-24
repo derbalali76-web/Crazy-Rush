@@ -119,10 +119,15 @@ func unavailable(r: Rect2, fsize := 22, show_tag := true, alpha := 0.55, radius 
 	cover.mouse_filter = Control.MOUSE_FILTER_STOP
 	if not show_tag:
 		return
-	var tw := minf(r.size.x - 10.0, fsize * 7.4)
-	var th := fsize * 1.6
+	var label := Loc.t(TAG_TEXT)
+	var f := UiKit.font()
+	var fs := fsize
+	while fs > 11 and f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + fs * 1.2 > r.size.x - 6.0:
+		fs -= 1
+	var tw := minf(r.size.x - 6.0, f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + fs * 1.2)
+	var th := fs * 1.7
 	var tag := box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(label, fs, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 
