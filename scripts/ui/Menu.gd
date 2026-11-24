@@ -128,7 +128,7 @@ func _build() -> void:
 	_focus = maxi(0, ORDER.find(Settings.selected_character))
 	_refresh_char()
 	_hit(Rect2(478, 570, 90, 100), func(): _set_focus(_focus - 1))    # سهم: تبديل الشخصية
-	_hit(Rect2(980, 570, 90, 100), func(): _set_focus(_focus + 1))
+	_hit(Rect2(1000, 570, 90, 100), func(): _set_focus(_focus + 1))
 	# --- الأزرار اليمنى
 	_unavailable(Rect2(1148, 340, 510, 115), 26)
 	_unavailable(Rect2(1138, 468, 520, 120), 26)
@@ -167,30 +167,42 @@ func _refresh_char() -> void:
 	var page := _focus / 3
 	for i in range(4):
 		var on := i == page
-		var dot := _box(Rect2(685.0 + i * 48.0 - 19.0, 768.0 - 19.0, 38, 38), Color("ffd54a") if on else Color("0a2a8a"), Color.WHITE if on else Color("5aa0ff"), 19, 4)
+		var dot := _box(Rect2(705.0 + i * 47.3 - 17.0, 756.0 - 17.0, 34, 34), Color("ffd54a") if on else Color("0a2a8a"), Color.WHITE if on else Color("5aa0ff"), 19, 4)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if id == "fox":
-		_root = keep
-		return
-	_box(Rect2(636, 172, 388, 580), Color("40329f"), Color("f3b63a"), 30, 4)
+	# الشخصية واقفة على المنصة (بلا بطاقة): ظل + حركة تنفّس خفيفة
+	var tex := load("res://assets/characters/fox_menu.png") as Texture2D if id == "fox" else Characters.portrait(id)
+	var ts := tex.get_size()
+	var sc := minf(420.0 / ts.x, 440.0 / ts.y)
+	var sz := ts * sc
+	var feet := Vector2(795.0, 722.0)
+	var shadow := Polygon2D.new()
+	var pts := PackedVector2Array()
+	for k in range(32):
+		var an := TAU * k / 32.0
+		pts.append(feet + Vector2(cos(an) * minf(sz.x * 0.5, 150.0), sin(an) * 24.0 - 6.0))
+	shadow.polygon = pts
+	shadow.color = Color(0.05, 0.0, 0.2, 0.38)
+	_dyn.add_child(shadow)
 	var tr := TextureRect.new()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	tr.texture = Characters.portrait(id)
-	tr.position = Vector2(642, 185)
-	tr.size = Vector2(360, 500)
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.texture = tex
+	tr.size = sz
+	tr.position = Vector2(feet.x - sz.x * 0.5, feet.y - sz.y)
+	tr.pivot_offset = Vector2(sz.x * 0.5, sz.y)
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dyn.add_child(tr)
-	for w in [[40.0, Color("7a3a00")], [24.0, Color("ffb300")]]:
-		var ln := Line2D.new()
-		ln.points = PackedVector2Array([Vector2(1000, 588), Vector2(1042, 628), Vector2(1000, 668)])
-		ln.width = w[0]
-		ln.default_color = w[1]
-		ln.joint_mode = Line2D.LINE_JOINT_ROUND
-		ln.begin_cap_mode = Line2D.LINE_CAP_ROUND
-		ln.end_cap_mode = Line2D.LINE_CAP_ROUND
-		_dyn.add_child(ln)
+	tr.scale = Vector2(0.9, 0.9)
+	var pop := create_tween()
+	pop.tween_property(tr, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_callback(func():
+		var br := create_tween().set_loops()
+		br.tween_property(tr, "scale", Vector2(1.0, 1.018), 1.2).set_trans(Tween.TRANS_SINE)
+		br.tween_property(tr, "scale", Vector2(1.0, 1.0), 1.2).set_trans(Tween.TRANS_SINE))
+	if id == "fox":
+		_root = keep
+		return
 	var nme := Characters.character_name(id)
 	UiKit.name_tag(_dyn, _bg_img, Rect2(342, 302, 236, 48), 338, nme, 40 if nme.length() < 12 else 32, Color("5a1a00"))
 	# بطاقة القدرة الخاصة بالشخصية (بنفس تنسيق بطاقة فوكسي)
