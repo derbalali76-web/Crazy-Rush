@@ -4,6 +4,7 @@ extends Control
 ## المتاح: الأساسي (مُلبَّس) والعودة؛ بقية الأزياء والشراء والمعاينة والتبويبات بوسم «غير متاح حاليًا».
 
 signal closed
+signal start_pressed
 
 const W := 1672.0
 const H := 941.0
@@ -23,6 +24,9 @@ const IMAGES := {
 	"arthur": "res://assets/ui/costumes_arthur_ref.png",
 	"m_day": "res://assets/ui/missions_daily_ref.png",
 	"m_week": "res://assets/ui/missions_weekly_ref.png",
+	"r_week": "res://assets/ui/ranking_week_ref.png",
+	"r_all": "res://assets/ui/ranking_all_ref.png",
+	"tour": "res://assets/ui/tournaments_ref.png",
 }
 const ORDER := ["fox", "bombo", "ziko", "robo", "lulu", "dino", "bibo", "batboot", "kung", "sosu", "zain", "arthur"]
 
@@ -150,6 +154,12 @@ func _patch_num(x: float, y: float, w: float, h: float, sample_x: int, text: Str
 func _build() -> void:
 	if char_id.begins_with("m_"):
 		_build_missions()
+		return
+	if char_id.begins_with("r_"):
+		_build_ranking()
+		return
+	if char_id == "tour":
+		_build_tour()
 		return
 	if char_id != "fox":
 		_build_bombo()
@@ -388,3 +398,99 @@ func _process(delta: float) -> void:
 	if _tick >= 1.0:
 		_tick = 0.0
 		_update_timer()
+
+
+# ------------------------------------------------------------------ التصنيفات والبطولات
+func _patch_text(r: Rect2, sample_x: int, text: String, size: int, color := Color.WHITE, outline := Color("0a1440")) -> void:
+	_patch_strip(r, sample_x)
+	var l := UiKit.bold_label(text, size, color, outline, 5)
+	l.position = r.position
+	l.size = r.size
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_root.add_child(l)
+
+
+func _solid_text(r: Rect2, sample: Vector2i, text: String, size: int, color := Color.WHITE, outline := Color("0a1440")) -> void:
+	var b := _box(r, _bg_img.get_pixelv(sample), Color(0, 0, 0, 0), 14, 0)
+	var l := UiKit.bold_label(text, size, color, outline, 5)
+	l.size = b.size
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	b.add_child(l)
+
+
+func _common_top(coin_x: int, gem_x: int) -> void:
+	_patch_num(1100, 34, 112, 40, coin_x, _fmt(Settings.total_coins))
+	_patch_num(1366, 34, 100, 40, gem_x, "0")
+	_hit(Rect2(1030, 26, 250, 66), func(): _open_store(0))
+	_hit(Rect2(1285, 26, 250, 66), func(): _open_store(1))
+	_hit(Rect2(1560, 22, 96, 92), func():
+		closed.emit()
+		queue_free())
+
+
+func _build_ranking() -> void:
+	var weekly := char_id == "r_week"
+	_common_top(1098, 1366)
+	var pts := Ranking.score(weekly)
+	var rk := Ranking.rank_of(weekly)
+	_solid_text(Rect2(690, 696, 146, 40), Vector2i(838, 716), _fmt(pts), 34)
+	_solid_text(Rect2(1494, 696, 60, 40), Vector2i(1490, 716), str(rk), 34, Color("ffd23a"), Color("3a2200"))
+	_patch_text(Rect2(104, 832, 420, 54), 98, "المركز %s · %s نقطة" % [Missions.arabic_digits(str(rk)), Missions.arabic_digits(_fmt(pts))], 38, Color.WHITE, Color("1b0a50"))
+	_hit(Rect2(1120, 118, 400, 84), func():
+		if not weekly: _switch("r_week"))
+	_hit(Rect2(770, 118, 345, 84), func():
+		if weekly: _switch("r_all"))
+
+
+func _build_tour() -> void:
+	_common_top(1098, 1366)
+	var ys := [245.0, 395.0, 540.0, 688.0]
+	for i in range(4):
+		var y: float = ys[i]
+		var races := int(Ranking.CUPS[i]["races"])
+		var prog := Ranking.cup_progress(i)
+		var done := Ranking.cup_done(i)
+		var claimed := Ranking.cup_claimed(i)
+		var px := 985.0 if i == 3 else 930.0
+		var pw := 192.0 if i == 3 else 230.0
+		_box(Rect2(px, y - 25, pw, 50), Color("0b1c52"), Color("6f8fe0"), 24, 2)
+		if prog > 0:
+			var fill := _box(Rect2(px + 4, y - 21, maxf(26.0, (pw - 8.0) * float(prog) / float(races)), 42), Color("3fd12c"), Color("a6f27a"), 20, 2)
+			fill.size.x = minf(fill.size.x, pw - 8.0)
+		var t := UiKit.bold_label("%d/%d" % [prog, races], 28, Color.WHITE, Color("0a1440"), 5)
+		t.position = Vector2(px, y - 25)
+		t.size = Vector2(pw, 50)
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_root.add_child(t)
+		var txt := "ابدأ"
+		var fillc := Color("2fcf2c")
+		var edge := Color("b6ff8a")
+		if claimed:
+			txt = "تم ✓"
+			fillc = Color("5c6384")
+			edge = Color("9aa2c4")
+		elif done:
+			txt = "استلام"
+			fillc = Color("f5b81c")
+			edge = Color("ffe38a")
+		elif Ranking.active == i or prog > 0:
+			txt = "متابعة"
+		_box(Rect2(552, y - 45, 175, 90), fillc, edge, 40, 3)
+		var bl := UiKit.bold_label(txt, 38, Color.WHITE, Color("114a12") if fillc == Color("2fcf2c") else Color("2b2f55"), 6)
+		bl.position = Vector2(552, y - 45)
+		bl.size = Vector2(175, 90)
+		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_root.add_child(bl)
+		if not claimed:
+			var idx := i
+			_hit(Rect2(552, y - 45, 175, 90), func():
+				if Ranking.cup_done(idx):
+					Ranking.claim_cup(idx)
+					_switch(char_id)
+				else:
+					Ranking.start_cup(idx)
+					start_pressed.emit())

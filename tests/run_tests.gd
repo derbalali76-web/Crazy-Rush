@@ -15,6 +15,7 @@ func check(cond: bool, msg: String) -> void:
 func _init() -> void:
 	test_meshes()
 	test_missions()
+	test_ranking()
 	test_run_forward()
 	test_jump()
 	test_slide()
@@ -535,3 +536,18 @@ func test_missions() -> void:
 	Missions.add("coins", 60)
 	check(Missions.progress("day", 2) == 50, "missions: progress capped at goal")
 	Missions.reset_for_tests()
+
+
+func test_ranking() -> void:
+	Ranking.reset_for_tests()
+	check(Ranking.rank_of(true) >= 7, "ranking: new player is below the six rivals")
+	Ranking.start_cup(0)
+	for i in range(3):
+		Ranking.report_race(1, 10)
+	check(Ranking.cup_done(0), "tournament: 3 races complete cup 1")
+	check(Ranking.score(true) == 330, "ranking: points = rank bonus + coins")
+	check(Ranking.claim_cup(0) == 500, "tournament: claim pays 500")
+	check(Ranking.claim_cup(0) == 0, "tournament: no double claim")
+	Ranking.report_race(2, 0)
+	check(Ranking.cup_progress(1) == 0, "tournament: other cups untouched")
+	Ranking.reset_for_tests()

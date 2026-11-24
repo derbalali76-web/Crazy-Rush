@@ -118,7 +118,7 @@ func _build() -> void:
 
 	# --- العمود الأيسر
 	_hit(Rect2(12, 245, 258, 96), _open_missions)                      # المهام
-	_unavailable(Rect2(12, 362, 258, 96), 17, 32.0)                    # البطولات
+	_hit(Rect2(12, 362, 258, 96), func(): _open_screen("tour"))        # البطولات
 	_hit(Rect2(12, 480, 258, 96), _open_costumes)                      # الأزياء
 	_hit(Rect2(12, 598, 258, 96), func(): _open_store(0))                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
 	# اختيار الشخصية
@@ -134,8 +134,8 @@ func _build() -> void:
 	_unavailable(Rect2(1138, 468, 520, 120), 26)
 	_unavailable(Rect2(1130, 600, 525, 120), 26)
 	# --- الشريط السفلي
-	for x in [25.0, 235.0]:
-		_unavailable(Rect2(x, 808, 200, 112), 16, 30.0)
+	_hit(Rect2(25, 808, 200, 112), func(): _open_screen("tour"))      # البطولات
+	_hit(Rect2(235, 808, 200, 112), func(): _open_screen("r_week"))   # التصنيفات
 	_hit(Rect2(445, 808, 200, 112), _open_tracks)                     # المسارات
 	_hit(Rect2(655, 808, 200, 112), _open_select)                     # الشخصيات
 
@@ -238,10 +238,15 @@ func _open_costumes() -> void:
 
 
 func _open_missions() -> void:
+	_open_screen("m_day")
+
+
+func _open_screen(id: String) -> void:
 	if _settings:
 		return
 	var ms := CostumesScreen.new()
-	ms.char_id = "m_day"
+	ms.char_id = id
+	ms.start_pressed.connect(func(): play_pressed.emit())
 	ms.closed.connect(func(): _settings = null)
 	_settings = ms
 	add_child(ms)

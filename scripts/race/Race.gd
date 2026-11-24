@@ -440,6 +440,7 @@ func _on_finished(t: float) -> void:
 		Settings.best_time = t
 	Settings.save_settings()
 	Missions.report_race(_final_rank, t)
+	Ranking.report_race(_final_rank, runner.coins_got)
 	set_meta("new_best", new_best)
 
 
