@@ -1,0 +1,112 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+
+PASS  mesh proto 'board' builds
+PASS  mesh proto 'stringer' builds
+PASS  mesh proto 'post' builds
+PASS  mesh proto 'palm_a' builds
+PASS  mesh proto 'palm_b' builds
+PASS  Foxy builds
+PASS  missions: starts at 0
+PASS  missions: 3 races done
+PASS  missions: win done
+PASS  missions: fast done (<70s)
+PASS  missions: weekly fast needs <60s
+PASS  missions: claim pays reward
+PASS  missions: no double claim
+PASS  missions: unfinished can't be claimed
+PASS  missions: progress capped at goal
+PASS  chest: not ready at start
+PASS  chest: ready after all claimed
+PASS  chest: gives 3 gems
+PASS  chest: opens once
+PASS  ranking: new player is below the six rivals
+PASS  tournament: 3 races complete cup 1
+PASS  ranking: points = rank bonus + coins
+PASS  tournament: claim pays 500
+PASS  tournament: no double claim
+PASS  tournament: other cups untouched
+PASS  runner auto-runs forward (s=32.8)
+PASS  steering right moves x (x=5.55)
+PASS  x stays within track
+PASS  jump rises (peak=1.97)
+PASS  jump lands back to RUN
+PASS  slide enters SLIDE
+PASS  slide ends
+PASS  bot reaches finish line (t=79.8s, s=1000, falls=0, stumbles=9)
+PASS  track frame finite along entire length
+PASS  start area is solid
+PASS  all racers in the race
+PASS  at least 7/8 racers finish within 300s (finished=4, t=80s)
+PASS  standings produced; winner idx=2
+PASS  rival punches land during the race (hits=21)
+PASS  hit count consistent
+PASS  first hit lands
+PASS  victim is protected right after a hit
+PASS  punch hits rival in front (times_hit=1)
+PASS  rival hit sets longer cooldown
+PASS  victim gets short protection
+PASS  start grid: min distance between racers 3.00 m (>= 2.2)
+PASS  start grid has exactly two rows ({ 0.0: 3, 2.2: 1 })
+PASS  row stagger equals ROW_GAP (2.20 m) to the same finish line
+PASS  same-row lateral spacing 3.00 m (>= 3.0)
+PASS  punch resolves when the fist arrives (0.20 s)
+PASS  punch aims right toward the rival on the right
+PASS  punch aims left toward the rival on the left
+PASS  side punch connects with a rival 1.7 m to the side
+PASS  hit registered at fist arrival (0.20 s)
+PASS  victim shoved sideways away from attacker (-0.97 m)
+PASS  run arms stay abducted away from torso (min z 0.36 rad)
+PASS  winding layout keeps same length
+PASS  winding layout radius >= 55 m (k=0.0163)
+PASS  winding layout never nears itself (104.4 m)
+PASS  winding layout really turns (80 deg)
+PASS  default layout unchanged (k=0.0040)
+PASS  jungle hazards spaced >= 9 m (min 14.0)
+PASS  jungle final straight is hazard-free (last 892)
+PASS  jungle pits jumpable (max 8 m)
+PASS  jungle has coins (180)
+PASS  branch layout: 2 forks, 2 tunnels
+PASS  fork A: high lane is >= 6.5 m above low lane
+PASS  fork B: high lane is >= 5.5 m above low lane
+PASS  fork A: divider void with a drop/crossing window at 340
+PASS  tunnel ceiling only over the low lane
+PASS  centerline slope stays comfortable (max 0.150)
+PASS  tunnel/low route finishes cleanly (t=76.7, falls=0)
+PASS  high/shortcut route finishes cleanly (t=72.9, falls=0)
+PASS  shortcut gives a time reward (72.9s vs 76.7s)
+PASS  real vertical range experienced (17.1 m)
+PASS  branch: >= 7/8 racers finish (finished=4, falls=0, t=83s)
+PASS  branch: rank order consistent with distance (violations=0)
+PASS  AI splits between routes at fork A (high=3/7)
+PASS  9 baked clips in AnimationPlayer
+PASS  AnimationTree state machine exists
+PASS  state machine reaches run
+PASS  run clip swings the leg (range=1.90)
+PASS  stride rate scales with speed ([8, 16])
+PASS  jump_up state
+PASS  fall_air state
+PASS  stumble state
+PASS  cheer raises arms
+PASS  landing bends the knees (-1.99)
+PASS  Foxy.create returns the GLB-rigged Foxy
+PASS  GLB skeleton has 19 bones
+PASS  GLB has all required clips (missing=[])
+PASS  GLB run swings the thigh (range 1.87 at speed 9)
+PASS  GLB run swings the thigh (range 1.87 at speed 18)
+PASS  GLB stride rate scales with speed ([7, 15])
+PASS  GLB state jump reached (got jump)
+PASS  GLB state fall reached (got fall)
+PASS  GLB state stumble reached (got stumble)
+PASS  GLB state pit_fall reached (got pit_fall)
+PASS  GLB state victory reached (got victory)
+PASS  GLB state slide reached (got slide)
+PASS  GLB landing clip triggers on notify_land
+PASS  GLB turn blend follows steering lean (1.00)
+PASS  GLB punch fires
+PASS  left filter only touches left-side bones (FoxyRig/Skeleton3D:arm.L)
+PASS  left filter only touches left-side bones (FoxyRig/Skeleton3D:forearm.L)
+PASS  right filter only touches right-side bones (FoxyRig/Skeleton3D:arm.R)
+PASS  right filter only touches right-side bones (FoxyRig/Skeleton3D:forearm.R)
+PASS  punch filters cover arm+forearm on each side (r=2 l=2)
+PASS  GLB ghost copy built
+RESULT fails=0
