@@ -8,7 +8,7 @@ signal play_pressed
 const W := 1672.0
 const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
-var BG: Texture2D = Loc.tex("res://assets/ui/menu_ref.png")
+var BG: Texture2D = preload("res://assets/ui/menu_clean.png")   # بلا نصوص: كل النصوص تُكتب بلغة اللعبة
 
 var _root: Control
 var _settings: Control
@@ -92,26 +92,11 @@ func _build() -> void:
 	_hit(Rect2(1158, 208, 500, 120), _open_tracks)                    # ضد الكمبيوتر: اختيار الحلبة
 	_hit(Rect2(1562, 18, 104, 108), _open_settings)                   # الإعدادات
 
-	# --- عدّاد العملات الحقيقي (فوق الرقم المرسوم)
-	var strip := Image.create(1, 52, false, Image.FORMAT_RGBA8)
-	for i in range(52):
-		strip.set_pixel(0, i, _bg_img.get_pixel(1236, 24 + i))
-	var pt := TextureRect.new()
-	pt.texture = ImageTexture.create_from_image(strip)
-	pt.position = Vector2(1122, 24)
-	pt.size = Vector2(112, 52)
-	pt.stretch_mode = TextureRect.STRETCH_SCALE
-	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_root.add_child(pt)
-	var coins := UiKit.num_label(str(Settings.total_coins), 36)
-	coins.position = Vector2(1122, 16)
-	coins.size = Vector2(112, 52)
-	coins.clip_text = true
-	_root.add_child(coins)
+	# --- عدّاد العملات والجواهر (الخلفية بلا أرقام)
+	_txt(str(Settings.total_coins), Rect2(1145, 28, 112, 50), 38, Color.WHITE, Color("0b1450"), 8)
 	_hit(Rect2(1240, 22, 56, 56), func(): _open_store(0))             # زر + (متجر العملات)
 	# الجواهر
-	UiKit.name_tag(_root, _bg_img, Rect2(1384, 18, 94, 48), 1481, str(Settings.gems), 36, Color("2a0a50"))   # الجواهر الفعلية 0
+	_txt(str(Settings.gems), Rect2(1398, 28, 108, 50), 38, Color.WHITE, Color("0b1450"), 8)
 	_hit(Rect2(1312, 22, 240, 56), func(): _open_store(1))             # متجر الجواهر
 	# الملف الشخصي
 	_hit(Rect2(30, 15, 440, 140), _open_account)                       # الملف الشخصي
@@ -121,6 +106,7 @@ func _build() -> void:
 	_hit(Rect2(12, 362, 258, 96), func(): _open_screen("tour"))        # البطولات
 	_hit(Rect2(12, 480, 258, 96), _open_costumes)                      # الأزياء
 	_hit(Rect2(12, 598, 258, 96), func(): _open_store(0))                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
+	_build_texts()
 	# اختيار الشخصية
 	_dyn = Control.new()
 	_dyn.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -200,9 +186,6 @@ func _refresh_char() -> void:
 		var br := create_tween().set_loops()
 		br.tween_property(tr, "scale", Vector2(1.0, 1.018), 1.2).set_trans(Tween.TRANS_SINE)
 		br.tween_property(tr, "scale", Vector2(1.0, 1.0), 1.2).set_trans(Tween.TRANS_SINE))
-	if id == "fox":
-		_root = keep
-		return
 	var nme := Characters.character_name(id)
 	UiKit.name_tag(_dyn, _bg_img, Rect2(342, 302, 236, 48), 338, nme, 40 if nme.length() < 12 else 32, Color("5a1a00"))
 	# بطاقة القدرة الخاصة بالشخصية (بنفس تنسيق بطاقة فوكسي)
@@ -223,16 +206,66 @@ func _refresh_char() -> void:
 	at.clip_text = true
 	_dyn.add_child(at)
 	var ln := _box(Rect2(440, 452, 148, 2), Color("5ac8ff"), Color(0, 0, 0, 0), 1, 0)
-	var ad := UiKit.bold_label(ab[1], 20, Color.WHITE, Color("0a1a4a"), 6)
+	var ad := UiKit.bold_label(ab[1], 20 if ab[1].length() < 38 else 17, Color.WHITE, Color("0a1a4a"), 5)
 	ad.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ad.custom_minimum_size = Vector2(168, 0)
-	ad.position = Vector2(428, 458)
-	ad.size = Vector2(168, 104)
+	ad.position = Vector2(428, 456)
+	ad.size = Vector2(172, 110)
 	ad.add_theme_constant_override("line_spacing", -6)
 	ad.clip_text = true
 	_dyn.add_child(ad)
-	_unavailable(Rect2(1100, 775, 555, 145), 28)
+	if not Characters.is_playable(id):
+		_unavailable(Rect2(1100, 775, 555, 145), 28)
 	_root = keep
+
+
+## نص بحجم يلائم المستطيل (يصغّر الخط حتى يتسع)
+func _txt(text: String, r: Rect2, size: int, color: Color, outline_color: Color, outline := 6, bold := true) -> Label:
+	var f := UiKit.font()
+	var sz := size
+	while sz > 16 and f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x * 1.12 > r.size.x:
+		sz -= 2
+	var l := UiKit.bold_label(text, sz, color, outline_color, outline) if bold else UiKit.label(text, sz, color, outline)
+	l.position = r.position
+	l.size = r.size
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_root.add_child(l)
+	return l
+
+
+func _player_level() -> Array:
+	var xp: int = Settings.races_played * 50 + Settings.wins * 100 + Settings.total_coins
+	return [xp / 500 + 1, xp % 500, 500]
+
+
+func _build_texts() -> void:
+	var navy := Color("0a1a5a")
+	# بطاقة اللاعب: الاسم + المستوى + شريط الخبرة
+	_txt(Settings.player_name, Rect2(180, 30, 280, 46), 40, Color.WHITE, navy, 6)
+	var lv := _player_level()
+	_txt(str(lv[0]), Rect2(172, 78, 66, 52), 34, Color.WHITE, Color("5a3a00"), 6)
+	_box(Rect2(232, 90, 206, 36), Color("0b1c52"), Color("5a7ae0"), 16, 2)
+	var fw := maxf(14.0, 198.0 * float(lv[1]) / float(lv[2]))
+	_box(Rect2(236, 94, fw, 28), Color("ffc21a"), Color("ffe38a"), 13, 1)
+	_txt("%d / %d" % [lv[1], lv[2]], Rect2(232, 90, 206, 36), 24, Color.WHITE, navy, 5)
+	# العمود الأيسر
+	for e in [[290.0, "المهام"], [405.0, "البطولات"], [522.0, "الأزياء"], [640.0, "المتجر"]]:
+		_txt(Loc.t(e[1]), Rect2(126, e[0] - 40, 142, 80), 42, Color.WHITE, navy, 7)
+	# البطاقات اليمنى (النص بين الأيقونتين)
+	_txt(Loc.t("ضد الكمبيوتر"), Rect2(1290, 226, 190, 48), 42, Color("4a2400"), Color.WHITE, 5)
+	_txt(Loc.t("تحدي الذكاء الاصطناعي"), Rect2(1285, 272, 200, 40), 24, Color("4a2400"), Color.WHITE, 0, false)
+	var cards := [[399.0, "أونلاين", "منافسة عالمية", Color("0a2a7a"), Rect2(1300, 0, 215, 0)], [526.0, "غرفة الأصدقاء", "العب مع أصدقائك", Color("3a0a70"), Rect2(1165, 0, 255, 0)], [655.0, "بلوتوث", "لعب محلي قريب", Color("0a4a14"), Rect2(1165, 0, 235, 0)]]
+	for c in cards:
+		var zr: Rect2 = c[4]
+		_txt(Loc.t(c[1]), Rect2(zr.position.x, c[0] - 46, zr.size.x, 50), 42, Color.WHITE, c[3], 7)
+		_txt(Loc.t(c[2]), Rect2(zr.position.x, c[0] + 6, zr.size.x, 40), 24, Color("e8eeff"), c[3], 4)
+	# زر العب الآن
+	_txt(Loc.t("العب الآن"), Rect2(1270, 785, 270, 90), 66, Color("5a2300"), Color.WHITE, 9)
+	# الشريط السفلي
+	for e in [[130.0, "البطولات"], [340.0, "الترتيب"], [548.0, "المسارات"], [755.0, "الشخصيات"]]:
+		_txt(Loc.t(e[1]), Rect2(e[0] - 95, 855, 190, 46), 36, Color.WHITE, navy, 6)
+	_txt(Loc.t("الرئيسية"), Rect2(860, 855, 190, 46), 36, Color.WHITE, Color("7a3a00"), 6)
 
 
 func _open_costumes() -> void:

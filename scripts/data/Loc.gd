@@ -57,6 +57,24 @@ static func digits(s: String) -> String:
 
 
 const T := {
+	# --- الرئيسية
+	"المهام": ["Missions", "Missions"],
+	"البطولات": ["Tournaments", "Tournois"],
+	"الأزياء": ["Costumes", "Costumes"],
+	"المتجر": ["Store", "Boutique"],
+	"ضد الكمبيوتر": ["Vs Computer", "Contre l'ordi"],
+	"تحدي الذكاء الاصطناعي": ["Challenge the AI", "Défie l'IA"],
+	"أونلاين": ["Online", "En ligne"],
+	"منافسة عالمية": ["Worldwide competition", "Compétition mondiale"],
+	"غرفة الأصدقاء": ["Friends Room", "Salon d'amis"],
+	"العب مع أصدقائك": ["Play with friends", "Joue avec tes amis"],
+	"بلوتوث": ["Bluetooth", "Bluetooth"],
+	"لعب محلي قريب": ["Local play nearby", "Jeu local à proximité"],
+	"العب الآن": ["Play Now", "Jouer"],
+	"الترتيب": ["Ranking", "Classement"],
+	"المسارات": ["Tracks", "Pistes"],
+	"الشخصيات": ["Characters", "Personnages"],
+	"الرئيسية": ["Home", "Accueil"],
 	# --- الجودة والإعدادات
 	"عالية": ["High", "Élevée"],
 	"متوسطة": ["Medium", "Moyenne"],
