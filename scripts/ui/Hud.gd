@@ -482,27 +482,16 @@ func show_pause() -> void:
 	img.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	img.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.add_child(img)
-	# صورة الشخصية المختارة (تتغير حسب Settings.selected_character)
-	var por := Characters.portrait(Settings.selected_character)
-	if por:
-		var slot := Rect2(44, 207, 333, 591)
-		var ps := por.get_size()
-		var k := minf(slot.size.x / ps.x, slot.size.y / ps.y)
-		var pr := TextureRect.new()
-		pr.texture = por
-		pr.size = ps * k
-		pr.position = Vector2(slot.position.x + (slot.size.x - pr.size.x) * 0.5, slot.position.y + slot.size.y - pr.size.y)
-		pr.stretch_mode = TextureRect.STRETCH_SCALE
-		pr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		pr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		pr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		panel.add_child(pr)
 	var items := [
-		[Rect2(400, 248, 575, 114), func(): resume_pressed.emit()],
-		[Rect2(400, 378, 575, 112), func(): restart_pressed.emit()],
-		[Rect2(400, 510, 575, 112), func(): _open_settings()],
-		[Rect2(400, 640, 575, 112), func(): home_pressed.emit()],
+		[Rect2(370, 216, 532, 102), func(): resume_pressed.emit(), "متابعة"],
+		[Rect2(370, 331, 532, 102), func(): restart_pressed.emit(), "إعادة السباق"],
+		[Rect2(370, 447, 532, 102), func(): _open_settings(), "الإعدادات"],
+		[Rect2(370, 561, 532, 102), func(): home_pressed.emit(), "الرئيسية"],
 	]
+	var title := UiKit.label(Loc.t("متوقف مؤقتًا"), 52, Color.WHITE, 8)
+	title.position = Vector2(300, 84)
+	title.size = Vector2(380, 90)
+	panel.add_child(title)
 	for it in items:
 		var r: Rect2 = it[0]
 		var hl := Panel.new()
@@ -524,6 +513,10 @@ func show_pause() -> void:
 		b.button_up.connect(func(): hl.visible = false)
 		b.pressed.connect(it[1])
 		panel.add_child(b)
+		var lb := UiKit.label(Loc.t(it[2]), 46, Color.WHITE, 8)
+		lb.position = Vector2(r.position.x + 140, r.position.y)
+		lb.size = Vector2(300, r.size.y)
+		panel.add_child(lb)
 	root.add_child(overlay)
 
 

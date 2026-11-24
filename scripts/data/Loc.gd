@@ -76,6 +76,9 @@ const T := {
 	"الترتيب": ["Ranking", "Classement", "Clasificación", "排名"],
 	"المسارات": ["Tracks", "Pistes", "Pistas", "赛道"],
 	"الشخصيات": ["Characters", "Personnages", "Personajes", "角色"],
+	"متوقف مؤقتًا": ["Paused", "En pause", "En pausa", "已暂停"],
+	"إعادة السباق": ["Restart", "Recommencer", "Reiniciar", "重新开始"],
+	"الإعدادات": ["Settings", "Paramètres", "Ajustes", "设置"],
 	"الرئيسية": ["Home", "Accueil", "Inicio", "主页"],
 	# --- الجودة والإعدادات
 	"عالية": ["High", "Élevée", "Alta", "高"],
