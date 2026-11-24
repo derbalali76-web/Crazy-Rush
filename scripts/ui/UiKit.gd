@@ -20,7 +20,11 @@ const C_PANEL_EDGE := Color("5aa0ff")
 
 static func font() -> Font:
 	if _font == null:
-		_font = load("res://assets/fonts/Cairo.ttf")
+		var base: FontFile = load("res://assets/fonts/Cairo.ttf")
+		var sys := SystemFont.new()
+		sys.font_names = PackedStringArray(["Noto Sans CJK SC", "Noto Sans SC", "Source Han Sans SC", "Droid Sans Fallback", "Microsoft YaHei", "sans-serif"])
+		base.fallbacks = [sys]
+		_font = base
 	return _font
 
 
