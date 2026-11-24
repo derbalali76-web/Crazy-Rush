@@ -364,7 +364,7 @@ func _show_fx(key: String, height: float, hold: float) -> void:
 	if _fx and is_instance_valid(_fx):
 		_fx.queue_free()
 	var vp := get_viewport().get_visible_rect().size
-	var tex: Texture2D = load(FX[key])
+	var tex: Texture2D = Loc.tex(FX[key]) if key == "انطلق!" else load(FX[key])
 	var sc := height / tex.get_size().y
 	var t := TextureRect.new()
 	t.texture = tex
