@@ -172,13 +172,13 @@ func _refresh_char() -> void:
 	if id == "fox":
 		_root = keep
 		return
-	_box(Rect2(634, 172, 446, 580), Color(0.05, 0.08, 0.26, 0.9), Color("f3b63a"), 30, 4)
+	_box(Rect2(636, 172, 388, 580), Color("40329f"), Color("f3b63a"), 30, 4)
 	var tr := TextureRect.new()
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tr.texture = Characters.portrait(id)
-	tr.position = Vector2(655, 185)
-	tr.size = Vector2(370, 500)
+	tr.position = Vector2(642, 185)
+	tr.size = Vector2(360, 500)
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dyn.add_child(tr)
