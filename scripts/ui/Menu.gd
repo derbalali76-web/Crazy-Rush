@@ -289,7 +289,7 @@ func _open_missions() -> void:
 func _open_screen(id: String) -> void:
 	if _settings:
 		return
-	var ms := CostumesScreen.new()
+	var ms := BoardScreen.new()
 	ms.char_id = id
 	ms.start_pressed.connect(func(): play_pressed.emit())
 	ms.closed.connect(func(): _settings = null)

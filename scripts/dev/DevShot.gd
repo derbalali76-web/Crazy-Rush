@@ -60,10 +60,15 @@ func _ready() -> void:
 				Missions.report_race(1, 30.0)
 				for i in range(6):
 					Missions.claim("day", i)
-			var cz := CostumesScreen.new()
-			cz.char_id = str(args.get("char", "fox"))
-			cz.char_id = cz.char_id
-			add_child(cz)
+			var cid := str(args.get("char", "fox"))
+			if cid.begins_with("m_") or cid.begins_with("r_") or cid == "tour":
+				var bz := BoardScreen.new()
+				bz.char_id = cid
+				add_child(bz)
+			else:
+				var cz := CostumesScreen.new()
+				cz.char_id = cid
+				add_child(cz)
 		"select":
 			var cs := CharacterSelect.new()
 			add_child(cs)
