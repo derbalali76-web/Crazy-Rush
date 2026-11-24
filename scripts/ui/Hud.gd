@@ -67,7 +67,7 @@ const REF_W := 1672.0
 const REF_H := 941.0
 const T_LOGO := preload("res://assets/ui/hud/logo.png")
 const T_TIMER := preload("res://assets/ui/hud/timer.png")
-const T_LAP := preload("res://assets/ui/hud/lap.png")
+const T_LAP := preload("res://assets/ui/hud/lap_blank.png")
 const T_PAUSE := preload("res://assets/ui/hud/pause.png")
 const T_MEDAL := [preload("res://assets/ui/hud/medal1.png"), preload("res://assets/ui/hud/medal2.png"), preload("res://assets/ui/hud/medal3.png")]
 const ROW0 := 162.0
@@ -178,6 +178,10 @@ func _build() -> void:
 	time_label.size = Vector2(206, 56)
 	right_root.add_child(time_label)
 	_spr(right_root, T_LAP, Vector2(1280, 80))
+	var lap_word := UiKit.label(Loc.t("لفة"), 36, Color.WHITE, 7)
+	lap_word.position = Vector2(1296, 91)
+	lap_word.size = Vector2(98, 50)
+	right_root.add_child(lap_word)
 	lap_label = _num(UiKit.label("1/1", 40, Color.WHITE, 8))
 	lap_label.position = Vector2(1392, 93)
 	lap_label.size = Vector2(90, 50)

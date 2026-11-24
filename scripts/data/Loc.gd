@@ -144,6 +144,7 @@ const T := {
 	"يُعاد التصنيف بعد %s": ["Resets in %s", "Réinitialisation dans %s", "Se reinicia en %s", "%s后重置"],
 	"الترتيب بين كل اللاعبين": ["Among all players", "Parmi tous les joueurs", "Entre todos los jugadores", "全体玩家排名"],
 	"فز بسباق واحد": ["Win 1 race", "Gagne 1 course", "Gana 1 carrera", "赢得1场比赛"],
+	"لفة": ["Lap", "Tour", "Vuelta", "圈"],
 	"الرئيسية": ["Home", "Accueil", "Inicio", "主页"],
 	# --- الجودة والإعدادات
 	"عالية": ["High", "Élevée", "Alta", "高"],

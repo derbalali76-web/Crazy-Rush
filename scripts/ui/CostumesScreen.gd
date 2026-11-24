@@ -22,11 +22,6 @@ const IMAGES := {
 	"sosu": "res://assets/ui/costumes_sosu_ref.png",
 	"zain": "res://assets/ui/costumes_zain_ref.png",
 	"arthur": "res://assets/ui/costumes_arthur_ref.png",
-	"m_day": "res://assets/ui/missions_daily_ref.png",
-	"m_week": "res://assets/ui/missions_weekly_ref.png",
-	"r_week": "res://assets/ui/ranking_week_ref.png",
-	"r_all": "res://assets/ui/ranking_all_ref.png",
-	"tour": "res://assets/ui/tournaments_ref.png",
 }
 const ORDER := ["fox", "bombo", "ziko", "robo", "lulu", "dino", "bibo", "batboot", "kung", "sosu", "zain", "arthur"]
 
