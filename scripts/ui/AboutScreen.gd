@@ -139,12 +139,13 @@ func _build() -> void:
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
 	var cl := UiKit.num_label(str(Settings.total_coins), 32)
-	cl.position = Vector2(1190, 24)
+	cl.position = Vector2(1190, 19)
 	cl.size = Vector2(100, 42)
 	cl.clip_text = true
 	_root.add_child(cl)
-	_unavailable(Rect2(1296, 22, 52, 52), 10, 0.0, false)
-	_unavailable(Rect2(1362, 20, 212, 60), 16, 0.0, true, 0.9)
+	_hit(Rect2(1296, 22, 52, 52), func(): UiKit.open_store(self, 0))
+	UiKit.counter(_root, _bg_img, Rect2(1424, 19, 88, 44), 1420, str(Settings.gems), 34)
+	_hit(Rect2(1362, 20, 212, 60), func(): UiKit.open_store(self, 1))
 	_hit(Rect2(1578, 12, 92, 92), _close)
 	_hit(Rect2(570, 795, 500, 130), _close)
 

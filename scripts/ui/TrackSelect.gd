@@ -177,12 +177,13 @@ func _build() -> void:
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_add(pt)
 	var coins := UiKit.num_label(str(Settings.total_coins), 32)
-	coins.position = Vector2(1194, 26)
+	coins.position = Vector2(1194, 17)
 	coins.size = Vector2(100, 42)
 	coins.clip_text = true
 	_add(coins)
-	_unavailable(Rect2(1296, 22, 52, 52), 10, 0.0, false)
-	_unavailable(Rect2(1380, 18, 192, 58), 16, 0.0, true, 0.9)
+	_hit(Rect2(1296, 22, 52, 52), func(): UiKit.open_store(self, 0))
+	UiKit.counter(_layer, _bg_img, Rect2(1424, 19, 98, 44), 1424, str(Settings.gems), 34)
+	_hit(Rect2(1380, 18, 192, 58), func(): UiKit.open_store(self, 1))
 
 	# --- الأزرار
 	_hit(Rect2(1575, 10, 90, 80), func():

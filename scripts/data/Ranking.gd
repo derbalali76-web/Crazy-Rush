@@ -11,7 +11,7 @@ const CUPS := [
 	{"races": 3, "reward": 500},
 	{"races": 5, "reward": 1200},
 	{"races": 5, "reward": 2500},
-	{"races": 8, "reward": 5000},
+	{"races": 8, "reward": 5000, "gems": 5},
 ]
 
 static var all_pts := 0
@@ -133,6 +133,7 @@ static func claim_cup(i: int) -> int:
 	var st = (ml as SceneTree).root.get_node_or_null("Settings") if ml is SceneTree else null
 	if st:
 		st.total_coins += r
+		st.gems += int(CUPS[i].get("gems", 0))
 		st.save_settings()
 	save()
 	return r

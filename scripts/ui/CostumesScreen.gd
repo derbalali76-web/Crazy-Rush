@@ -145,7 +145,7 @@ func _patch_num(x: float, y: float, w: float, h: float, sample_x: int, text: Str
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
 	var l := UiKit.num_label(text, 34)
-	l.position = Vector2(x - 6, y - 4)
+	l.position = Vector2(x - 6, y - 8)
 	l.size = Vector2(w, h + 8)
 	l.clip_text = true
 	_root.add_child(l)
@@ -180,7 +180,7 @@ func _build() -> void:
 
 func _build_bombo() -> void:
 	_patch_num(1100, 34, 112, 40, 1100, str(Settings.total_coins))
-	_patch_num(1362, 34, 98, 40, 1358, "0")
+	_patch_num(1362, 34, 98, 40, 1358, str(Settings.gems))
 	if char_id == "ziko":
 		_fix_text(Rect2(1345, 678, 272, 38), 1338, 1622, 683, "زي النينجا السيبراني", 28)
 	if char_id == "bombo":
@@ -259,7 +259,7 @@ func _build_six() -> void:
 func _build_fox() -> void:
 	# أرصدة حقيقية فوق الأرقام المرسومة
 	_patch_num(1132, 34, 106, 42, 1236, str(Settings.total_coins))
-	_patch_num(1388, 34, 84, 42, 1478, "0")
+	_patch_num(1388, 34, 84, 42, 1478, str(Settings.gems))
 
 	# بطاقات الأزياء: الأساسي (أول بطاقة) هو الفعّال فقط
 	var xs := [730.0, 960.0, 1190.0, 1420.0]
@@ -311,7 +311,7 @@ func _build_missions() -> void:
 	_timer_scope = scope
 	# العدّادان
 	_patch_num(1100, 34, 112, 40, 1098, _fmt(Settings.total_coins))
-	_patch_num(1366, 34, 100, 40, 1366, "0")
+	_patch_num(1366, 34, 100, 40, 1366, str(Settings.gems))
 	# الصفوف
 	var ds := Missions.defs(scope)
 	for i in range(ds.size()):
@@ -355,6 +355,24 @@ func _build_missions() -> void:
 			var idx := i
 			_hit(Rect2(598, y - 35, 158, 70), func():
 				Missions.claim(scope, idx)
+				_switch(char_id))
+	# صندوق اليوم/الأسبوع
+	var ready := Missions.chest_ready(scope)
+	var opened := Missions.chest_opened(scope)
+	var ctxt := "اضغط لفتح الصندوق!" if ready else ("تم فتح الصندوق ✓" if opened else "أكمل كل المهام")
+	var cb := _box(Rect2(150, 296, 330, 46), Color("f5b81c") if ready else Color("141d5c"), Color("ffe48a") if ready else Color("5a68b8"), 22, 3)
+	var cl := UiKit.bold_label(ctxt, 26, Color.WHITE, Color("5a2d00") if ready else Color("0a1040"), 5)
+	cl.size = cb.size
+	cb.add_child(cl)
+	if ready:
+		var tw := create_tween().set_loops()
+		tw.tween_property(cb, "modulate", Color(1.25, 1.25, 1.0), 0.6)
+		tw.tween_property(cb, "modulate", Color.WHITE, 0.6)
+		_hit(Rect2(150, 120, 330, 225), func():
+			var rw := Missions.open_chest(scope)
+			if not rw.is_empty():
+				_toast("حصلت على %d جواهر و%d عملة!" % [rw["gems"], rw["coins"]])
+				await get_tree().create_timer(1.6).timeout
 				_switch(char_id))
 	# العدّ التنازلي
 	_patch_strip(Rect2(790, 832, 548, 66), 1346 if scope == "day" else 1322)
@@ -422,7 +440,7 @@ func _solid_text(r: Rect2, sample: Vector2i, text: String, size: int, color := C
 
 func _common_top(coin_x: int, gem_x: int) -> void:
 	_patch_num(1100, 34, 112, 40, coin_x, _fmt(Settings.total_coins))
-	_patch_num(1366, 34, 100, 40, gem_x, "0")
+	_patch_num(1366, 34, 100, 40, gem_x, str(Settings.gems))
 	_hit(Rect2(1030, 26, 250, 66), func(): _open_store(0))
 	_hit(Rect2(1285, 26, 250, 66), func(): _open_store(1))
 	_hit(Rect2(1560, 22, 96, 92), func():
@@ -494,3 +512,12 @@ func _build_tour() -> void:
 				else:
 					Ranking.start_cup(idx)
 					start_pressed.emit())
+
+
+## رسالة قصيرة في منتصف الشاشة
+func _toast(text: String) -> void:
+	var b := _box(Rect2(436, 380, 800, 140), Color("1b2a9a"), Color("ffd23a"), 40, 6)
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
+	var l := UiKit.bold_label(text, 48, Color("ffe84a"), Color("4a1a00"), 8)
+	l.size = b.size
+	b.add_child(l)

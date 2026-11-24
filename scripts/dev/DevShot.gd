@@ -52,6 +52,12 @@ func _ready() -> void:
 		"account":
 			add_child(AccountScreen.new())
 		"costumes":
+			if args.get("fill", "") != "":
+				for k in ["races", "wins", "coins", "ability", "hits"]:
+					Missions.add(k, 999)
+				Missions.report_race(1, 30.0)
+				for i in range(6):
+					Missions.claim("day", i)
 			var cz := CostumesScreen.new()
 			cz.char_id = str(args.get("char", "fox"))
 			cz.char_id = cz.char_id
@@ -59,6 +65,9 @@ func _ready() -> void:
 		"select":
 			var cs := CharacterSelect.new()
 			add_child(cs)
+			if args.get("tab", "") != "":
+				await get_tree().process_frame
+				cs._set_tab(int(args.get("tab", "0")))
 			if args.get("sel", "") != "":
 				await get_tree().process_frame
 				cs._set_focus(int(args.get("sel", "0")))

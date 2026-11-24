@@ -535,6 +535,20 @@ func test_missions() -> void:
 	check(Missions.claim("day", 2) == 0, "missions: unfinished can't be claimed")
 	Missions.add("coins", 60)
 	check(Missions.progress("day", 2) == 50, "missions: progress capped at goal")
+	check(not Missions.chest_ready("day"), "chest: not ready at start")
+	for i in range(6):
+		Missions.add("races", 99)
+		Missions.add("wins", 99)
+		Missions.add("coins", 999)
+		Missions.add("ability", 99)
+		Missions.add("hits", 99)
+	Missions.report_race(1, 30.0)
+	for i in range(6):
+		Missions.claim("day", i)
+	check(Missions.chest_ready("day"), "chest: ready after all claimed")
+	var rw := Missions.open_chest("day")
+	check(int(rw.get("gems", 0)) == 3, "chest: gives 3 gems")
+	check(Missions.open_chest("day").is_empty(), "chest: opens once")
 	Missions.reset_for_tests()
 
 

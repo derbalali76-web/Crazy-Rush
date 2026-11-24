@@ -33,6 +33,9 @@ var _root: Control
 var _bg_img: Image
 var _dyn: Control
 var _focus := 0
+var _tab := 0          # 0 الكل، 1 الأساسية (8)، 2 الأسطورية (4)
+var _grid: Control
+const LEG_DY := -368.0
 
 
 func _ready() -> void:
@@ -102,21 +105,10 @@ func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha 
 
 
 func _build() -> void:
-	# --- البطاقات: المتاحة تُختار، وغيرها معتَّمة بوسم
-	for i in range(CARDS.size()):
-		var r: Rect2 = CARDS[i].r
-		var id: String = CARDS[i].id
-		if id == "":
-			_unavailable(r, 20, 22.0)
-		_hit(r, func():
-			if id != "":
-				Settings.selected_character = id
-				Settings.save_settings()
-			_set_focus(i))
-
-	# --- التبويبات (الكل نشط فقط)
-	_unavailable(Rect2(412, 110, 388, 76), 18, 0.0, true, 0.88)
-	_unavailable(Rect2(810, 110, 385, 76), 18, 0.0, true, 0.88)
+	_grid = Control.new()
+	_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_grid)
+	_build_grid()
 
 	# --- أسهم تبديل الشخصية (لا توجد شخصيات أخرى بعد)
 
@@ -133,12 +125,13 @@ func _build() -> void:
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
 	var coins := UiKit.num_label(str(Settings.total_coins), 34)
-	coins.position = Vector2(1186, 26)
+	coins.position = Vector2(1186, 17)
 	coins.size = Vector2(98, 44)
 	coins.clip_text = true
 	_root.add_child(coins)
-	_unavailable(Rect2(1286, 22, 56, 56), 10, 0.0, false)     # زر + (المتجر)
-	_unavailable(Rect2(1352, 20, 212, 62), 16, 0.0, true, 0.9)           # الجواهر
+	_hit(Rect2(1286, 22, 56, 56), func(): UiKit.open_store(self, 0))     # زر + (المتجر)
+	UiKit.counter(_root, _bg_img, Rect2(1418, 18, 88, 44), 1420, str(Settings.gems), 34)
+	_hit(Rect2(1352, 20, 212, 62), func(): UiKit.open_store(self, 1))    # الجواهر
 
 	# --- زر العودة (البيت)
 	_hit(Rect2(1572, 12, 90, 90), func():
@@ -161,11 +154,16 @@ func _build() -> void:
 		var gl := UiKit.label(a[1], 54, Color("ffd54a"), 4)
 		gl.size = bx.size
 		bx.add_child(gl)
-		_hit(ar, func(): _set_focus(_focus + step))
+		_hit(ar, func(): _set_focus(_focus + step, step))
 
 
-func _set_focus(i: int) -> void:
+func _set_focus(i: int, step := 0) -> void:
 	_focus = posmod(i, ORDER.size())
+	if step != 0:
+		var n := 0
+		while _card_rect(_focus).size.x <= 0.0 and n < ORDER.size():
+			_focus = posmod(_focus + step, ORDER.size())
+			n += 1
 	_refresh()
 
 
@@ -218,7 +216,99 @@ func _refresh() -> void:
 			poly.color = cols[row] if on else Color(0.25, 0.28, 0.4, 0.9)
 			_dyn.add_child(poly)
 	# إطار تمييز على البطاقة المحدَّدة
-	_box(CARDS[_focus].r, Color(0, 0, 0, 0), Color("ffd54a"), 26, 5)
+	var fr := _card_rect(_focus)
+	if fr.size.x > 0.0:
+		_box(fr, Color(0, 0, 0, 0), Color("ffd54a"), 26, 5)
 	if not playable:
 		_unavailable(Rect2(590, 810, 605, 112), 26, 0.0, true, 0.6)
 	_root = keep
+
+
+# ------------------------------------------------------------------ التبويبات والشبكة
+func _in_tab(i: int) -> bool:
+	return _tab == 0 or (_tab == 1 and i < 8) or (_tab == 2 and i >= 8)
+
+
+## مستطيل البطاقة كما تظهر في التبويب الحالي (حجم صفر = مخفية)
+func _card_rect(i: int) -> Rect2:
+	if not _in_tab(i):
+		return Rect2()
+	var r: Rect2 = CARDS[i].r
+	if _tab == 2:
+		r.position.y += LEG_DY
+	return r
+
+
+func _build_grid() -> void:
+	for c in _grid.get_children():
+		_grid.remove_child(c)
+		c.queue_free()
+	var keep := _root
+	_root = _grid
+	# تغطية البطاقات غير المعروضة بلون اللوحة، ورسم الصف الأسطوري في الأعلى عند تبويبه
+	var panel := Color("1c2a84")
+	if _tab == 1:
+		_box(Rect2(437, 563, 1140, 213), panel, Color(0, 0, 0, 0), 0, 0)
+		_soon("المزيد من الشخصيات قريبًا", Rect2(437, 567, 1140, 209))
+	elif _tab == 2:
+		_box(Rect2(437, 183, 1140, 593), panel, Color(0, 0, 0, 0), 0, 0)
+		var at := AtlasTexture.new()
+		at.atlas = BG
+		at.region = Rect2(437, 566, 1140, 210)
+		var tr := TextureRect.new()
+		tr.texture = at
+		tr.position = Vector2(437, 566 + LEG_DY)
+		tr.size = Vector2(1140, 210)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_grid.add_child(tr)
+		_soon("المزيد من الأساطير قريبًا", Rect2(437, 420, 1140, 340))
+	for i in range(CARDS.size()):
+		var r := _card_rect(i)
+		if r.size.x <= 0.0:
+			continue
+		var id: String = CARDS[i].id
+		if id == "":
+			_unavailable(r, 20, 22.0)
+		_hit(r, func():
+			if id != "":
+				Settings.selected_character = id
+				Settings.save_settings()
+			_set_focus(i))
+	# التبويبات الثلاثة (نُعيد رسمها لتتبدّل حالتها)
+	var tabs := [
+		[Rect2(1205, 108, 325, 80), "الكل (12)", 0],
+		[Rect2(810, 108, 385, 80), "الشخصيات الأساسية (8)", 1],
+		[Rect2(412, 108, 388, 80), "الشخصيات الأسطورية (4)", 2],
+	]
+	for t in tabs:
+		var rr: Rect2 = t[0]
+		var act: bool = t[2] == _tab
+		var bx := _box(rr, Color("f8b81a") if act else Color("141d5c"), Color("ffe48a") if act else Color("5a68b8"), 30, 4)
+		var tl := UiKit.bold_label(t[1], 30, Color.WHITE if act else Color("c9d2ff"), Color("5a2d00") if act else Color("0a1040"), 6)
+		tl.size = bx.size
+		tl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		bx.add_child(tl)
+		var which: int = t[2]
+		_hit(rr, func(): _set_tab(which))
+	_root = keep
+
+
+func _soon(text: String, r: Rect2) -> void:
+	var l := UiKit.bold_label(text, 44, Color("8f9be0"), Color("0a1040"), 6)
+	l.position = r.position
+	l.size = r.size
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_grid.add_child(l)
+
+
+func _set_tab(t: int) -> void:
+	if t == _tab:
+		return
+	_tab = t
+	_build_grid()
+	if _card_rect(_focus).size.x <= 0.0:
+		_set_focus(_focus, 1)
+	else:
+		_refresh()

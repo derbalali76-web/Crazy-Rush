@@ -3,6 +3,8 @@ extends RefCounted
 ## المهام اليومية والأسبوعية: تقدّم يُحفظ في user://missions.cfg، والمكافأة تُستلم يدويًا.
 
 const PATH := "user://missions.cfg"
+## صندوق اليوم/الأسبوع: يُفتح بعد استلام كل المهام (جواهر + عملات)
+const CHEST := {"day": {"gems": 3, "coins": 100}, "week": {"gems": 10, "coins": 500}}
 
 ## kind: races / wins / coins / fast (إنهاء بزمن أقل من limit) / hits / ability
 const DAILY := [
@@ -47,6 +49,7 @@ static func _load() -> void:
 				"p": int(cf.get_value(s, "period", -1)),
 				"prog": cf.get_value(s, "prog", []),
 				"claimed": cf.get_value(s, "claimed", []),
+				"chest": bool(cf.get_value(s, "chest", false)),
 			}
 	_ensure()
 
@@ -62,7 +65,7 @@ static func _ensure(now := -1.0) -> void:
 			for i in range(n):
 				z.append(0)
 				c.append(false)
-			_d[s] = {"p": cur, "prog": z, "claimed": c}
+			_d[s] = {"p": cur, "prog": z, "claimed": c, "chest": false}
 
 
 static func save() -> void:
@@ -71,6 +74,7 @@ static func save() -> void:
 		cf.set_value(s, "period", _d[s]["p"])
 		cf.set_value(s, "prog", _d[s]["prog"])
 		cf.set_value(s, "claimed", _d[s]["claimed"])
+		cf.set_value(s, "chest", _d[s].get("chest", false))
 	cf.save(PATH)
 
 
@@ -149,6 +153,40 @@ static func claimable_count() -> int:
 			if is_done(s, i) and not is_claimed(s, i):
 				c += 1
 	return c
+
+
+## هل كل مهام النطاق مستلمة (الصندوق جاهز)؟
+static func chest_ready(scope: String) -> bool:
+	_load()
+	_ensure()
+	if bool(_d[scope].get("chest", false)):
+		return false
+	for i in range(defs(scope).size()):
+		if not is_claimed(scope, i):
+			return false
+	return true
+
+
+static func chest_opened(scope: String) -> bool:
+	_load()
+	_ensure()
+	return bool(_d[scope].get("chest", false))
+
+
+## يفتح الصندوق: يعيد {"gems":..,"coins":..} أو {} إن لم يكن جاهزًا
+static func open_chest(scope: String) -> Dictionary:
+	if not chest_ready(scope):
+		return {}
+	_d[scope]["chest"] = true
+	var rw: Dictionary = CHEST[scope]
+	var ml := Engine.get_main_loop()
+	var st = (ml as SceneTree).root.get_node_or_null("Settings") if ml is SceneTree else null
+	if st:
+		st.total_coins += int(rw["coins"])
+		st.gems += int(rw["gems"])
+		st.save_settings()
+	save()
+	return rw.duplicate()
 
 
 ## الثواني المتبقية حتى التجدّد (منتصف الليل بتوقيت الجهاز)

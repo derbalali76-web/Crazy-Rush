@@ -131,8 +131,8 @@ static func name_tag(parent: Control, bg_img: Image, r: Rect2, sample_x: int, te
 static func num_label(text: String, size := 36) -> Label:
 	var fv := FontVariation.new()
 	fv.base_font = font()
-	fv.variation_embolden = 1.3
-	var l := label(text, size, Color.WHITE, 8)
+	fv.variation_embolden = 2.4
+	var l := label(text, size, Color.WHITE, 10)
 	l.add_theme_font_override("font", fv)
 	l.add_theme_color_override("font_outline_color", Color("0b1450"))
 	return l
@@ -196,3 +196,31 @@ static func _fold(t: float) -> float:
 	if m > 1.0:
 		m = 2.0 - m
 	return clampf(m, 0.0, 0.999)
+
+
+## يفتح المتجر فوق الشاشة المضيفة (tab 0 عملات / 1 جواهر)
+static func open_store(host: Control, tab: int) -> void:
+	var st := StoreScreen.new()
+	host.add_child(st)
+	if tab != 0:
+		st._select(tab)
+
+
+## عدّاد رقمي حقيقي: يمسح الرقم المرسوم بعمود لون من الخلفية ثم يكتب رقمًا ثقيلًا في منتصف المستطيل
+static func counter(parent: Control, bg_img: Image, r: Rect2, sample_x: int, text: String, size := 34) -> void:
+	var strip := Image.create(1, int(r.size.y), false, Image.FORMAT_RGBA8)
+	for i in range(int(r.size.y)):
+		strip.set_pixel(0, i, bg_img.get_pixel(sample_x, int(r.position.y) + i))
+	var pt := TextureRect.new()
+	pt.texture = ImageTexture.create_from_image(strip)
+	pt.position = r.position
+	pt.size = r.size
+	pt.stretch_mode = TextureRect.STRETCH_SCALE
+	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(pt)
+	var l := num_label(text, size)
+	l.position = r.position
+	l.size = r.size
+	l.clip_text = true
+	parent.add_child(l)

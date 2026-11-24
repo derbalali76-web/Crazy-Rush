@@ -105,13 +105,13 @@ func _build() -> void:
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
 	var coins := UiKit.num_label(str(Settings.total_coins), 36)
-	coins.position = Vector2(1122, 24)
+	coins.position = Vector2(1122, 16)
 	coins.size = Vector2(112, 52)
 	coins.clip_text = true
 	_root.add_child(coins)
 	_hit(Rect2(1240, 22, 56, 56), func(): _open_store(0))             # زر + (متجر العملات)
 	# الجواهر
-	UiKit.name_tag(_root, _bg_img, Rect2(1384, 26, 94, 48), 1481, "0", 36, Color("2a0a50"))   # الجواهر الفعلية 0
+	UiKit.name_tag(_root, _bg_img, Rect2(1384, 18, 94, 48), 1481, str(Settings.gems), 36, Color("2a0a50"))   # الجواهر الفعلية 0
 	_hit(Rect2(1312, 22, 240, 56), func(): _open_store(1))             # متجر الجواهر
 	# الملف الشخصي
 	_hit(Rect2(30, 15, 440, 140), _open_account)                       # الملف الشخصي
