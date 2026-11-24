@@ -70,7 +70,7 @@ func _open_store(tab: int) -> void:
 
 
 func _setup() -> void:
-	BG = load(IMAGES.get(char_id, IMAGES["fox"])) as Texture2D
+	BG = Loc.tex(IMAGES.get(char_id, IMAGES["fox"]))
 	_bg_img = BG.get_image()
 	var vp := get_viewport_rect().size
 	set_deferred("size", vp)
@@ -127,7 +127,7 @@ func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha 
 	var tw := minf(r.size.x - 10.0, fsize * 7.2)
 	var th := fsize * 1.6
 	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 
@@ -202,6 +202,8 @@ func _build_bombo() -> void:
 
 
 func _fix_text(r: Rect2, lx: int, rx: int, sy: int, text: String, size: int, color := Color.WHITE, outline := Color("0a0a40")) -> void:
+	if not Loc.rtl():
+		return
 	var strip := Image.create(2, int(r.size.y), false, Image.FORMAT_RGBA8)
 	for i in range(int(r.size.y)):
 		strip.set_pixel(0, i, _bg_img.get_pixel(lx, sy + i))
@@ -223,6 +225,8 @@ func _fix_text(r: Rect2, lx: int, rx: int, sy: int, text: String, size: int, col
 
 
 func _fix_bombo_name() -> void:
+	if not Loc.rtl():
+		return
 	# تصحيح الاسم المرسوم («يومبو» ← «بومبو»)
 	var strip := Image.create(2, 40, false, Image.FORMAT_RGBA8)
 	for i in range(40):
@@ -237,7 +241,7 @@ func _fix_bombo_name() -> void:
 	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(pt)
-	var nm := UiKit.bold_label("بومبو الملاكم", 40, Color("ffd54a"), Color("3a1a00"), 8)
+	var nm := UiKit.bold_label(Loc.t("بومبو الملاكم"), 40, Color("ffd54a"), Color("3a1a00"), 8)
 	nm.position = Vector2(244, 788)
 	nm.size = Vector2(268, 52)
 	nm.clip_text = true
@@ -333,15 +337,15 @@ func _build_missions() -> void:
 		t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_root.add_child(t)
 		# زر الحالة
-		var txt := "جاري"
+		var txt := Loc.t("جاري")
 		var fillc := Color("8b93ad")
 		var edge := Color("d5daf0")
 		if claimed:
-			txt = "تم ✓"
+			txt = Loc.t("تم ✓")
 			fillc = Color("5c6384")
 			edge = Color("9aa2c4")
 		elif done:
-			txt = "استلام"
+			txt = Loc.t("استلام")
 			fillc = Color("27c43a")
 			edge = Color("b6ff8a")
 		_box(Rect2(598, y - 35, 158, 70), fillc, edge, 32, 3)
@@ -359,7 +363,7 @@ func _build_missions() -> void:
 	# صندوق اليوم/الأسبوع
 	var ready := Missions.chest_ready(scope)
 	var opened := Missions.chest_opened(scope)
-	var ctxt := "اضغط لفتح الصندوق!" if ready else ("تم فتح الصندوق ✓" if opened else "أكمل كل المهام")
+	var ctxt := Loc.t("اضغط لفتح الصندوق!") if ready else (Loc.t("تم فتح الصندوق ✓") if opened else Loc.t("أكمل كل المهام"))
 	var cb := _box(Rect2(150, 296, 330, 46), Color("f5b81c") if ready else Color("141d5c"), Color("ffe48a") if ready else Color("5a68b8"), 22, 3)
 	var cl := UiKit.bold_label(ctxt, 26, Color.WHITE, Color("5a2d00") if ready else Color("0a1040"), 5)
 	cl.size = cb.size
@@ -371,14 +375,14 @@ func _build_missions() -> void:
 		_hit(Rect2(150, 120, 330, 225), func():
 			var rw := Missions.open_chest(scope)
 			if not rw.is_empty():
-				_toast("حصلت على %d جواهر و%d عملة!" % [rw["gems"], rw["coins"]])
+				_toast(Loc.t("حصلت على %d جواهر و%d عملة!") % [rw["gems"], rw["coins"]])
 				await get_tree().create_timer(1.6).timeout
 				_switch(char_id))
 	# العدّ التنازلي
-	_patch_strip(Rect2(790, 832, 548, 66), 1346 if scope == "day" else 1322)
-	_timer_lbl = UiKit.bold_label("", 44, Color("ffe84a"), Color("4a1a00"), 6)
-	_timer_lbl.position = Vector2(790, 832)
-	_timer_lbl.size = Vector2(548, 66)
+	_patch_strip(Rect2(650, 832, 688, 66), 1346 if scope == "day" else 1322)
+	_timer_lbl = UiKit.bold_label("", 44 if Loc.rtl() else 36, Color("ffe84a"), Color("4a1a00"), 6)
+	_timer_lbl.position = Vector2(650, 832)
+	_timer_lbl.size = Vector2(688, 66)
 	_timer_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_timer_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_root.add_child(_timer_lbl)
@@ -401,11 +405,11 @@ func _update_timer() -> void:
 		return
 	var sec := Missions.seconds_left(_timer_scope)
 	if _timer_scope == "day":
-		_timer_lbl.text = "تتجدد المهام بعد " + Missions.arabic_digits("%02d:%02d:%02d" % [sec / 3600, (sec / 60) % 60, sec % 60])
+		_timer_lbl.text = Loc.t("تتجدد المهام بعد ") + Loc.digits("%02d:%02d:%02d" % [sec / 3600, (sec / 60) % 60, sec % 60])
 	else:
 		var d := ceili(sec / 86400.0)
-		var w := "يوم" if d == 1 else ("أيام" if d <= 10 else "يومًا")
-		_timer_lbl.text = "تتجدد المهام بعد " + Missions.arabic_digits(str(d)) + " " + w
+		var w := Loc.t("يوم") if d == 1 else (Loc.t("أيام") if d <= 10 else Loc.t("يومًا"))
+		_timer_lbl.text = Loc.t("تتجدد المهام بعد ") + Loc.digits(str(d)) + " " + w
 
 
 var _tick := 0.0
@@ -455,7 +459,7 @@ func _build_ranking() -> void:
 	var rk := Ranking.rank_of(weekly)
 	_solid_text(Rect2(690, 696, 146, 40), Vector2i(838, 716), _fmt(pts), 34)
 	_solid_text(Rect2(1494, 696, 60, 40), Vector2i(1490, 716), str(rk), 34, Color("ffd23a"), Color("3a2200"))
-	_patch_text(Rect2(104, 832, 420, 54), 98, "المركز %s · %s نقطة" % [Missions.arabic_digits(str(rk)), Missions.arabic_digits(_fmt(pts))], 38, Color.WHITE, Color("1b0a50"))
+	_patch_text(Rect2(104, 832, 420, 54), 98, Loc.t("المركز %s · %s نقطة") % [Loc.digits(str(rk)), Loc.digits(_fmt(pts))], 38, Color.WHITE, Color("1b0a50"))
 	_hit(Rect2(1120, 118, 400, 84), func():
 		if not weekly: _switch("r_week"))
 	_hit(Rect2(770, 118, 345, 84), func():
@@ -483,19 +487,19 @@ func _build_tour() -> void:
 		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_root.add_child(t)
-		var txt := "ابدأ"
+		var txt := Loc.t("ابدأ")
 		var fillc := Color("2fcf2c")
 		var edge := Color("b6ff8a")
 		if claimed:
-			txt = "تم ✓"
+			txt = Loc.t("تم ✓")
 			fillc = Color("5c6384")
 			edge = Color("9aa2c4")
 		elif done:
-			txt = "استلام"
+			txt = Loc.t("استلام")
 			fillc = Color("f5b81c")
 			edge = Color("ffe38a")
 		elif Ranking.active == i or prog > 0:
-			txt = "متابعة"
+			txt = Loc.t("متابعة")
 		_box(Rect2(552, y - 45, 175, 90), fillc, edge, 40, 3)
 		var bl := UiKit.bold_label(txt, 38, Color.WHITE, Color("114a12") if fillc == Color("2fcf2c") else Color("2b2f55"), 6)
 		bl.position = Vector2(552, y - 45)

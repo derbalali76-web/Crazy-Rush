@@ -6,6 +6,8 @@ var args := {}
 
 
 func _ready() -> void:
+	if args_lang() != "":
+		Loc.set_lang(args_lang())
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--") and a.contains("="):
 			var kv := a.substr(2).split("=", true, 1)
@@ -436,3 +438,10 @@ func _scene_trees() -> void:
 		PropLib.apply_tree_materials(ti, true)
 		ti.position = Vector3(-4.0 + k * 7.0, 0.0, -4.0)
 		add_child(ti)
+
+
+func args_lang() -> String:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--lang="):
+			return a.substr(7)
+	return ""

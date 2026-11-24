@@ -10,7 +10,7 @@ const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
 const C_ROW := Color("143a94")
 const C_ROW_EDGE := Color("2f6fe0")
-const BG := preload("res://assets/ui/settings_ref.png")
+var BG: Texture2D = Loc.tex("res://assets/ui/settings_ref.png")
 
 var _root: Control
 var _bg_img: Image
@@ -119,7 +119,7 @@ func _build_controls() -> void:
 
 	# جودة الرسوم: أزرار حقيقية فوق منطقة الأزرار المرسومة
 	_patch(Rect2(922, 352, 636, 90))
-	var names := ["منخفضة", "متوسطة", "عالية"]
+	var names := [Loc.t("منخفضة"), Loc.t("متوسطة"), Loc.t("عالية")]
 	var xs := [930, 1087, 1243]
 	for i in range(3):
 		var b := _btn(_root, names[i], Rect2(xs[i], 366, 142, 64), Color("0a3a9a"), Color("062a7a"), 32, Color("2f8cff"))
@@ -133,8 +133,27 @@ func _build_controls() -> void:
 	hd.disabled = true
 	_unavailable(_root, Rect2(1397, 366, 146, 64), 17)
 
-	# اللغة (غير متاحة)
-	_unavailable(_root, Rect2(1027, 462, 418, 62), 24)
+	# اللغة: ثلاث لغات (العربية / English / Français)
+	var lbx := _box(_root, Rect2(1027, 462, 418, 62), Color("0d1f66"), Color("4f78ff"), 24, 3)
+	var lname := _lbl(lbx, Loc.NAMES[Loc.lang], Rect2(60, 0, 298, 62), 34, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, 5)
+	for d in [[-1, Rect2(0, 0, 80, 62), "‹"], [1, Rect2(338, 0, 80, 62), "›"]]:
+		var step: int = d[0]
+		var ab := Button.new()
+		ab.text = d[2]
+		ab.flat = true
+		ab.position = d[1].position
+		ab.size = d[1].size
+		ab.focus_mode = Control.FOCUS_NONE
+		ab.add_theme_font_size_override("font_size", 46)
+		ab.add_theme_color_override("font_color", Color("ffd54a"))
+		ab.pressed.connect(func():
+			var i := Loc.LANGS.find(Loc.lang)
+			Settings.language = Loc.LANGS[posmod(i + step, Loc.LANGS.size())]
+			Loc.set_lang(Settings.language)
+			Settings.save_settings()
+			get_tree().reload_current_scene())
+		lbx.add_child(ab)
+	lname.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# الاهتزاز: مفتاح حقيقي
 	_patch(Rect2(1105, 626, 240, 76))
@@ -160,9 +179,9 @@ func _build_nav() -> void:
 	_hit_nav(Rect2(20, 355, 250, 88), func(): _push(AccountScreen.new()))
 	_hit_nav(Rect2(20, 462, 250, 88), func(): _push(HelpScreen.new()))
 	_hit_nav(Rect2(20, 570, 250, 88), func(): _push(AboutScreen.new()))
-	var adv := _btn(_root, "خيارات متقدمة", Rect2(18, 800, 255, 64), UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, 28)
+	var adv := _btn(_root, Loc.t("خيارات متقدمة"), Rect2(18, 800, 255, 64), UiKit.C_PURPLE_TOP, UiKit.C_PURPLE_BOT, 28)
 	adv.pressed.connect(func(): _adv.visible = true)
-	var reset := _btn(_root, "استعادة الافتراضي", Rect2(18, 874, 255, 56), UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, 24)
+	var reset := _btn(_root, Loc.t("استعادة الافتراضي"), Rect2(18, 874, 255, 56), UiKit.C_BLUE_TOP, UiKit.C_BLUE_BOT, 24)
 	reset.pressed.connect(func():
 		Settings.reset_defaults()
 		_refresh())
@@ -253,7 +272,7 @@ func _unavailable(parent: Control, r: Rect2, fsize := 24, tag_dy := 0.0) -> void
 	var tw := minf(r.size.x - 12.0, fsize * 7.2)
 	var th := fsize * 1.6
 	var tag := _box(parent, Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 
@@ -269,12 +288,12 @@ func _build_advanced() -> void:
 	shade.size = Vector2(W, H)
 	_adv.add_child(shade)
 	_box(_adv, Rect2(430, 150, 810, 640), Color("0f2f82"), Color("f3b21c"), 44, 8)
-	_lbl(_adv, "خيارات متقدمة", Rect2(430, 165, 810, 80), 56, Color("ffd23a"))
+	_lbl(_adv, Loc.t("خيارات متقدمة"), Rect2(430, 165, 810, 80), 56, Color("ffd23a"))
 	var items := [
-		["عرض عدّاد الأداء (FPS)", "show_fps"],
-		["تخفيف الرسومات تلقائيًا عند الثقل", "auto_quality"],
-		["حلبة الغابة التجريبية (بريميوم)", "premium_track"],
-		["حلبة التفرعات متعددة الارتفاعات (تجريبي)", "branch_track"],
+		[Loc.t("عرض عدّاد الأداء (FPS)"), "show_fps"],
+		[Loc.t("تخفيف الرسومات تلقائيًا عند الثقل"), "auto_quality"],
+		[Loc.t("حلبة الغابة التجريبية (بريميوم)"), "premium_track"],
+		[Loc.t("حلبة التفرعات متعددة الارتفاعات (تجريبي)"), "branch_track"],
 	]
 	var y := 270.0
 	for it in items:
@@ -288,7 +307,7 @@ func _build_advanced() -> void:
 			_refresh())
 		_toggles[key] = t
 		y += 100.0
-	var back := _btn(_adv, "رجوع", Rect2(660, 690, 350, 80), UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, 40, Color.WHITE)
+	var back := _btn(_adv, Loc.t("رجوع"), Rect2(660, 690, 350, 80), UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, 40, Color.WHITE)
 	back.pressed.connect(func(): _adv.visible = false)
 
 
@@ -302,7 +321,7 @@ func _refresh() -> void:
 			_style_btn(b, Color("0a3a9a"), Color("062a7a"), Color("2f8cff"))
 	var on := Settings.vibration
 	_tog.add_theme_stylebox_override("panel", _tog_style(Color("1fa83a") if on else Color("525775"), Color("c8ffd0") if on else Color("aab0cc")))
-	_tog_lbl.text = "مفعّل" if on else "متوقف"
+	_tog_lbl.text = Loc.t("مفعّل") if on else Loc.t("متوقف")
 	_tog_lbl.position.x = 0.0 if on else 58.0
 	_tog_knob.position.x = 150.0 if on else 8.0
 	for key in _toggles:
@@ -322,7 +341,7 @@ func _tog_style(fill: Color, edge: Color) -> StyleBoxFlat:
 
 
 func _set_toggle(b: Button, on: bool) -> void:
-	b.text = "مفعّل" if on else "متوقف"
+	b.text = Loc.t("مفعّل") if on else Loc.t("متوقف")
 	if on:
 		_style_btn(b, UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, Color("c8ffd0"))
 	else:

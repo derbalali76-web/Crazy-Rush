@@ -67,11 +67,11 @@ static func icon(id: String) -> Texture2D:
 
 
 static func character_name(id: String) -> String:
-	return get_def(id).name
+	return Loc.t(get_def(id).name)
 
 
 static func short_name(id: String) -> String:
-	return get_def(id).short
+	return Loc.t(get_def(id).short)
 
 
 static func is_playable(id: String) -> bool:
@@ -80,13 +80,14 @@ static func is_playable(id: String) -> bool:
 
 static func id_from_short(short_name_: String) -> String:
 	for k in LIST:
-		if LIST[k].short == short_name_:
+		if LIST[k].short == short_name_ or Loc.t(LIST[k].short) == short_name_:
 			return k
 	return DEFAULT
 
 
 static func ability(id: String) -> Array:
-	return ABILITY.get(id, ABILITY[DEFAULT])
+	var a: Array = ABILITY.get(id, ABILITY[DEFAULT])
+	return [Loc.t(a[0]), Loc.t(a[1])]
 
 
 static func stats(id: String) -> Array:

@@ -19,6 +19,7 @@ var selected_character: String = "fox"   # الشخصية المختارة (ان
 var best_time: float = 0.0
 var total_coins: int = 0
 var gems: int = 0
+var language: String = "ar"
 var player_name: String = "ALI"
 var races_played: int = 0
 var wins: int = 0
@@ -32,6 +33,8 @@ func load_settings() -> void:
 	var cf := ConfigFile.new()
 	if cf.load(PATH) != OK:
 		quality = _guess_default_quality()
+		language = "ar"
+		Loc.set_lang(language)
 		return
 	quality = clampi(int(cf.get_value("gfx", "quality", Quality.MEDIUM)), 0, 2)
 	auto_quality = bool(cf.get_value("gfx", "auto_quality", true))
@@ -45,6 +48,8 @@ func load_settings() -> void:
 	best_time = float(cf.get_value("progress", "best_time", 0.0))
 	total_coins = int(cf.get_value("progress", "coins", 0))
 	gems = int(cf.get_value("progress", "gems", 0))
+	language = str(cf.get_value("ui", "lang", "ar"))
+	Loc.set_lang(language)
 	player_name = str(cf.get_value("progress", "name", "ALI"))
 	races_played = int(cf.get_value("progress", "races", 0))
 	wins = int(cf.get_value("progress", "wins", 0))
@@ -64,6 +69,7 @@ func save_settings() -> void:
 	cf.set_value("progress", "best_time", best_time)
 	cf.set_value("progress", "coins", total_coins)
 	cf.set_value("progress", "gems", gems)
+	cf.set_value("ui", "lang", language)
 	cf.set_value("progress", "name", player_name)
 	cf.set_value("progress", "races", races_played)
 	cf.set_value("progress", "wins", wins)
@@ -106,7 +112,7 @@ func profile() -> Dictionary:
 
 
 func quality_name() -> String:
-	return ["منخفضة", "متوسطة", "عالية"][quality]
+	return Loc.t(["منخفضة", "متوسطة", "عالية"][quality])
 
 
 ## تطبيق إعدادات المنفذ (Viewport) على الشاشة الحالية.

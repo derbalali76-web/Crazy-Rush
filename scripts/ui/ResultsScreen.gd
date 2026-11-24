@@ -132,7 +132,7 @@ func _unavailable(r: Rect2, fsize := 20, alpha := 0.55) -> void:
 	var tw := minf(r.size.x - 8.0, fsize * 7.2)
 	var th := fsize * 1.6
 	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 
@@ -166,7 +166,7 @@ func _build() -> void:
 	_unavailable(Rect2(990, 548, 347, 80), 22, 0.82)
 	_unavailable(Rect2(596, 650, 722, 100), 26, 0.78)
 	if data.get("new_best", false):
-		_lbl("رقم قياسي جديد!", Rect2(1320, 168, 210, 40), 24, Color("fff3a0"), HORIZONTAL_ALIGNMENT_CENTER, 6)
+		_lbl(Loc.t("رقم قياسي جديد!"), Rect2(1320, 168, 210, 40), 24, Color("fff3a0"), HORIZONTAL_ALIGNMENT_CENTER, 6)
 
 	# --- جدول الترتيب
 	var n := mini(st.size(), CENTERS.size())

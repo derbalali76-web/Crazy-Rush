@@ -90,7 +90,7 @@ func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha 
 	var tw := minf(r.size.x - 10.0, fsize * 7.2)
 	var th := fsize * 1.6
 	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 

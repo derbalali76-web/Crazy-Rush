@@ -10,7 +10,7 @@ signal closed
 const W := 1672.0
 const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
-const BG := preload("res://assets/ui/select_ref.png")
+var BG: Texture2D = Loc.tex("res://assets/ui/select_ref.png")
 
 ## مستطيلات البطاقات الاثنتي عشرة؛ "id" فارغ = غير متاحة بعد.
 const ORDER := ["bombo", "ziko", "robo", "lulu", "fox", "dino", "bibo", "batboot", "kung", "sosu", "zain", "arthur"]
@@ -99,7 +99,7 @@ func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha 
 	var tw := minf(r.size.x - 10.0, fsize * 7.2)
 	var th := fsize * 1.6
 	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 
@@ -249,7 +249,7 @@ func _build_grid() -> void:
 	var panel := Color("1c2a84")
 	if _tab == 1:
 		_box(Rect2(437, 563, 1140, 213), panel, Color(0, 0, 0, 0), 0, 0)
-		_soon("المزيد من الشخصيات قريبًا", Rect2(437, 567, 1140, 209))
+		_soon(Loc.t("المزيد من الشخصيات قريبًا"), Rect2(437, 567, 1140, 209))
 	elif _tab == 2:
 		_box(Rect2(437, 183, 1140, 593), panel, Color(0, 0, 0, 0), 0, 0)
 		var at := AtlasTexture.new()
@@ -261,7 +261,7 @@ func _build_grid() -> void:
 		tr.size = Vector2(1140, 210)
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_grid.add_child(tr)
-		_soon("المزيد من الأساطير قريبًا", Rect2(437, 420, 1140, 340))
+		_soon(Loc.t("المزيد من الأساطير قريبًا"), Rect2(437, 420, 1140, 340))
 	for i in range(CARDS.size()):
 		var r := _card_rect(i)
 		if r.size.x <= 0.0:
@@ -276,9 +276,9 @@ func _build_grid() -> void:
 			_set_focus(i))
 	# التبويبات الثلاثة (نُعيد رسمها لتتبدّل حالتها)
 	var tabs := [
-		[Rect2(1205, 108, 325, 80), "الكل (12)", 0],
-		[Rect2(810, 108, 385, 80), "الشخصيات الأساسية (8)", 1],
-		[Rect2(412, 108, 388, 80), "الشخصيات الأسطورية (4)", 2],
+		[Rect2(1205, 108, 325, 80), Loc.t("الكل (12)"), 0],
+		[Rect2(810, 108, 385, 80), Loc.t("الشخصيات الأساسية (8)"), 1],
+		[Rect2(412, 108, 388, 80), Loc.t("الشخصيات الأسطورية (4)"), 2],
 	]
 	for t in tabs:
 		var rr: Rect2 = t[0]

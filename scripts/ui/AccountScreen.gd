@@ -8,7 +8,7 @@ signal closed
 const W := 1672.0
 const H := 941.0
 const TAG_TEXT := "غير متاح حاليًا"
-const BG := preload("res://assets/ui/account_ref.png")
+var BG: Texture2D = Loc.tex("res://assets/ui/account_ref.png")
 
 var _root: Control
 var _bg_img: Image
@@ -75,7 +75,7 @@ func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, alpha 
 	var tw := minf(r.size.x - 10.0, fsize * 7.2)
 	var th := fsize * 1.6
 	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
-	var t := UiKit.label(TAG_TEXT, fsize, Color("dfe5ff"), 3)
+	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
 
@@ -199,7 +199,7 @@ func _rename() -> void:
 	var dim := _box(Rect2(0, 0, W, H), Color(0.02, 0.03, 0.16, 0.72), Color(0, 0, 0, 0), 0, 0)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	var panel := _box(Rect2(W * 0.5 - 330, 250, 660, 340), Color("14246e"), Color("ffc21a"), 36, 6)
-	var title := UiKit.label("تغيير الاسم", 46, Color("ffe45a"), 8)
+	var title := UiKit.label(Loc.t("تغيير الاسم"), 46, Color("ffe45a"), 8)
 	title.position = Vector2(W * 0.5 - 330, 266)
 	title.size = Vector2(660, 70)
 	_root.add_child(title)
@@ -212,7 +212,7 @@ func _rename() -> void:
 	le.add_theme_font_size_override("font_size", 44)
 	le.add_theme_font_override("font", UiKit.font())
 	_root.add_child(le)
-	var ok := UiKit.button("حفظ", UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, Vector2(250, 80), 36)
+	var ok := UiKit.button(Loc.t("حفظ"), UiKit.C_GREEN_TOP, UiKit.C_GREEN_BOT, Vector2(250, 80), 36)
 	ok.position = Vector2(W * 0.5 - 270, 470)
 	ok.pressed.connect(func():
 		var n := le.text.strip_edges()
@@ -222,7 +222,7 @@ func _rename() -> void:
 			_name_label.text = n
 		_close_dialog(dim, panel, title, le))
 	_root.add_child(ok)
-	var cancel := UiKit.button("إلغاء", UiKit.C_RED_TOP, UiKit.C_RED_BOT, Vector2(250, 80), 36)
+	var cancel := UiKit.button(Loc.t("إلغاء"), UiKit.C_RED_TOP, UiKit.C_RED_BOT, Vector2(250, 80), 36)
 	cancel.position = Vector2(W * 0.5 + 20, 470)
 	cancel.pressed.connect(func(): _close_dialog(dim, panel, title, le))
 	_root.add_child(cancel)

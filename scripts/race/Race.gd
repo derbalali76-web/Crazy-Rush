@@ -67,7 +67,7 @@ func _ready() -> void:
 	hud.resume_pressed.connect(_on_resume)
 	hud.restart_pressed.connect(func(): restart_requested.emit())
 	hud.home_pressed.connect(func(): exit_to_menu.emit())
-	hud.show_toast("جارٍ تجهيز المسار...")
+	hud.show_toast(Loc.t("جارٍ تجهيز المسار..."))
 	_load()
 
 
@@ -196,7 +196,7 @@ func _build_rivals() -> void:
 		f.set_hue(float(RaceLogic.HUES[k]))
 		add_child(f)
 		var lb := Label3D.new()
-		lb.text = RaceLogic.NAMES[k]
+		lb.text = Loc.t(RaceLogic.NAMES[k])
 		lb.font = font
 		lb.font_size = 56
 		lb.pixel_size = 0.0042
@@ -336,7 +336,7 @@ func _connect_runner() -> void:
 		_buzz(60)
 		if foxy:
 			foxy.notify_hit(_hit_power(kind))
-		hud.show_banner("أُصبتَ بضربة!" if kind == "hit" else "أوه! اصطدام", Color("ff9a8a")))
+		hud.show_banner(Loc.t("أُصبتَ بضربة!") if kind == "hit" else Loc.t("أوه! اصطدام"), Color("ff9a8a")))
 	runner.punch_started.connect(func():
 		if foxy:
 			foxy.start_punch(logic.punch_side(logic.player)))
@@ -346,8 +346,8 @@ func _connect_runner() -> void:
 		view.hide_coin(i)
 		hud.set_coins(runner.coins_got)
 		_spark(data.world(data.coins[i].x, data.coins[i].y, data.coins[i].z)))
-	runner.boosted.connect(func(): hud.show_banner("تسارع!", Color("ffe45a")))
-	runner.fell.connect(func(): hud.show_banner("سقطت!", Color("ff9a8a")))
+	runner.boosted.connect(func(): hud.show_banner(Loc.t("تسارع!"), Color("ffe45a")))
+	runner.fell.connect(func(): hud.show_banner(Loc.t("سقطت!"), Color("ff9a8a")))
 	runner.finished.connect(_on_finished)
 	runner.dashed.connect(func():
 		Missions.add("ability")
@@ -416,7 +416,7 @@ func _on_racer_hit(victim: int, attacker: int) -> void:
 	var pos := data.world(vr.s, vr.x, vr.y + 1.0)
 	_spark(pos)
 	if attacker == logic.player:
-		hud.show_banner("ضربة موفّقة!", Color("ffe45a"))
+		hud.show_banner(Loc.t("ضربة موفّقة!"), Color("ffe45a"))
 		_shake = maxf(_shake, 0.18)
 		_buzz(30)
 	elif victim == logic.player:
@@ -496,7 +496,7 @@ func _update_countdown(delta: float) -> void:
 		if stage >= 1:
 			hud.show_countdown(str(stage))
 		elif stage == 0:
-			hud.show_countdown("انطلق!", Color("7dffb0"))
+			hud.show_countdown(Loc.t("انطلق!"), Color("7dffb0"))
 			phase = Phase.RACING
 			logic.start()
 			hud.controls.enabled = true
@@ -530,16 +530,16 @@ func _standings_rows() -> Array:
 	var ids := {}
 	for i in range(RaceLogic.RACERS):
 		if i == logic.player:
-			names[i] = "أنت (%s)" % Characters.short_name(Settings.selected_character)
+			names[i] = Loc.t("أنت (%s)") % Characters.short_name(Settings.selected_character)
 			ids[i] = Settings.selected_character
 		else:
-			names[i] = RaceLogic.NAMES[k]
+			names[i] = Loc.t(RaceLogic.NAMES[k])
 			ids[i] = Characters.ROSTER[k]
 			k += 1
 	for i in _final_standings:
 		var r := logic.runners[i]
 		var done: bool = r.state == Runner.State.FINISHED and (i == logic.player or r.finish_time <= runner.finish_time)
-		var tt := Hud._fmt(r.finish_time) if done else "لم ينهِ"
+		var tt := Hud._fmt(r.finish_time) if done else Loc.t("لم ينهِ")
 		rows.append({"name": names[i], "player": i == logic.player, "time_text": tt, "character": ids[i]})
 	return rows
 
@@ -573,13 +573,13 @@ func _track_perf(delta: float) -> void:
 		if Settings.auto_quality and _auto_cooldown <= 0.0 and fps < 44.0 and Settings.quality > Settings.Quality.LOW:
 			Settings.set_quality(Settings.quality - 1)
 			Settings.apply_to_viewport(get_viewport(), sun)
-			hud.show_toast("تم تخفيف الرسومات تلقائيًا إلى: %s (%.0f إطار/ث)" % [Settings.quality_name(), fps])
+			hud.show_toast(Loc.t("تم تخفيف الرسومات تلقائيًا إلى: %s (%.0f إطار/ث)") % [Settings.quality_name(), fps])
 			_auto_cooldown = 6.0
 		_perf_window = 0.0
 		_perf_sum = 0.0
 		_perf_n = 0
 	if Settings.show_fps:
-		var info := "FPS %d   %.1f ms\nمكالمات الرسم %d   مثلثات %dk\nالذاكرة %.0f MB   الجودة %s  دقة %.0f%%" % [
+		var info := Loc.t("FPS %d   %.1f ms\nمكالمات الرسم %d   مثلثات %dk\nالذاكرة %.0f MB   الجودة %s  دقة %.0f%%") % [
 			Engine.get_frames_per_second(), delta * 1000.0,
 			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 			int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0),
@@ -598,9 +598,9 @@ func _update_hud() -> void:
 	var nm := {}
 	for i in range(RaceLogic.RACERS):
 		if i == logic.player:
-			nm[i] = "فوكسي"
+			nm[i] = Loc.t("فوكسي")
 		else:
-			nm[i] = RaceLogic.NAMES[nk]
+			nm[i] = Loc.t(RaceLogic.NAMES[nk])
 			nk += 1
 	for i in logic.standings():
 		order.append({"name": nm[i], "player": i == logic.player})

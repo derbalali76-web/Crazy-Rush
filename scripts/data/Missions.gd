@@ -200,7 +200,4 @@ static func seconds_left(scope: String) -> int:
 
 
 static func arabic_digits(s: String) -> String:
-	var out := ""
-	for ch in s:
-		out += "٠١٢٣٤٥٦٧٨٩"[int(ch)] if ch >= "0" and ch <= "9" else ch
-	return out
+	return Loc.digits(s)
