@@ -178,7 +178,7 @@ func _build() -> void:
 	_unavailable(Rect2(240, 640, 330, 96), 18, 0.0, true, 0.6)
 	# --- أزرار الأعلى
 	_hit(Rect2(1296, 22, 52, 52), func(): UiKit.open_store(self, 0))
-	UiKit.counter(_root, _bg_img, Rect2(1424, 19, 88, 44), 1420, str(Settings.gems), 34)
+	UiKit.counter(_root, _bg_img, Rect2(1424, 29, 100, 42), 1422, str(Settings.gems), 30)
 	_hit(Rect2(1362, 20, 212, 60), func(): UiKit.open_store(self, 1))
 	_hit(Rect2(1578, 12, 92, 92), _close)
 	_hit(Rect2(340, 770, 455, 135), _close)                  # رجوع

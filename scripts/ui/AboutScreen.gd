@@ -144,7 +144,7 @@ func _build() -> void:
 	cl.clip_text = true
 	_root.add_child(cl)
 	_hit(Rect2(1296, 22, 52, 52), func(): UiKit.open_store(self, 0))
-	UiKit.counter(_root, _bg_img, Rect2(1424, 19, 88, 44), 1420, str(Settings.gems), 34)
+	UiKit.counter(_root, _bg_img, Rect2(1424, 29, 100, 42), 1422, str(Settings.gems), 30)
 	_hit(Rect2(1362, 20, 212, 60), func(): UiKit.open_store(self, 1))
 	_hit(Rect2(1578, 12, 92, 92), _close)
 	_hit(Rect2(570, 795, 500, 130), _close)

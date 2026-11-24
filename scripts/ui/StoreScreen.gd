@@ -138,19 +138,11 @@ func _build() -> void:
 	# --- التبويبان
 	_hit(Rect2(425, 118, 415, 110), func(): _select(0))
 	_hit(Rect2(845, 118, 440, 110), func(): _select(1))
-	# --- عدّاد العملات الحقيقي
-	_patch2(886, 1040, 34, 72, 882, 1044)
-	var cl := UiKit.num_label(str(Settings.total_coins), 36)
-	var fv := FontVariation.new()
-	fv.base_font = UiKit.font()
-	fv.variation_embolden = 1.0
-	cl.add_theme_font_override("font", fv)
-	cl.position = Vector2(886, 28)
-	cl.size = Vector2(154, 46)
-	cl.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_add(cl)
-	_unavailable(Rect2(1050, 22, 56, 56), 10, 0.0, false)            # +
-	_unavailable(Rect2(1150, 14, 340, 76), 18, 0.0, true, 0.9)       # الجواهر
+	# --- عدّادا العملات والجواهر الحقيقيان (+ يفتح المتجر المناسب)
+	UiKit.counter(_layer, _bg_img, Rect2(890, 32, 150, 44), 884, str(Settings.total_coins), 34, -8.0)
+	UiKit.counter(_layer, _bg_img, Rect2(1250, 32, 150, 44), 1246, str(Settings.gems), 34, -8.0)
+	_hit(Rect2(1048, 30, 76, 72), func(): _select(0))
+	_hit(Rect2(1412, 30, 76, 72), func(): _select(1))
 	_hit(Rect2(1520, 10, 140, 108), func():
 		closed.emit()
 		queue_free())

@@ -73,14 +73,15 @@ func _box(r: Rect2, fill: Color, edge: Color, radius := 24, bw := 2) -> Panel:
 
 
 ## تعتيم عنصر لم يُطوَّر بعد + وسم «غير متاح حاليًا» (ويمنع اللمس عليه).
-func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true) -> void:
+func _unavailable(r: Rect2, fsize := 22, tag_dy := 0.0, show_tag := true, tag_right := false) -> void:
 	var cover := _box(r, Color(0.03, 0.05, 0.2, 0.52), Color(0, 0, 0, 0), 26, 0)
 	cover.mouse_filter = Control.MOUSE_FILTER_STOP
 	if not show_tag:
 		return
 	var tw := minf(r.size.x - 10.0, fsize * 7.2)
 	var th := fsize * 1.6
-	var tag := _box(Rect2(r.position + Vector2((r.size.x - tw) * 0.5, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
+	var tx := (r.size.x - tw - 14.0) if tag_right else (r.size.x - tw) * 0.5
+	var tag := _box(Rect2(r.position + Vector2(tx, (r.size.y - th) * 0.5 + tag_dy), Vector2(tw, th)), Color(0.1, 0.12, 0.3, 0.92), Color("8a93c8"), 14, 2)
 	var t := UiKit.label(Loc.t(TAG_TEXT), fsize, Color("dfe5ff"), 3)
 	t.size = tag.size
 	tag.add_child(t)
@@ -116,9 +117,9 @@ func _build() -> void:
 	_hit(Rect2(478, 570, 90, 100), func(): _set_focus(_focus - 1))    # سهم: تبديل الشخصية
 	_hit(Rect2(1000, 570, 90, 100), func(): _set_focus(_focus + 1))
 	# --- الأزرار اليمنى
-	_unavailable(Rect2(1148, 340, 510, 115), 26)
-	_unavailable(Rect2(1138, 468, 520, 120), 26)
-	_unavailable(Rect2(1130, 600, 525, 120), 26)
+	_unavailable(Rect2(1148, 340, 510, 115), 20, 0.0, true, true)
+	_unavailable(Rect2(1138, 468, 520, 120), 20, 0.0, true, true)
+	_unavailable(Rect2(1130, 600, 525, 120), 20, 0.0, true, true)
 	# --- الشريط السفلي
 	_hit(Rect2(25, 808, 200, 112), func(): _open_screen("tour"))      # البطولات
 	_hit(Rect2(235, 808, 200, 112), func(): _open_screen("r_week"))   # التصنيفات
@@ -251,7 +252,7 @@ func _build_texts() -> void:
 	_txt("%d / %d" % [lv[1], lv[2]], Rect2(232, 90, 206, 36), 24, Color.WHITE, navy, 5)
 	# العمود الأيسر
 	for e in [[290.0, "المهام"], [405.0, "البطولات"], [522.0, "الأزياء"], [640.0, "المتجر"]]:
-		_txt(Loc.t(e[1]), Rect2(126, e[0] - 40, 142, 80), 42, Color.WHITE, navy, 7)
+		_txt(Loc.t(e[1]), Rect2(118 if e[1] == "المهام" else 126, e[0] - 40 + (6 if e[1] == "المهام" else 0), 126 if e[1] == "المهام" else 142, 80), 42, Color.WHITE, navy, 7)
 	# البطاقات اليمنى (النص بين الأيقونتين)
 	_txt(Loc.t("ضد الكمبيوتر"), Rect2(1290, 226, 190, 48), 42, Color("4a2400"), Color.WHITE, 5)
 	_txt(Loc.t("تحدي الذكاء الاصطناعي"), Rect2(1285, 272, 200, 40), 24, Color("4a2400"), Color.WHITE, 0, false)

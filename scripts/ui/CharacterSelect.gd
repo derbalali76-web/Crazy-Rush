@@ -130,7 +130,7 @@ func _build() -> void:
 	coins.clip_text = true
 	_root.add_child(coins)
 	_hit(Rect2(1286, 22, 56, 56), func(): UiKit.open_store(self, 0))     # زر + (المتجر)
-	UiKit.counter(_root, _bg_img, Rect2(1418, 18, 88, 44), 1420, str(Settings.gems), 34)
+	UiKit.counter(_root, _bg_img, Rect2(1416, 29, 92, 38), 1418, str(Settings.gems), 30)
 	_hit(Rect2(1352, 20, 212, 62), func(): UiKit.open_store(self, 1))    # الجواهر
 
 	# --- زر العودة (البيت)

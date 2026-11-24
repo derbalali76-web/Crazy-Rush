@@ -211,7 +211,7 @@ static func open_store(host: Control, tab: int) -> void:
 
 
 ## عدّاد رقمي حقيقي: يمسح الرقم المرسوم بعمود لون من الخلفية ثم يكتب رقمًا ثقيلًا في منتصف المستطيل
-static func counter(parent: Control, bg_img: Image, r: Rect2, sample_x: int, text: String, size := 34) -> void:
+static func counter(parent: Control, bg_img: Image, r: Rect2, sample_x: int, text: String, size := 34, label_dy := 0.0) -> void:
 	var strip := Image.create(1, int(r.size.y), false, Image.FORMAT_RGBA8)
 	for i in range(int(r.size.y)):
 		strip.set_pixel(0, i, bg_img.get_pixel(sample_x, int(r.position.y) + i))
@@ -224,7 +224,7 @@ static func counter(parent: Control, bg_img: Image, r: Rect2, sample_x: int, tex
 	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(pt)
 	var l := num_label(text, size)
-	l.position = r.position
+	l.position = r.position + Vector2(0, label_dy)
 	l.size = r.size
 	l.clip_text = true
 	parent.add_child(l)
