@@ -21,7 +21,10 @@ const IMAGES := {
 	"sosu": "res://assets/ui/costumes_sosu_ref.png",
 	"zain": "res://assets/ui/costumes_zain_ref.png",
 	"arthur": "res://assets/ui/costumes_arthur_ref.png",
+	"m_day": "res://assets/ui/missions_daily_ref.png",
+	"m_week": "res://assets/ui/missions_weekly_ref.png",
 }
+const ORDER := ["fox", "bombo", "ziko", "robo", "lulu", "dino", "bibo", "batboot", "kung", "sosu", "zain", "arthur"]
 
 ## الشخصيات التي لها صورة متجر جاهزة
 static func has_store(id: String) -> bool:
@@ -37,6 +40,32 @@ var _bg_img: Image
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_setup()
+
+
+## يعيد بناء الشاشة بصورة أخرى (شخصية أخرى أو تبويب آخر)
+func _switch(id: String) -> void:
+	char_id = id
+	for c in get_children():
+		remove_child(c)
+		c.queue_free()
+	_setup()
+
+
+func _step_char(d: int) -> void:
+	var i := ORDER.find(char_id)
+	_switch(ORDER[posmod(i + d, ORDER.size())])
+
+
+## يفتح المتجر (عملات/جواهر) فوق هذه الشاشة
+func _open_store(tab: int) -> void:
+	var st := StoreScreen.new()
+	add_child(st)
+	if tab != 0:
+		st._select(tab)
+
+
+func _setup() -> void:
 	BG = load(IMAGES.get(char_id, IMAGES["fox"])) as Texture2D
 	_bg_img = BG.get_image()
 	var vp := get_viewport_rect().size
@@ -119,10 +148,21 @@ func _patch_num(x: float, y: float, w: float, h: float, sample_x: int, text: Str
 
 
 func _build() -> void:
+	if char_id.begins_with("m_"):
+		_build_missions()
+		return
 	if char_id != "fox":
 		_build_bombo()
 	else:
 		_build_fox()
+	# أسهم التبديل بين الشخصيات (فوق المعاينة وأعلى/أسفل القائمة الجانبية)
+	_hit(Rect2(160, 480, 110, 160), func(): _step_char(-1))
+	_hit(Rect2(570, 480, 110, 160), func(): _step_char(1))
+	_hit(Rect2(40, 140, 100, 60), func(): _step_char(-1))
+	_hit(Rect2(40, 800, 100, 70), func(): _step_char(1))
+	# عدّاد العملات والجواهر يفتحان المتجر
+	_hit(Rect2(1030, 26, 250, 66), func(): _open_store(0))
+	_hit(Rect2(1285, 26, 250, 66), func(): _open_store(1))
 	_hit(Rect2(1560, 22, 96, 92), func():
 		closed.emit()
 		queue_free())
@@ -202,11 +242,8 @@ func _build_six() -> void:
 	_unavailable(Rect2(1160, 128, 236, 76), 15, 0.0, true, 0.6)
 	_unavailable(Rect2(905, 128, 245, 76), 15, 0.0, true, 0.6)
 	_unavailable(Rect2(652, 128, 240, 76), 15, 0.0, true, 0.6)
-	_unavailable(Rect2(12, 145, 144, 705), 14, 0.0, true, 0.5)
 	_unavailable(Rect2(678, 802, 355, 112), 20, 0.0, true, 0.55)
 	_unavailable(Rect2(1085, 798, 545, 118), 24, 0.0, true, 0.5)
-	_unavailable(Rect2(170, 510, 80, 100), 10, 0.0, false, 0.0)
-	_unavailable(Rect2(588, 510, 80, 100), 10, 0.0, false, 0.0)
 
 
 func _build_fox() -> void:
@@ -223,10 +260,131 @@ func _build_fox() -> void:
 	_unavailable(Rect2(930, 135, 232, 70), 15, 0.0, true, 0.6)
 	_unavailable(Rect2(688, 135, 232, 70), 15, 0.0, true, 0.6)
 	# قائمة الشخصيات الجانبية
-	_unavailable(Rect2(18, 155, 148, 690), 14, 0.0, true, 0.5)
 	# معاينة وشراء
 	_unavailable(Rect2(760, 788, 325, 115), 20, 0.0, true, 0.55)
 	_unavailable(Rect2(1150, 785, 485, 125), 24, 0.0, true, 0.5)
 	# الأسهم والبطاقة الأولى: لا بديل ما دام زي واحد فقط
-	_unavailable(Rect2(205, 520, 80, 100), 10, 0.0, false, 0.0)
-	_unavailable(Rect2(610, 520, 80, 100), 10, 0.0, false, 0.0)
+
+
+# ------------------------------------------------------------------ شاشة المهام
+const M_ROWS := [262.0, 357.0, 452.0, 547.0, 642.0, 737.0]
+var _timer_lbl: Label
+var _timer_scope := "day"
+
+
+func _patch_strip(r: Rect2, sample_x: int) -> void:
+	var strip := Image.create(1, int(r.size.y), false, Image.FORMAT_RGBA8)
+	for i in range(int(r.size.y)):
+		strip.set_pixel(0, i, _bg_img.get_pixel(sample_x, int(r.position.y) + i))
+	var pt := TextureRect.new()
+	pt.texture = ImageTexture.create_from_image(strip)
+	pt.position = r.position
+	pt.size = r.size
+	pt.stretch_mode = TextureRect.STRETCH_SCALE
+	pt.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	pt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(pt)
+
+
+func _fmt(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	for i in range(s.length()):
+		if i > 0 and (s.length() - i) % 3 == 0:
+			out += ","
+		out += s[i]
+	return out
+
+
+func _build_missions() -> void:
+	var scope := "day" if char_id == "m_day" else "week"
+	_timer_scope = scope
+	# العدّادان
+	_patch_num(1100, 34, 112, 40, 1098, _fmt(Settings.total_coins))
+	_patch_num(1366, 34, 100, 40, 1366, "0")
+	# الصفوف
+	var ds := Missions.defs(scope)
+	for i in range(ds.size()):
+		var y: float = M_ROWS[i]
+		var goal := int(ds[i]["goal"])
+		var prog := Missions.progress(scope, i)
+		var done := Missions.is_done(scope, i)
+		var claimed := Missions.is_claimed(scope, i)
+		# شريط التقدّم
+		_box(Rect2(928, y - 20, 250, 40), Color("0b1c52"), Color("6f8fe0"), 20, 2)
+		if prog > 0:
+			var fw := maxf(24.0, 242.0 * float(prog) / float(goal))
+			var fill := _box(Rect2(932, y - 16, fw, 32), Color("3fd12c"), Color("a6f27a"), 16, 2)
+			fill.size.x = minf(fw, 242.0)
+		var t := UiKit.bold_label("%d/%d" % [prog, goal], 26, Color.WHITE, Color("0a1440"), 5)
+		t.position = Vector2(928, y - 22)
+		t.size = Vector2(250, 44)
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_root.add_child(t)
+		# زر الحالة
+		var txt := "جاري"
+		var fillc := Color("8b93ad")
+		var edge := Color("d5daf0")
+		if claimed:
+			txt = "تم ✓"
+			fillc = Color("5c6384")
+			edge = Color("9aa2c4")
+		elif done:
+			txt = "استلام"
+			fillc = Color("27c43a")
+			edge = Color("b6ff8a")
+		_box(Rect2(598, y - 35, 158, 70), fillc, edge, 32, 3)
+		var bl := UiKit.bold_label(txt, 34, Color.WHITE, Color("1b2350") if not done or claimed else Color("0e5a1c"), 6)
+		bl.position = Vector2(598, y - 35)
+		bl.size = Vector2(158, 70)
+		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_root.add_child(bl)
+		if done and not claimed:
+			var idx := i
+			_hit(Rect2(598, y - 35, 158, 70), func():
+				Missions.claim(scope, idx)
+				_switch(char_id))
+	# العدّ التنازلي
+	_patch_strip(Rect2(790, 832, 548, 66), 1346 if scope == "day" else 1322)
+	_timer_lbl = UiKit.bold_label("", 44, Color("ffe84a"), Color("4a1a00"), 6)
+	_timer_lbl.position = Vector2(790, 832)
+	_timer_lbl.size = Vector2(548, 66)
+	_timer_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_timer_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_root.add_child(_timer_lbl)
+	_update_timer()
+	# التبويبان
+	_hit(Rect2(1225, 118, 300, 84), func():
+		if char_id != "m_day": _switch("m_day"))
+	_hit(Rect2(915, 118, 305, 84), func():
+		if char_id != "m_week": _switch("m_week"))
+	# العدّادان يفتحان المتجر + العودة
+	_hit(Rect2(1030, 26, 250, 66), func(): _open_store(0))
+	_hit(Rect2(1285, 26, 250, 66), func(): _open_store(1))
+	_hit(Rect2(1560, 22, 96, 92), func():
+		closed.emit()
+		queue_free())
+
+
+func _update_timer() -> void:
+	if _timer_lbl == null:
+		return
+	var sec := Missions.seconds_left(_timer_scope)
+	if _timer_scope == "day":
+		_timer_lbl.text = "تتجدد المهام بعد " + Missions.arabic_digits("%02d:%02d:%02d" % [sec / 3600, (sec / 60) % 60, sec % 60])
+	else:
+		var d := ceili(sec / 86400.0)
+		var w := "يوم" if d == 1 else ("أيام" if d <= 10 else "يومًا")
+		_timer_lbl.text = "تتجدد المهام بعد " + Missions.arabic_digits(str(d)) + " " + w
+
+
+var _tick := 0.0
+
+
+func _process(delta: float) -> void:
+	_tick += delta
+	if _tick >= 1.0:
+		_tick = 0.0
+		_update_timer()

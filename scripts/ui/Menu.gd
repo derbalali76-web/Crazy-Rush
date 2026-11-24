@@ -117,8 +117,8 @@ func _build() -> void:
 	_hit(Rect2(30, 15, 440, 140), _open_account)                       # الملف الشخصي
 
 	# --- العمود الأيسر
-	for y in [245.0, 362.0]:
-		_unavailable(Rect2(12, y, 258, 96), 17, 32.0)
+	_hit(Rect2(12, 245, 258, 96), _open_missions)                      # المهام
+	_unavailable(Rect2(12, 362, 258, 96), 17, 32.0)                    # البطولات
 	_hit(Rect2(12, 480, 258, 96), _open_costumes)                      # الأزياء
 	_hit(Rect2(12, 598, 258, 96), func(): _open_store(0))                        # المتجر (شاشته جاهزة والمحتوى غير متاح)
 	# اختيار الشخصية
@@ -235,6 +235,16 @@ func _open_costumes() -> void:
 	cs.closed.connect(func(): _settings = null)
 	_settings = cs
 	add_child(cs)
+
+
+func _open_missions() -> void:
+	if _settings:
+		return
+	var ms := CostumesScreen.new()
+	ms.char_id = "m_day"
+	ms.closed.connect(func(): _settings = null)
+	_settings = ms
+	add_child(ms)
 
 
 func _open_account() -> void:

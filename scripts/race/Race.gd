@@ -330,6 +330,8 @@ func _connect_runner() -> void:
 			foxy.notify_land(hard)
 		_puff())
 	runner.stumbled.connect(func(kind: String):
+		if kind != "hit":
+			Missions.add("hits")
 		_shake = 0.35
 		_buzz(60)
 		if foxy:
@@ -340,13 +342,16 @@ func _connect_runner() -> void:
 			foxy.start_punch(logic.punch_side(logic.player)))
 	runner.punch_hit.connect(_on_punch_hit)
 	runner.coin_collected.connect(func(i: int):
+		Missions.add("coins")
 		view.hide_coin(i)
 		hud.set_coins(runner.coins_got)
 		_spark(data.world(data.coins[i].x, data.coins[i].y, data.coins[i].z)))
 	runner.boosted.connect(func(): hud.show_banner("تسارع!", Color("ffe45a")))
 	runner.fell.connect(func(): hud.show_banner("سقطت!", Color("ff9a8a")))
 	runner.finished.connect(_on_finished)
-	runner.dashed.connect(func(): _ghost_timer = 0.0)
+	runner.dashed.connect(func():
+		Missions.add("ability")
+		_ghost_timer = 0.0)
 
 
 static func _hit_power(kind: String) -> float:
@@ -434,6 +439,7 @@ func _on_finished(t: float) -> void:
 	if new_best:
 		Settings.best_time = t
 	Settings.save_settings()
+	Missions.report_race(_final_rank, t)
 	set_meta("new_best", new_best)
 
 

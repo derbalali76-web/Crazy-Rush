@@ -14,6 +14,7 @@ func check(cond: bool, msg: String) -> void:
 
 func _init() -> void:
 	test_meshes()
+	test_missions()
 	test_run_forward()
 	test_jump()
 	test_slide()
@@ -517,3 +518,20 @@ func test_branch_track() -> void:
 	check(fin >= RaceLogic.RACERS - 1, "branch: >= 7/8 racers finish (finished=%d, falls=%d, t=%.0fs)" % [fin, falls, float(t) / 120.0])
 	check(bad_rank == 0, "branch: rank order consistent with distance (violations=%d)" % bad_rank)
 	check(used_high.A > 0 and used_high.A < 7, "AI splits between routes at fork A (high=%d/7)" % used_high.A)
+
+
+func test_missions() -> void:
+	Missions.reset_for_tests()
+	check(Missions.progress("day", 0) == 0, "missions: starts at 0")
+	for i in range(3):
+		Missions.report_race(2 if i < 2 else 1, 65.0)
+	check(Missions.is_done("day", 0), "missions: 3 races done")
+	check(Missions.is_done("day", 1), "missions: win done")
+	check(Missions.is_done("day", 3), "missions: fast done (<70s)")
+	check(not Missions.is_done("week", 3), "missions: weekly fast needs <60s")
+	check(Missions.claim("day", 0) == 50, "missions: claim pays reward")
+	check(Missions.claim("day", 0) == 0, "missions: no double claim")
+	check(Missions.claim("day", 2) == 0, "missions: unfinished can't be claimed")
+	Missions.add("coins", 60)
+	check(Missions.progress("day", 2) == 50, "missions: progress capped at goal")
+	Missions.reset_for_tests()
